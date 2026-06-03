@@ -2,7 +2,7 @@
 
 Generate and verify HOTP and TOTP codes with sensible defaults.
 
-`@dws-std/totp` supports base32 secrets, raw byte secrets, custom digits, custom algorithms, verification windows, and structured errors via `@dws-std/error`.
+`@dws-std/totp` supports base32 secrets, raw byte secrets, custom digits, custom algorithms, verification windows, secret generation, `otpauth://` provisioning URIs, and structured errors via `@dws-std/error`.
 
 ## 📌 Table of Contents
 
@@ -12,6 +12,8 @@ Generate and verify HOTP and TOTP codes with sensible defaults.
     - [verifyHOTP](#verifyhotp)
     - [generateTOTP](#generatetotp)
     - [verifyTOTP](#verifytotp)
+    - [generateOTPSecret](#generateotpsecret)
+    - [buildOtpauthUrl](#buildotpauthurl)
 - [Error handling](#-error-handling)
 - [API Reference](#-api-reference)
 - [License](#-license)
@@ -156,6 +158,53 @@ const isValid = await verifyTOTP({
 	period: 30
 });
 ```
+
+### `generateOTPSecret`
+
+Generates a random base32-encoded secret, suitable for both HOTP and TOTP.  
+The argument is the number of chars (each carries 5 bits of entropy).
+
+```ts
+import { generateOTPSecret } from '@dws-std/totp';
+
+const secret = generateOTPSecret(32);
+
+const otp = await generateTOTP({ secret });
+```
+
+### `buildOtpauthUrl`
+
+Builds an `otpauth://` provisioning URI (Key Uri Format) you can encode into a QR code for authenticator apps.  
+The `type` field selects between time-based and counter-based credentials.
+
+```ts
+import { buildOtpauthUrl, generateOTPSecret } from '@dws-std/totp';
+
+const secret = generateOTPSecret(32);
+
+const url = buildOtpauthUrl({
+	type: 'totp',
+	secret,
+	accountName: 'alice@example.com',
+	issuer: 'DWS'
+});
+// otpauth://totp/DWS%3Aalice%40example.com?secret=...&issuer=DWS&algorithm=SHA1&digits=6&period=30
+```
+
+For HOTP, pass a `counter` instead of a `period`:
+
+```ts
+const url = buildOtpauthUrl({
+	type: 'hotp',
+	secret,
+	accountName: 'alice@example.com',
+	issuer: 'DWS',
+	counter: 0
+});
+// otpauth://hotp/DWS%3Aalice%40example.com?secret=...&issuer=DWS&algorithm=SHA1&digits=6&counter=0
+```
+
+`digits` defaults to `6` and `algorithm` to `'SHA-1'`. The algorithm is normalised to the dash-less spelling the URI format expects (`SHA-256` -> `SHA256`).
 
 ## 🚨 Error handling
 
