@@ -1,11 +1,10 @@
 import { Exception } from '@dws-std/error';
 
+import { BASE32_ALPHABET, BASE32_CHARS } from '#/util/base32';
+
 export const DECODE_BASE32_ERROR_KEYS = {
 	INVALID_CHAR: 'totp.decode-base32.invalid-char'
 } as const;
-
-const _BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-const _BASE32_CHARS = new Set(_BASE32_ALPHABET);
 
 /**
  * Decodes a base32-encoded string into a Uint8Array (RFC 4648).
@@ -20,7 +19,7 @@ export const decodeBase32 = (input: string): Uint8Array<ArrayBuffer> => {
 	const sanitized = input.toUpperCase().replace(/[\s=]/g, '');
 
 	for (const char of sanitized)
-		if (!_BASE32_CHARS.has(char))
+		if (!BASE32_CHARS.has(char))
 			throw new Exception(`Invalid base32 character: '${char}'`, {
 				key: DECODE_BASE32_ERROR_KEYS.INVALID_CHAR,
 				cause: { input, invalidCharacter: char }
@@ -32,7 +31,7 @@ export const decodeBase32 = (input: string): Uint8Array<ArrayBuffer> => {
 	let index = 0;
 
 	for (const char of sanitized) {
-		value = (value << 5) | _BASE32_ALPHABET.indexOf(char);
+		value = (value << 5) | BASE32_ALPHABET.indexOf(char);
 		bits += 5;
 		if (bits >= 8) {
 			bits -= 8;
