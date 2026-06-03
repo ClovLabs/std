@@ -1,57 +1,57 @@
 {
-	"name": "@dws-std/kv-store",
-	"version": "1.0.0",
-	"description": "Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter.",
-	"keywords": [
-		"bun",
-		"cache",
-		"dws",
-		"key-value",
-		"kv-store",
-		"memory",
-		"open-source",
-		"redis",
-		"ttl",
-		"typescript"
-	],
-	"license": "MIT",
-	"author": "Dominus Web Services (DWS)",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/Dominus-Web-Service/std",
-		"directory": "packages/kv-store"
-	},
-	"files": [
-		"dist"
-	],
-	"type": "module",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"default": "./dist/index.js"
-		}
-	},
-	"scripts": {
-		"build": "bun builder.ts",
-		"docs": "bunx typedoc --tsconfig tsconfig.build.json",
-		"fmt:check": "oxfmt --check",
-		"fmt": "oxfmt",
-		"lint:fix": "oxlint --type-aware --type-check --fix ./src",
-		"lint:github": "oxlint --type-aware --type-check --format=github ./src",
-		"lint": "oxlint --type-aware --type-check ./src",
-		"test": "bun test --pass-with-no-tests --coverage"
-	},
-	"dependencies": {
-		"@dws-std/error": "workspace:^"
-	},
-	"devDependencies": {
-		"@types/bun": "catalog:base",
-		"oxfmt": "catalog:base",
-		"oxlint": "catalog:base",
-		"oxlint-tsgolint": "catalog:base",
-		"typescript": "catalog:base"
-	},
-	"peerDependencies": {
-		"@dws-std/error": "workspace:^"
-	}
+  "name": "@dws-std/kv-store",
+  "version": "1.0.1",
+  "description": "Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter.",
+  "keywords": [
+    "bun",
+    "cache",
+    "dws",
+    "key-value",
+    "kv-store",
+    "memory",
+    "open-source",
+    "redis",
+    "ttl",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "Dominus Web Services (DWS)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dominus-Web-Service/std",
+    "directory": "packages/kv-store"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun builder.ts",
+    "docs": "bunx typedoc --tsconfig tsconfig.build.json",
+    "fmt:check": "oxfmt --check",
+    "fmt": "oxfmt",
+    "lint:fix": "oxlint --type-aware --type-check --fix ./src",
+    "lint:github": "oxlint --type-aware --type-check --format=github ./src",
+    "lint": "oxlint --type-aware --type-check ./src",
+    "test": "bun test --pass-with-no-tests --coverage"
+  },
+  "dependencies": {
+    "@dws-std/error": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:base",
+    "oxfmt": "catalog:base",
+    "oxlint": "catalog:base",
+    "oxlint-tsgolint": "catalog:base",
+    "typescript": "catalog:base"
+  },
+  "peerDependencies": {
+    "@dws-std/error": "workspace:^"
+  }
 }
