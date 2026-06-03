@@ -6,6 +6,12 @@ export {
 	type VerifyHOTPOptions
 } from './hotp';
 export {
+	buildOtpauthUrl,
+	type HOTPAuthUrlParams,
+	type OtpauthUrlParams,
+	type TOTPAuthUrlParams
+} from './otpauth-url';
+export {
 	generateTOTP,
 	TOTP_ERROR_KEYS,
 	verifyTOTP,
