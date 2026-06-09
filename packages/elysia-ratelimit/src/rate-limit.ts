@@ -4,6 +4,8 @@ import { type KvStore, MemoryStore } from '@dws-std/kv-store';
 import type { Server } from 'bun';
 import { Elysia, type HTTPHeaders, type StatusMap } from 'elysia';
 
+import { rateLimitContract } from './rate-limit.contract';
+
 export const RATE_LIMIT_ERROR_KEYS = {
 	RATE_LIMIT_EXCEEDED: 'rate-limit.exceeded'
 } as const;
@@ -31,12 +33,17 @@ export const rateLimitPlugin = (
 ): Elysia<
 	'rateLimitPlugin',
 	{ decorator: {}; derive: {}; resolve: {}; store: {} },
-	{ typebox: {}; error: {} },
-	// oxlint-disable-next-line typescript/no-unnecessary-type-arguments
+	{
+		typebox: {
+			RateLimitError: (typeof rateLimitContract)[409];
+		};
+		error: {};
+	},
 	{
 		macro: Partial<{ readonly rateLimit: RateLimitMacroOptions }>;
 		macroFn: {
 			rateLimit: (options: RateLimitMacroOptions) => {
+				response: { 409: 'RateLimitError' };
 				transform: ({
 					set,
 					request,
@@ -60,37 +67,44 @@ export const rateLimitPlugin = (
 	new Elysia<'rateLimitPlugin'>({
 		name: 'rateLimitPlugin',
 		seed: store
-	}).macro({
-		rateLimit: ({ limit, window, keyGenerator }: RateLimitMacroOptions) => ({
-			// Uses transform because it's the first per-route hook in Elysia's lifecycle,
-			// running before derive, resolve, and beforeHandle.
-			// onRequest would be ideal but it's global, it can't be scoped to macro-enabled routes.
-			// A pending PR (https://github.com/elysiajs/elysia/pull/1557) would expose routes
-			// in introspect, allowing onRequest with route filtering.
-			transform: async ({ set, request, server }): Promise<void> => {
-				const route = `${request.method}:${new URL(request.url).pathname}`;
-				const ip = extractClientIp(request, server);
-				const discriminator = keyGenerator ? keyGenerator({ request, server, ip }) : ip;
-				const key = `ratelimit:${route}:${discriminator}`;
-
-				const count = await store.increment(key);
-				if (count === 1) await store.expire(key, window);
-
-				const remaining = Math.max(0, limit - count);
-				const resetTime = await store.ttl(key);
-
-				set.headers['X-RateLimit-Limit'] = limit.toString();
-				set.headers['X-RateLimit-Remaining'] = remaining.toString();
-				set.headers['X-RateLimit-Reset'] = resetTime.toString();
-
-				if (count > limit) {
-					set.status = 429;
-					throw new HttpException('Too Many Requests', {
-						key: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
-						cause: { limit, window, remaining: 0, reset: resetTime },
-						status: 429
-					});
-				}
-			}
+	})
+		.model({
+			RateLimitError: rateLimitContract[409]
 		})
-	});
+		.macro({
+			rateLimit: ({ limit, window, keyGenerator }: RateLimitMacroOptions) => ({
+				response: {
+					409: 'RateLimitError'
+				} as const,
+				// Uses transform because it's the first per-route hook in Elysia's lifecycle,
+				// running before derive, resolve, and beforeHandle.
+				// onRequest would be ideal but it's global, it can't be scoped to macro-enabled routes.
+				// A pending PR (https://github.com/elysiajs/elysia/pull/1557) would expose routes
+				// in introspect, allowing onRequest with route filtering.
+				transform: async ({ set, request, server }): Promise<void> => {
+					const route = `${request.method}:${new URL(request.url).pathname}`;
+					const ip = extractClientIp(request, server);
+					const discriminator = keyGenerator ? keyGenerator({ request, server, ip }) : ip;
+					const key = `ratelimit:${route}:${discriminator}`;
+
+					const count = await store.increment(key);
+					if (count === 1) await store.expire(key, window);
+
+					const remaining = Math.max(0, limit - count);
+					const resetTime = await store.ttl(key);
+
+					set.headers['X-RateLimit-Limit'] = limit.toString();
+					set.headers['X-RateLimit-Remaining'] = remaining.toString();
+					set.headers['X-RateLimit-Reset'] = resetTime.toString();
+
+					if (count > limit) {
+						set.status = 429;
+						throw new HttpException('Too Many Requests', {
+							key: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
+							cause: { limit, window, remaining: 0, reset: resetTime },
+							status: 429
+						});
+					}
+				}
+			})
+		});

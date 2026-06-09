@@ -10,6 +10,7 @@
 		/* ———— Eslint ———— */
 		"constructor-super": "error",
 		"for-direction": "error",
+		"getter-return": "off", // move from Nursery
 		"no-async-promise-executor": "error",
 		"no-caller": "error",
 		"no-class-assign": "error",
@@ -48,6 +49,7 @@
 		"no-sparse-arrays": "error",
 		"no-this-before-super": "error",
 		"no-unassigned-vars": "error",
+		"no-unreachable": "error", // move from Nursery
 		"no-unsafe-finally": "error",
 		"no-unsafe-negation": "error",
 		"no-unsafe-optional-chaining": "error",
@@ -90,6 +92,9 @@
 		"typescript/restrict-template-expressions": "warn",
 		"typescript/triple-slash-reference": "off",
 		"typescript/unbound-method": "warn",
+		"typescript/prefer-namespace-keyword": "off", // move from Style
+		"typescript/no-useless-default-assignment": "error",
+		"typescript/prefer-string-starts-ends-with": "off",
 
 		// ————————————————————————————————————————————————————————————————————————————— //
 		//                                  Performance                                  //
@@ -105,16 +110,19 @@
 		"block-scoped-var": "error",
 		"no-extend-native": "off",
 		"no-extra-bind": "error",
+		"no-implied-eval": "off",
 		"no-new": "off",
-		"no-shadow": "error", // new add
+		"no-shadow": "error",
 		"no-unexpected-multiline": "off",
+		"no-underscore-dangle": "off",
 		"no-unneeded-ternary": "error",
+		"no-unmodified-loop-condition": "error",
 		"no-useless-concat": "error",
 		"no-useless-constructor": "error",
 		"preserve-caught-error": "off",
 
 		/* ———— Typescript ———— */
-		"no-confusing-non-null-assertion": "error",
+		"typescript/no-confusing-non-null-assertion": "error",
 		"typescript/no-extraneous-class": "warn",
 		"typescript/no-unnecessary-boolean-literal-compare": "off",
 		"typescript/no-unnecessary-template-expression": "error",
@@ -123,6 +131,9 @@
 		"typescript/no-unnecessary-type-constraint": "error",
 		"typescript/no-unsafe-enum-comparison": "error",
 		"typescript/no-unsafe-type-assertion": "off",
+		"typescript/consistent-return": "off",
+		"typescript/no-unnecessary-type-conversion": "error",
+		"typescript/no-unnecessary-type-parameters": "off",
 
 		// ————————————————————————————————————————————————————————————————————————————— //
 		//                                   Pedantic                                    //
@@ -183,6 +194,10 @@
 		"typescript/require-await": "error",
 		"typescript/strict-boolean-expressions": "off",
 		"typescript/switch-exhaustiveness-check": "off",
+		"typescript/prefer-readonly-parameter-types": "off",
+		"typescript/restrict-plus-operands": "error",
+		"typescript/return-await": "off",
+		"typescript/strict-void-return": "error",
 
 		// ————————————————————————————————————————————————————————————————————————————— //
 		//                                     Style                                     //
@@ -193,15 +208,18 @@
 		"curly": ["error", "multi"],
 		"default-case-last": "error",
 		"default-param-last": "error",
+		"func-name-matching": "off",
 		"func-names": "off",
 		"func-style": ["error", "expression"],
 		"grouped-accessor-pairs": ["warn", "getBeforeSet"],
 		"guard-for-in": "off",
 		"id-length": "off",
+		"id-match": "off",
 		"init-declarations": "off",
+		"logical-assignment-operators": "off",
 		"max-params": ["error", 6],
 		"max-statements": "off",
-		"new-cap": "error",
+		"new-cap": "off",
 		"no-continue": "off",
 		"no-duplicate-imports": "error",
 		"no-extra-label": "error",
@@ -219,20 +237,23 @@
 		"no-template-curly-in-string": "error",
 		"no-ternary": "off",
 		"no-useless-computed-key": "error",
-		"object-shorthand": "error", // new add
+		"object-shorthand": "error",
 		"operator-assignment": "warn",
-		"prefer-const": "error", // new add
+		"prefer-arrow-callback": "error",
+		"prefer-const": "error",
 		"prefer-destructuring": "error",
 		"prefer-exponentiation-operator": "error",
 		"prefer-numeric-literals": "off",
 		"prefer-object-has-own": "error",
 		"prefer-object-spread": "error",
 		"prefer-promise-reject-errors": "error",
+		"prefer-regex-literals": "warn",
 		"prefer-rest-params": "error",
 		"prefer-spread": "error",
 		"prefer-template": "off",
 		"sort-imports": "off",
 		"sort-keys": "off",
+		"vars-on-top": "warn",
 		"yoda": "off",
 
 		/* ———— Typescript ———— */
@@ -247,9 +268,18 @@
 		"typescript/no-inferrable-types": "error",
 		"typescript/prefer-for-of": "off",
 		"typescript/prefer-function-type": "error",
-		"prefer-namespace-keyword": "off",
 		"typescript/prefer-reduce-type-parameter": "warn",
 		"typescript/prefer-return-this-type": "off",
+		"typescript/class-literal-property-style": "error",
+		"typescript/consistent-type-assertions": "off",
+		"typescript/consistent-type-exports": "error",
+		"typescript/dot-notation": "off",
+		"typescript/no-unnecessary-qualifier": "error",
+		"typescript/parameter-properties": "error",
+		"typescript/prefer-find": "warn",
+		"typescript/prefer-readonly": "warn",
+		"typescript/prefer-regexp-exec": "warn",
+		"typescript/unified-signatures": "off",
 
 		// ————————————————————————————————————————————————————————————————————————————— //
 		//                                  Restriction                                  //
@@ -264,6 +294,7 @@
 		"no-div-regex": "off",
 		"no-empty": "warn",
 		"no-empty-function": "warn",
+		"no-implicit-globals": "off",
 		"no-eq-null": "off",
 		"no-param-reassign": "off",
 		"no-plusplus": "off",
@@ -271,9 +302,10 @@
 		"no-regex-spaces": "error",
 		"no-restricted-globals": "off",
 		"no-restricted-imports": "off",
+		"no-restricted-properties": "off",
 		"no-sequences": "off",
 		"no-undefined": "off",
-		"no-use-before-define": "error", // new add
+		"no-use-before-define": "error",
 		"no-var": "error",
 		"no-void": "off",
 		"unicode-bom": "off",
@@ -295,19 +327,20 @@
 		"typescript/prefer-literal-enum-member": "error",
 		"typescript/promise-function-async": "off",
 		"typescript/use-unknown-in-catch-callback-variable": "error",
+		"typescript/explicit-member-accessibility": "error",
+		"typescript/no-invalid-void-type": "error",
 
 		// ————————————————————————————————————————————————————————————————————————————— //
 		//                                    Nursery                                    //
 		// ————————————————————————————————————————————————————————————————————————————— //
 		/* ———— Eslint ———— */
-		"getter-return": "off",
-		"no-restricted-exports": "off", // new add
+		"no-restricted-exports": "off",
 		"no-undef": "off",
-		"no-unreachable": "error",
-		"no-useless-assignment": "error", // new add
+		"no-useless-assignment": "error",
 
 		/* ———— Typescript ———— */
-		"typescript/prefer-optional-chain": "warn"
+		"typescript/prefer-optional-chain": "warn",
+		"typescript/no-unnecessary-condition": "warn"
 	},
 	"settings": {},
 	"env": {

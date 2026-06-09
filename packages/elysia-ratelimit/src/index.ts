@@ -5,3 +5,5 @@ export {
 	type RateLimitKeyContext,
 	type RateLimitMacroOptions
 } from './rate-limit';
+export { rateLimitContract } from './rate-limit.contract';
+
