@@ -7,7 +7,7 @@ Instead of copy-pasting the same helpers across every project, `@dws-std/common`
 
 - [Installation](#-installation)
 - [Utilities](#-utilities)
-    - [parseHumanTimeToSeconds](#parsehumentimetoseconds)
+    - [parseHumanTime](#parsehumantime)
 - [License](#-license)
 
 ## 🔧 Installation
@@ -18,28 +18,36 @@ bun add @dws-std/common
 
 ## 🛠️ Utilities
 
-### `parseHumanTimeToSeconds`
+### `parseHumanTime`
 
-Converts a human-readable time expression into a number of seconds.  
-Useful anywhere you need to define durations without sprinkling magic numbers - JWT expiry, TTLs, rate-limit windows, you name it.
+Converts a human-readable time expression into a numeric value in the unit of your choice.  
+Useful anywhere you need to define durations without sprinkling magic numbers — JWT expiry, TTLs, rate-limit windows, you name it.
 
 ```ts
-import { parseHumanTimeToSeconds } from '@dws-std/common';
+import { parseHumanTime } from '@dws-std/common';
 
-parseHumanTimeToSeconds('2 hours'); // 7200
-parseHumanTimeToSeconds('30 mins'); // 1800
-parseHumanTimeToSeconds('1 day'); // 86400
-parseHumanTimeToSeconds('2 weeks'); // 1209600
-parseHumanTimeToSeconds('1 year'); // 31557600
+parseHumanTime('2 hours'); // 7200 (seconds by default)
+parseHumanTime('30 mins'); // 1800
+parseHumanTime('1 day'); // 86400
+parseHumanTime('2 weeks'); // 1209600
+parseHumanTime('1 year'); // 31557600
+```
+
+Choose a different output unit with the second argument:
+
+```ts
+parseHumanTime('1 hour', 'minutes'); // 60
+parseHumanTime('1 day', 'hours'); // 24
+parseHumanTime('1 second', 'ms'); // 1000
 ```
 
 Past and future offsets are also supported:
 
 ```ts
-parseHumanTimeToSeconds('30 mins ago'); // -1800
-parseHumanTimeToSeconds('+1 day'); // 86400
-parseHumanTimeToSeconds('-2 hours'); // -7200
-parseHumanTimeToSeconds('1 hour from now'); // 3600
+parseHumanTime('30 mins ago'); // -1800
+parseHumanTime('+1 day'); // 86400
+parseHumanTime('-2 hours'); // -7200
+parseHumanTime('1 hour from now'); // 3600
 ```
 
 **Supported units:**

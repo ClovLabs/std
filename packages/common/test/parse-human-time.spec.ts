@@ -1,13 +1,10 @@
 import { Exception } from '@dws-std/error';
 import { describe, expect, test } from 'bun:test';
 
-import {
-	PARSE_HUMAN_TIME_TO_SECONDS_ERROR_KEYS,
-	parseHumanTimeToSeconds
-} from '#/parse-human-time-to-seconds';
+import { PARSE_HUMAN_TIME_ERROR_KEYS, parseHumanTime } from '#/parse-human-time';
 
-describe.concurrent('parseHumanTimeToSeconds', () => {
-	describe('basic time units', () => {
+describe.concurrent('parseHumanTime', () => {
+	describe('basic time units (default seconds)', () => {
 		test.each([
 			// Seconds
 			['1 second', 1],
@@ -21,7 +18,7 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['15 mins', 900],
 			['30 min', 1800],
 			['60 m', 3600],
-			// Hoursbun
+			// Hours
 			['1 hour', 3600],
 			['2 hours', 7200],
 			['12 hrs', 43200],
@@ -42,11 +39,11 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['10 yr', 315576000],
 			['1 y', 31557600]
 		])('should parse "%s" correctly as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 	});
 
-	describe('decimal values', () => {
+	describe('decimal values (default seconds)', () => {
 		test.each([
 			// Decimal seconds
 			['1.5 seconds', 2], // Rounded
@@ -64,7 +61,7 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['1.5 days', 129600],
 			['0.5 d', 43200]
 		])('should parse decimal value "%s" as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 	});
 
@@ -89,7 +86,7 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['+30 minutes', 1800],
 			['+2 days', 172800]
 		])('should handle directional modifier "%s" as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 	});
 
@@ -104,7 +101,7 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['1 hour from now', 3600],
 			['1hour ago', -3600]
 		])('should handle whitespace pattern "%s" as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 	});
 
@@ -118,7 +115,7 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['1 WEEK AGO', 604800], // AGO not recognized, treated as positive
 			['1 hour from now', 3600]
 		])('should handle case pattern "%s" as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 	});
 
@@ -133,7 +130,7 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['120 minutes', 7200],
 			['36 hours', 129600]
 		])('should handle real-world time expression "%s" as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 
 		test.each([
@@ -141,7 +138,28 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['0.1 seconds', 0], // Rounds to 0
 			['1000 years', 31557600000]
 		])('should handle edge case value "%s" as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
+		});
+	});
+
+	describe('custom units', () => {
+		test.each([
+			['1 hour', 'minutes', 60],
+			['1 hour', 'hours', 1],
+			['2 hours', 'hours', 2],
+			['1 day', 'hours', 24],
+			['1 day', 'days', 1],
+			['1 week', 'days', 7],
+			['1 week', 'weeks', 1],
+			['1 year', 'days', 365.25],
+			['1 second', 'ms', 1000],
+			['1 second', 'milliseconds', 1000],
+			['1 minute', 'ms', 60000],
+			['1 hour', 'ms', 3600000],
+			['1 hour ago', 'minutes', -60],
+			['+2 days', 'hours', 48]
+		])('should convert "%s" to %s as %d', (input, unit, expected) => {
+			expect(parseHumanTime(input, unit as Parameters<typeof parseHumanTime>[1])).toBe(expected);
 		});
 	});
 
@@ -160,15 +178,15 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			'next week',
 			'last month'
 		])('should throw Exception for invalid format: "%s"', (input) => {
-			expect(() => parseHumanTimeToSeconds(input)).toThrow(Exception);
+			expect(() => parseHumanTime(input)).toThrow(Exception);
 
 			try {
-				parseHumanTimeToSeconds(input);
+				parseHumanTime(input);
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
 				expect((error as Exception).message).toBe('Invalid time expression: ' + input);
 				expect((error as Exception).key).toBe(
-					PARSE_HUMAN_TIME_TO_SECONDS_ERROR_KEYS.INVALID_TIME_EXPRESSION
+					PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION
 				);
 				expect((error as Exception).cause).toEqual({ timeExpression: input });
 			}
@@ -177,15 +195,15 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 		test.each(['1 century', '1 decade', '1 millisecond', '1 nanosecond', '1 fortnight'])(
 			'should throw Exception for unknown time units: "%s"',
 			(input) => {
-				expect(() => parseHumanTimeToSeconds(input)).toThrow(Exception);
+				expect(() => parseHumanTime(input)).toThrow(Exception);
 
 				try {
-					parseHumanTimeToSeconds(input);
+					parseHumanTime(input);
 				} catch (error) {
 					expect(error).toBeInstanceOf(Exception);
 					expect((error as Exception).message).toBe('Invalid time expression: ' + input);
 					expect((error as Exception).key).toBe(
-						PARSE_HUMAN_TIME_TO_SECONDS_ERROR_KEYS.INVALID_TIME_EXPRESSION
+						PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION
 					);
 					expect((error as Exception).cause).toEqual({ timeExpression: input });
 				}
@@ -198,15 +216,15 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			'+5 minutes ago',
 			'-10 seconds from now'
 		])('should throw Exception for conflicting signs and directions: "%s"', (input) => {
-			expect(() => parseHumanTimeToSeconds(input)).toThrow(Exception);
+			expect(() => parseHumanTime(input)).toThrow(Exception);
 
 			try {
-				parseHumanTimeToSeconds(input);
+				parseHumanTime(input);
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
 				expect((error as Exception).message).toBe('Invalid time expression: ' + input);
 				expect((error as Exception).key).toBe(
-					PARSE_HUMAN_TIME_TO_SECONDS_ERROR_KEYS.INVALID_TIME_EXPRESSION
+					PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION
 				);
 				expect((error as Exception).cause).toEqual({ timeExpression: input });
 			}
@@ -220,7 +238,7 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['1.6 seconds', 2],
 			['2.9 seconds', 3]
 		])('should round "%s" to nearest second as %i', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 
 		test.each([
@@ -228,12 +246,9 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['2.5 hours', 9000],
 			['0.5 days', 43200],
 			['1.5 weeks', 907200]
-		])(
-			'should handle fractional calculation "%s" correctly as %i seconds',
-			(input, expected) => {
-				expect(parseHumanTimeToSeconds(input)).toBe(expected);
-			}
-		);
+		])('should handle fractional calculation "%s" correctly as %i seconds', (input, expected) => {
+			expect(parseHumanTime(input)).toBe(expected);
+		});
 	});
 
 	describe('boundary testing', () => {
@@ -241,14 +256,14 @@ describe.concurrent('parseHumanTimeToSeconds', () => {
 			['999999 seconds', 999999],
 			['1000 years', 31557600000]
 		])('should handle very large number "%s" as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 
 		test.each([
 			['0.001 seconds', 0],
 			['0.999 seconds', 1]
 		])('should handle very small decimal "%s" as %i seconds', (input, expected) => {
-			expect(parseHumanTimeToSeconds(input)).toBe(expected);
+			expect(parseHumanTime(input)).toBe(expected);
 		});
 	});
 });

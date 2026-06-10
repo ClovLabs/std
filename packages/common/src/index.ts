@@ -1,4 +1,2 @@
-export {
-	PARSE_HUMAN_TIME_TO_SECONDS_ERROR_KEYS,
-	parseHumanTimeToSeconds
-} from './parse-human-time-to-seconds';
+export { PARSE_HUMAN_TIME_ERROR_KEYS, parseHumanTime } from './parse-human-time';
+export type { TimeUnit } from './parse-human-time';

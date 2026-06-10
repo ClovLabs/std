@@ -1,8 +1,18 @@
 import { Exception } from '@dws-std/error';
 
-export const PARSE_HUMAN_TIME_TO_SECONDS_ERROR_KEYS = {
-	INVALID_TIME_EXPRESSION: 'common.parse-human-time-to-seconds.invalid-time-expression'
+export const PARSE_HUMAN_TIME_ERROR_KEYS = {
+	INVALID_TIME_EXPRESSION: 'common.parse-human-time.invalid-time-expression'
 } as const;
+
+export type TimeUnit =
+	| 'ms'
+	| 'milliseconds'
+	| 'seconds'
+	| 'minutes'
+	| 'hours'
+	| 'days'
+	| 'weeks'
+	| 'years';
 
 /**
  * Time unit constants in seconds
@@ -67,39 +77,58 @@ const UNIT_MAPPINGS: Record<string, number> = {
 };
 
 /**
- * Converts a human-readable time expression to seconds
+ * Conversion factors from seconds to each supported unit
+ */
+const CONVERSION_FACTORS: Record<TimeUnit, number> = {
+	ms: 0.001,
+	milliseconds: 0.001,
+	seconds: 1,
+	minutes: 60,
+	hours: 60 * 60,
+	days: 60 * 60 * 24,
+	weeks: 60 * 60 * 24 * 7,
+	years: 60 * 60 * 24 * 365.25
+};
+
+/**
+ * Converts a human-readable time expression to a numeric value in the specified unit
  *
  * @param timeExpression - A string representing a time period (e.g., "2 hours", "30 minutes ago", "+1 day")
+ * @param unit - The unit to return the result in (default: "seconds")
  *
  * @throws ({@link Exception}) - If the time expression is invalid or contains an unknown unit
  *
- * @returns The time period in seconds (negative for past times)
+ * @returns The time period in the requested unit (negative for past times)
  *
  * @example
  * ```typescript
- * parseHumanTimeToSeconds("2 hours")      // Returns 7200
- * parseHumanTimeToSeconds("30 mins ago")  // Returns -1800
- * parseHumanTimeToSeconds("+1 day")       // Returns 86400
+ * parseHumanTime("2 hours")           // Returns 7200 (seconds)
+ * parseHumanTime("30 mins ago")       // Returns -1800 (seconds)
+ * parseHumanTime("+1 day", "hours")  // Returns 24
+ * parseHumanTime("1 hour", "ms")      // Returns 3600000
  * ```
  */
-export const parseHumanTimeToSeconds = (timeExpression: string): number => {
+export const parseHumanTime = (timeExpression: string, unit: TimeUnit = 'seconds'): number => {
 	const match = TIME_EXPRESSION_REGEX.exec(timeExpression);
 
 	if (!match || (match[4] && match[1]))
 		throw new Exception(`Invalid time expression: ${timeExpression}`, {
-			key: PARSE_HUMAN_TIME_TO_SECONDS_ERROR_KEYS.INVALID_TIME_EXPRESSION,
+			key: PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION,
 			cause: { timeExpression }
 		});
 
 	const [, sign, valueStr, unitStr, direction] = match;
 	const value = parseFloat(valueStr);
-	const unit = unitStr.toLowerCase();
+	const rawUnit = unitStr.toLowerCase();
 
-	const multiplier = UNIT_MAPPINGS[unit];
+	const multiplier = UNIT_MAPPINGS[rawUnit];
 	const seconds = Math.round(value * multiplier);
 
-	// Return negative value for past times (ago or negative sign)
-	if (sign === '-' || direction === 'ago') return -seconds;
+	const conversion = CONVERSION_FACTORS[unit];
+	const result = seconds / conversion;
 
-	return seconds;
+	// Return negative value for past times (ago or negative sign)
+	if (sign === '-' || direction === 'ago') return -result;
+
+	return result;
 };
