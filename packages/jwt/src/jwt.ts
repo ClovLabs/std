@@ -52,7 +52,6 @@ export const signJWT = (
 		iss: 'DWS-Issuer',
 		sub: '',
 		aud: ['DWS-Audience'],
-		jti: Bun.randomUUIDv7(),
 		nbf: nowSeconds,
 		iat: nowSeconds,
 		exp,
@@ -61,7 +60,7 @@ export const signJWT = (
 
 	try {
 		return new SignJWT(finalPayload)
-			.setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+			.setProtectedHeader({ alg: 'HS256', typ: 'JWT'})
 			.sign(_textEncoder.encode(secret));
 	} catch (error) {
 		throw new Exception('Failed to sign JWT', {
