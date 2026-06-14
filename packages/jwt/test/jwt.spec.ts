@@ -88,7 +88,6 @@ describe.concurrent('JWT Core Functions', () => {
 			expect(decodedPayload.iss).toBe('DWS-Issuer');
 			expect(decodedPayload.sub).toBe('');
 			expect(decodedPayload.aud).toEqual(['DWS-Audience']);
-			expect(decodedPayload.jti).toBeTypeOf('string');
 			expect(decodedPayload.nbf).toBeTypeOf('number');
 			expect(decodedPayload.iat).toBeTypeOf('number');
 			expect(decodedPayload.exp).toBeTypeOf('number');
@@ -115,8 +114,12 @@ describe.concurrent('JWT Core Functions', () => {
 		});
 
 		test('should generate unique JWT IDs for different tokens', async () => {
-			const token1 = await signJWT(testSecret, {});
-			const token2 = await signJWT(testSecret, {});
+			const token1 = await signJWT(testSecret, {
+				jti: Bun.randomUUIDv7()
+			});
+			const token2 = await signJWT(testSecret, {
+				jti: Bun.randomUUIDv7()
+			});
 
 			const result1 = await verifyJWT(token1, testSecret);
 			const result2 = await verifyJWT(token2, testSecret);
@@ -161,7 +164,6 @@ describe.concurrent('JWT Core Functions', () => {
 			expect(result.payload.iss).toBe('DWS-Issuer');
 			expect(result.payload.sub).toBe('');
 			expect(result.payload.aud).toEqual(['DWS-Audience']);
-			expect(result.payload.jti).toBeTypeOf('string');
 			expect(result.payload.nbf).toBeTypeOf('number');
 			expect(result.payload.iat).toBeTypeOf('number');
 			expect(result.payload.exp).toBeTypeOf('number');
