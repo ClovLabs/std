@@ -1,6 +1,6 @@
 {
   "name": "@dws-std/error",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Structured TypeScript exceptions with UUID v7 tracking, HTTP status codes, and automatic timestamps.",
   "keywords": [
     "bun",
