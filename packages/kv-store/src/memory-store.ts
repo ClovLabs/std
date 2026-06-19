@@ -168,7 +168,7 @@ export class MemoryStore extends KvStore {
 						key: MEMORY_STORE_ERROR_KEYS.NOT_A_NUMBER,
 						cause: { key, value: entry.value }
 					});
-				currentValue = (entry.value as number) ?? 0;
+				currentValue = entry.value ?? 0;
 				({ exp } = entry);
 			}
 
