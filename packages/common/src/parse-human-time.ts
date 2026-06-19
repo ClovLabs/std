@@ -118,10 +118,23 @@ export const parseHumanTime = (timeExpression: string, unit: TimeUnit = 'seconds
 		});
 
 	const [, sign, valueStr, unitStr, direction] = match;
+
+	if (!valueStr || !unitStr)
+		throw new Exception(`Invalid time expression: ${timeExpression}`, {
+			key: PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION,
+			cause: { timeExpression }
+		});
+
 	const value = parseFloat(valueStr);
 	const rawUnit = unitStr.toLowerCase();
 
 	const multiplier = UNIT_MAPPINGS[rawUnit];
+	if (!multiplier)
+		throw new Exception(`Invalid time expression: ${timeExpression}`, {
+			key: PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION,
+			cause: { timeExpression, rawUnit }
+		});
+
 	const seconds = Math.round(value * multiplier);
 
 	const conversion = CONVERSION_FACTORS[unit];
