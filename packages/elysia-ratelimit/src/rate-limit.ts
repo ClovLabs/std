@@ -24,7 +24,10 @@ export interface RateLimitMacroOptions {
 
 export const extractClientIp = (request: Request, server: Server<unknown> | null): string => {
 	const forwarded = request.headers.get('x-forwarded-for');
-	if (forwarded) return forwarded.split(',')[0].trim();
+	if (forwarded) {
+		const [first] = forwarded.split(',');
+		if (first) return first.trim();
+	}
 	return request.headers.get('x-real-ip') ?? server?.requestIP(request)?.address ?? '127.0.0.1';
 };
 
