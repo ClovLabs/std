@@ -1,54 +1,54 @@
 {
-  "name": "@dws-std/common",
-  "version": "1.2.0",
-  "description": "Common utilities and types library for building robust applications.",
-  "keywords": [
-    "bun",
-    "dws",
-    "helpers",
-    "open-source",
-    "types",
-    "typescript",
-    "utilities"
-  ],
-  "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
-    "directory": "packages/common"
-  },
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "bun builder.ts",
-    "docs": "bunx typedoc --tsconfig tsconfig.build.json",
-    "fmt:check": "oxfmt --check",
-    "fmt": "oxfmt",
-    "lint:fix": "oxlint --type-aware --type-check --fix ./src",
-    "lint:github": "oxlint --type-aware --type-check --format=github ./src",
-    "lint": "oxlint --type-aware --type-check ./src",
-    "test": "bun test --pass-with-no-tests --coverage"
-  },
-  "dependencies": {
-    "@dws-std/error": "workspace:^"
-  },
-  "devDependencies": {
-    "@types/bun": "catalog:base",
-    "oxfmt": "catalog:base",
-    "oxlint": "catalog:base",
-    "oxlint-tsgolint": "catalog:base",
-    "typescript": "catalog:base"
-  },
-  "peerDependencies": {
-    "@dws-std/error": "workspace:^"
-  }
+	"name": "@dws-std/common",
+	"version": "1.2.0",
+	"description": "Common utilities and types library for building robust applications.",
+	"keywords": [
+		"bun",
+		"dws",
+		"helpers",
+		"open-source",
+		"types",
+		"typescript",
+		"utilities"
+	],
+	"license": "MIT",
+	"author": "Dominus Web Services (DWS)",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Dominus-Web-Service/std",
+		"directory": "packages/common"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "bun builder.ts",
+		"docs": "bunx typedoc --tsconfig tsconfig.build.json",
+		"fmt:check": "oxfmt --check",
+		"fmt": "oxfmt",
+		"lint:fix": "oxlint --type-aware --type-check --fix ./src",
+		"lint:github": "oxlint --type-aware --type-check --format=github ./src",
+		"lint": "oxlint --type-aware --type-check ./src",
+		"test": "bun test --pass-with-no-tests --coverage"
+	},
+	"dependencies": {
+		"@dws-std/error": "workspace:^"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:base",
+		"oxfmt": "catalog:base",
+		"oxlint": "catalog:base",
+		"oxlint-tsgolint": "catalog:base",
+		"typescript": "catalog:base"
+	},
+	"peerDependencies": {
+		"@dws-std/error": "workspace:^"
+	}
 }
