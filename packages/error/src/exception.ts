@@ -43,7 +43,6 @@ export class Exception<const TCause = unknown> extends Error {
 		this.cause = init?.cause;
 		this.key = init?.key;
 		this.name = new.target.name;
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-		if (Error.captureStackTrace) Error.captureStackTrace(this, new.target);
+		Error.captureStackTrace(this, new.target);
 	}
 }
