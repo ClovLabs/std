@@ -42,11 +42,11 @@ Register your instances once at startup. They're available everywhere after that
 import { Registry } from '@dws-std/registry';
 
 class DatabaseConnection {
-	private _isConnected: boolean = false;
+	private isConnected: boolean = false;
 
 	public constructor() {
 		console.log('Database connection created');
-		this._isConnected = true;
+		this.isConnected = true;
 	}
 
 	public query(sql: string): string[] {
@@ -56,12 +56,12 @@ class DatabaseConnection {
 
 class ApiClient {
 	public constructor(
-		private readonly _baseUrl: string,
-		private readonly _apiKey: string
+		private readonly baseUrl: string,
+		private readonly apiKey: string
 	) {}
 
 	public get baseUrl(): string {
-		return this._baseUrl;
+		return this.baseUrl;
 	}
 }
 
