@@ -29,42 +29,42 @@ export class MemoryStore extends KvStore {
 	/**
 	 * In-memory key-value store.
 	 */
-	private readonly _store = new Map<string, MemoryStoreEntry>();
+	private readonly store = new Map<string, MemoryStoreEntry>();
 
 	/**
 	 * Cleanup interval (5 minutes by default).
 	 *
 	 * @defaultValue 300000
 	 */
-	private readonly _cleanupInterval: number;
+	private readonly cleanupInterval: number;
 
 	/**
 	 * Maximum number of entries allowed in the store.
 	 * Defaults to Infinity (no limit).
 	 */
-	private readonly _maxSize: number;
+	private readonly maxSize: number;
 
 	/**
 	 * Timer for cleanup operations.
 	 */
-	private _cleanupTimer: Timer | null = null;
+	private cleanupTimer: Timer | null = null;
 
 	public constructor(cleanupIntervalMs?: number, maxSize?: number) {
 		super();
-		this._cleanupInterval = cleanupIntervalMs ?? 300000;
-		this._maxSize = maxSize ?? Infinity;
-		this._startCleanup();
+		this.cleanupInterval = cleanupIntervalMs ?? 300000;
+		this.maxSize = maxSize ?? Infinity;
+		this.startCleanup();
 	}
 
 	public override get<T = unknown>(key: string): T | null {
-		KvStore._validateKey(key);
+		KvStore.validateKey(key);
 
-		const entry = this._store.get(key);
+		const entry = this.store.get(key);
 		if (!entry) return null;
 
 		const now = Date.now();
 		if (now > entry.exp && entry.exp !== -1) {
-			this._store.delete(key);
+			this.store.delete(key);
 			return null;
 		}
 
@@ -72,38 +72,38 @@ export class MemoryStore extends KvStore {
 	}
 
 	public override set<T = unknown>(key: string, value: T, ttlSec?: number): void {
-		KvStore._validateKey(key);
-		KvStore._validateTtl(ttlSec);
+		KvStore.validateKey(key);
+		KvStore.validateTtl(ttlSec);
 
-		if (this._store.size >= this._maxSize && !this._store.has(key))
+		if (this.store.size >= this.maxSize && !this.store.has(key))
 			throw new Exception('Store is full', { key: MEMORY_STORE_ERROR_KEYS.STORE_IS_FULL });
 
 		const exp = ttlSec ? Date.now() + ttlSec * 1000 : -1;
-		this._store.set(key, { value, exp });
+		this.store.set(key, { value, exp });
 	}
 
 	public override increment(key: string, amount = 1): number {
-		KvStore._validateKey(key);
-		KvStore._validateAmount(amount);
-		return this._adjustBy(key, amount);
+		KvStore.validateKey(key);
+		KvStore.validateAmount(amount);
+		return this.adjustBy(key, amount);
 	}
 
 	public override decrement(key: string, amount = 1): number {
-		KvStore._validateKey(key);
-		KvStore._validateAmount(amount);
-		return this._adjustBy(key, -amount);
+		KvStore.validateKey(key);
+		KvStore.validateAmount(amount);
+		return this.adjustBy(key, -amount);
 	}
 
 	public override del(key: string): boolean {
-		KvStore._validateKey(key);
-		return this._store.delete(key);
+		KvStore.validateKey(key);
+		return this.store.delete(key);
 	}
 
 	public override expire(key: string, ttlSec: number): boolean {
-		KvStore._validateKey(key);
-		KvStore._validateTtl(ttlSec);
+		KvStore.validateKey(key);
+		KvStore.validateTtl(ttlSec);
 
-		const entry = this._store.get(key);
+		const entry = this.store.get(key);
 		if (!entry) return false;
 
 		entry.exp = Date.now() + ttlSec * 1000;
@@ -111,9 +111,9 @@ export class MemoryStore extends KvStore {
 	}
 
 	public override ttl(key: string): number {
-		KvStore._validateKey(key);
+		KvStore.validateKey(key);
 
-		const entry = this._store.get(key);
+		const entry = this.store.get(key);
 		if (!entry) return -1;
 
 		if (entry.exp === -1) return -1;
@@ -123,45 +123,45 @@ export class MemoryStore extends KvStore {
 	}
 
 	public override clean(): number {
-		const sizeBefore = this._store.size;
-		this._store.clear();
+		const sizeBefore = this.store.size;
+		this.store.clear();
 		return sizeBefore;
 	}
 
-	private _startCleanup(): void {
-		if (this._cleanupTimer) return;
+	private startCleanup(): void {
+		if (this.cleanupTimer) return;
 
-		this._cleanupTimer = setInterval(() => {
-			this._removeExpiredEntries();
-		}, this._cleanupInterval);
+		this.cleanupTimer = setInterval(() => {
+			this.removeExpiredEntries();
+		}, this.cleanupInterval);
 
 		// Allow process to exit even if timer is running
-		this._cleanupTimer.unref();
+		this.cleanupTimer.unref();
 	}
 
-	private _removeExpiredEntries(): void {
+	private removeExpiredEntries(): void {
 		const now = Date.now();
 
-		for (const [key, entry] of this._store.entries())
-			if (entry.exp !== -1 && now > entry.exp) this._store.delete(key);
+		for (const [key, entry] of this.store.entries())
+			if (entry.exp !== -1 && now > entry.exp) this.store.delete(key);
 	}
 
 	public destroy(): void {
-		if (this._cleanupTimer) {
-			clearInterval(this._cleanupTimer);
-			this._cleanupTimer = null;
+		if (this.cleanupTimer) {
+			clearInterval(this.cleanupTimer);
+			this.cleanupTimer = null;
 		}
-		this._store.clear();
+		this.store.clear();
 	}
 
-	private _adjustBy(key: string, amount: number): number {
+	private adjustBy(key: string, amount: number): number {
 		const now = Date.now();
 		let currentValue = 0;
 		let exp = -1;
 
-		const entry = this._store.get(key);
+		const entry = this.store.get(key);
 		if (entry)
-			if (entry.exp !== -1 && now > entry.exp) this._store.delete(key);
+			if (entry.exp !== -1 && now > entry.exp) this.store.delete(key);
 			else {
 				if (entry.value !== null && typeof entry.value !== 'number')
 					throw new Exception('Value is not a number', {
@@ -173,7 +173,7 @@ export class MemoryStore extends KvStore {
 			}
 
 		const newValue = currentValue + amount;
-		this._store.set(key, { value: newValue, exp });
+		this.store.set(key, { value: newValue, exp });
 		return newValue;
 	}
 }
