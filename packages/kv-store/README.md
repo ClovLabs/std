@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-kv-store.png" alt="DWS KV Store logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/kv-store/logo-kv-store.png" alt="DWS KV Store logo" width="200" />
 </p>
 
 # 🗃️ DWS KV Store

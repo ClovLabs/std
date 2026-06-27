@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-logger.png" alt="DWS Logger logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/logger/logo-logger.png" alt="DWS Logger logo" width="200" />
 </p>
 
 # 🎯 DWS Logger

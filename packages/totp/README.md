@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-totp.png" alt="DWS TOTP logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/totp/logo-totp.png" alt="DWS TOTP logo" width="200" />
 </p>
 
 # 🔐 DWS TOTP

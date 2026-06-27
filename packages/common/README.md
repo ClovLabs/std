@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-common.png" alt="DWS Common logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/common/logo-common.png" alt="DWS Common logo" width="200" />
 </p>
 
 # 🧰 DWS Common

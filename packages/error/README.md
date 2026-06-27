@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-error.png" alt="DWS Error logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/error/logo-error.png" alt="DWS Error logo" width="200" />
 </p>
 
 # 🐞 DWS Error

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-elysia-ratelimit.png" alt="DWS Elysia Rate Limit logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/elysia-ratelimit/logo-elysia-ratelimit.png" alt="DWS Elysia Rate Limit logo" width="200" />
 </p>
 
 # 🚦 DWS Elysia Rate Limit

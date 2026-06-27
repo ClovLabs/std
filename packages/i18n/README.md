@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-i18n.png" alt="DWS I18n logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/i18n/logo-i18n.png" alt="DWS I18n logo" width="200" />
 </p>
 
 # 🌐 DWS I18n

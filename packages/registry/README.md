@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-registry.png" alt="DWS Registry logo" width="200" />
+  <img src="https://github.com/Dominus-Web-Service/std/blob/main/packages/registry/logo-registry.png" alt="DWS Registry logo" width="200" />
 </p>
 
 # 🎯 DWS Registry

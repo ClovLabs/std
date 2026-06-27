@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo-jwt.png" alt="DWS JWT logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/jwt/logo-jwt.png" alt="DWS JWT logo" width="200" />
 </p>
 
 # 🔐 DWS JWT
