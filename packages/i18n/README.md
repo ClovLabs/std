@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./logo-i18n.png" alt="DWS I18n logo" width="200" />
+</p>
+
 # 🌐 DWS I18n
 
 Type-safe internationalization for TypeScript.
@@ -137,7 +141,7 @@ resolveMessage(error, 'fr'); // → "L'email "a@b.com" est déjà utilisé"
 
 ## 📚 API Reference
 
-Full docs: [Dominus-Web-Service.github.io/packages](https://Dominus-Web-Service.github.io/packages/)
+Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
 
 ## ⚖️ License
 
