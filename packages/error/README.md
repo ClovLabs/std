@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./logo-error.png" alt="DWS Error logo" width="200" />
+</p>
+
 # 🐞 DWS Error
 
 If you've ever debugged a production incident with nothing but a generic `Error("something went wrong")`,
@@ -91,7 +95,7 @@ throw new HttpException('Something broke');
 
 ## 📚 API Reference
 
-Full docs: [Dominus-Web-Service.github.io/packages](https://Dominus-Web-Service.github.io/packages/)
+Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
 
 ## ⚖️ License
 
