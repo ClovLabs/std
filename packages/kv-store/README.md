@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./logo-kv-store.png" alt="DWS KV Store logo" width="200" />
+</p>
+
 # 🗃️ DWS KV Store
 
 A lightweight, abstract key-value store with TTL support, increment/decrement operations, and built-in input validation.  
@@ -52,23 +56,23 @@ store.set('user:42', { name: 'Alice' }, 300); // TTL of 5 minutes
 const user = store.get<{ name: string }>('user:42');
 
 store.set('hits', 0);
-store.increment('hits');      // 1
-store.increment('hits', 5);   // 6
-store.decrement('hits');      // 5
+store.increment('hits'); // 1
+store.increment('hits', 5); // 6
+store.decrement('hits'); // 5
 
-store.ttl('user:42');         // remaining seconds
-store.del('user:42');         // true
-store.clean();                // removes all keys, returns count
+store.ttl('user:42'); // remaining seconds
+store.del('user:42'); // true
+store.clean(); // removes all keys, returns count
 
-store.destroy();              // stops cleanup timer and clears data
+store.destroy(); // stops cleanup timer and clears data
 ```
 
 You can configure the cleanup interval and max size:
 
 ```ts
 const store = new MemoryStore(
-  60_000, // cleanup every 60 seconds (default: 5 minutes)
-  10_000  // max 10 000 entries (default: Infinity)
+	60_000, // cleanup every 60 seconds (default: 5 minutes)
+	10_000 // max 10 000 entries (default: Infinity)
 );
 ```
 
@@ -97,14 +101,30 @@ Extend `KvStore` and implement the abstract methods:
 import { KvStore } from '@dws-std/kv-store';
 
 class MyStore extends KvStore {
-  get<T>(key: string): T | null { /* ... */ }
-  set<T>(key: string, value: T, ttlSec?: number): void { /* ... */ }
-  increment(key: string, amount?: number): number { /* ... */ }
-  decrement(key: string, amount?: number): number { /* ... */ }
-  del(key: string): boolean { /* ... */ }
-  expire(key: string, ttlSec: number): boolean { /* ... */ }
-  ttl(key: string): number { /* ... */ }
-  clean(): number { /* ... */ }
+	get<T>(key: string): T | null {
+		/* ... */
+	}
+	set<T>(key: string, value: T, ttlSec?: number): void {
+		/* ... */
+	}
+	increment(key: string, amount?: number): number {
+		/* ... */
+	}
+	decrement(key: string, amount?: number): number {
+		/* ... */
+	}
+	del(key: string): boolean {
+		/* ... */
+	}
+	expire(key: string, ttlSec: number): boolean {
+		/* ... */
+	}
+	ttl(key: string): number {
+		/* ... */
+	}
+	clean(): number {
+		/* ... */
+	}
 }
 ```
 
@@ -112,7 +132,7 @@ Use `KvStore._validateKey()`, `KvStore._validateTtl()`, and `KvStore._validateAm
 
 ## 📚 API Reference
 
-Full docs: [Dominus-Web-Service.github.io/packages](https://Dominus-Web-Service.github.io/packages/)
+Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
 
 ## ⚖️ License
 
