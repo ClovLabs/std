@@ -1,6 +1,6 @@
 {
   "name": "@dws-std/elysia-ratelimit",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Rate limiting plugin for Elysia framework.",
   "keywords": [
     "bun",
