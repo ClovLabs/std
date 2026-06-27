@@ -8,6 +8,7 @@
 			"packages/i18n",
 			"packages/jwt",
 			"packages/kv-store",
+			"packages/logger",
 			"packages/registry",
 			"packages/totp"
 		],
