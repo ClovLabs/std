@@ -1,6 +1,6 @@
 {
   "name": "@dws-std/i18n",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Type-safe i18n for TypeScript, define localized exception and message catalogs with compile-time validated parameters.",
   "keywords": [
     "bun",
