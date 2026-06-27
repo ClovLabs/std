@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./logo-common.png" alt="DWS Common logo" width="200" />
+</p>
+
 # 🧰 DWS Common
 
 Small utilities you'll want everywhere, but don't belong to any specific domain.  
@@ -65,7 +69,7 @@ Throws an `Exception` if the expression is invalid or the unit is unrecognised.
 
 ## 📚 API Reference
 
-Full docs: [Dominus-Web-Service.github.io/packages](https://Dominus-Web-Service.github.io/packages/)
+Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
 
 ## ⚖️ License
 
