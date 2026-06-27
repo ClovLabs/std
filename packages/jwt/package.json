@@ -1,6 +1,6 @@
 {
   "name": "@dws-std/jwt",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "JWT utilities and helpers for secure token management.",
   "keywords": [
     "bun",
