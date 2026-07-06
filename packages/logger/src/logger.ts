@@ -430,73 +430,70 @@ export class Logger<
 	 * Sets up message handling for the worker.
 	 */
 	private setupWorkerMessages(): void {
-		this.worker.addEventListener(
-			'message',
-			(event: BunMessageEvent<WorkerResponseMessage>) => {
-				switch (event.data.type) {
-					case 'BATCH_COMPLETE':
-						this.releaseBatch();
-						this.tryFlush();
-						break;
+		this.worker.addEventListener('message', (event: BunMessageEvent<WorkerResponseMessage>) => {
+			switch (event.data.type) {
+				case 'BATCH_COMPLETE':
+					this.releaseBatch();
+					this.tryFlush();
+					break;
 
-					case 'FLUSH_COMPLETE': {
-						this.flushPending = false;
-						const resolvers = this.flushingResolvers.splice(
-							0,
-							this.flushingResolvers.length
-						);
-						for (const resolve of resolvers) resolve();
-						// Re-arm if new flushes were requested during the round-trip.
-						this.tryFlush();
-						break;
-					}
-
-					case 'SINK_LOG_ERROR':
-						this.emit(
-							'sinkError',
-							new Exception('Sink failed to log message', {
-								key: LOGGER_ERROR_KEYS.SINK_LOG_ERROR,
-								cause: {
-									sinkName: event.data.sinkName,
-									object: event.data.object,
-									error: event.data.error
-								}
-							})
-						);
-						break;
-
-					case 'SINK_CLOSE_ERROR':
-						this.emit(
-							'sinkError',
-							new Exception('Sink failed to close', {
-								key: LOGGER_ERROR_KEYS.SINK_CLOSE_ERROR,
-								cause: { sinkName: event.data.sinkName, error: event.data.error }
-							})
-						);
-						break;
-
-					case 'REGISTER_SINK_ERROR':
-						this.emit(
-							'registerSinkError',
-							new Exception('Failed to register sink', {
-								key: LOGGER_ERROR_KEYS.REGISTER_SINK_ERROR,
-								cause: { sinkName: event.data.sinkName, error: event.data.error }
-							})
-						);
-						break;
-
-					case 'CLOSE_COMPLETE':
-						this.terminateWorker();
-						if (this.closeResolver) {
-							this.closeResolver();
-							this.closeResolver = null;
-						}
-						break;
-					default:
-						break;
+				case 'FLUSH_COMPLETE': {
+					this.flushPending = false;
+					const resolvers = this.flushingResolvers.splice(
+						0,
+						this.flushingResolvers.length
+					);
+					for (const resolve of resolvers) resolve();
+					// Re-arm if new flushes were requested during the round-trip.
+					this.tryFlush();
+					break;
 				}
+
+				case 'SINK_LOG_ERROR':
+					this.emit(
+						'sinkError',
+						new Exception('Sink failed to log message', {
+							key: LOGGER_ERROR_KEYS.SINK_LOG_ERROR,
+							cause: {
+								sinkName: event.data.sinkName,
+								object: event.data.object,
+								error: event.data.error
+							}
+						})
+					);
+					break;
+
+				case 'SINK_CLOSE_ERROR':
+					this.emit(
+						'sinkError',
+						new Exception('Sink failed to close', {
+							key: LOGGER_ERROR_KEYS.SINK_CLOSE_ERROR,
+							cause: { sinkName: event.data.sinkName, error: event.data.error }
+						})
+					);
+					break;
+
+				case 'REGISTER_SINK_ERROR':
+					this.emit(
+						'registerSinkError',
+						new Exception('Failed to register sink', {
+							key: LOGGER_ERROR_KEYS.REGISTER_SINK_ERROR,
+							cause: { sinkName: event.data.sinkName, error: event.data.error }
+						})
+					);
+					break;
+
+				case 'CLOSE_COMPLETE':
+					this.terminateWorker();
+					if (this.closeResolver) {
+						this.closeResolver();
+						this.closeResolver = null;
+					}
+					break;
+				default:
+					break;
 			}
-		);
+		});
 	}
 
 	/**
