@@ -1,4 +1,4 @@
-import type { CatalogFactory, ConsistentLocales, LocalesOf } from '#/type/translations';
+import type { CatalogFactory, ConsistentLocales, LocalesOf } from '../type/translations';
 import type { LocalizedMessage } from './type/localized-message';
 import type { MessageEntry } from './type/message-entry';
 

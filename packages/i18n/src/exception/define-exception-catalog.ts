@@ -1,4 +1,4 @@
-import type { CatalogFactory, ConsistentLocales, LocalesOf } from '#/type/translations';
+import type { CatalogFactory, ConsistentLocales, LocalesOf } from '../type/translations';
 import { LocalizedHttpException } from './localized-http-exception';
 import type { ExceptionEntry } from './type/exception-entry';
 
