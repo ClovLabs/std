@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
+import { entry } from '#/entry';
 import { defineMessageCatalog } from '#/message/define-message-catalog';
 import { resolveMessage } from '#/resolve-message';
-import { entry } from '#/entry';
 
 describe.concurrent('defineMessageCatalog', (): void => {
 	test('should return an object with factory functions for each definition', (): void => {
@@ -38,7 +38,7 @@ describe.concurrent('defineMessageCatalog', (): void => {
 		const catalog = defineMessageCatalog({
 			defaultLocale: 'en',
 			definitions: {
-				updated: entry<{ domain: string }>({
+				updated: entry({
 					translations: {
 						en: 'Record for "{{domain}}" updated',
 						fr: 'Enregistrement pour "{{domain}}" mis à jour'
@@ -71,7 +71,7 @@ describe.concurrent('defineMessageCatalog', (): void => {
 		const catalog = defineMessageCatalog({
 			defaultLocale: 'en',
 			definitions: {
-				propagation: entry<{ zone: string; minutes: string }>({
+				propagation: entry({
 					translations: {
 						en: 'Propagation for "{{zone}}" takes ~{{minutes}} min',
 						es: 'Propagación de "{{zone}}" tardará ~{{minutes}} min'

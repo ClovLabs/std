@@ -1,4 +1,4 @@
-import type { Translations } from '../../type/translations';
+import type { Translations } from '#/type/translations';
 
 /**
  * Localized message carrying translations and interpolation parameters.

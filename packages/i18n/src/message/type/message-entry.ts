@@ -1,18 +1,15 @@
+import type { Translations } from '#/type/translations';
+
 /**
  * Blueprint for a translatable message.
  *
  * Used inside a message catalog created with `defineMessageCatalog`.
+ * Interpolation params are derived from the `{{placeholder}}` tokens in
+ * `translations`, so there is nothing extra to declare.
  *
- * @template TParams - Parameter placeholders the message expects (e.g. `{ domain: string }`).
- * @template TLocales - Locale keys that must be provided (e.g. `'en' | 'fr'`).
+ * @template TTranslations - Locale-to-template map (e.g. `{ en: 'Hi {{name}}' }`).
  */
-export interface MessageEntry<
-	TParams extends Record<string, string> = Record<string, string>,
-	TLocales extends string = string
-> {
+export interface MessageEntry<TTranslations extends Translations = Translations> {
 	/** Translated strings keyed by locale. */
-	readonly translations: Readonly<Record<TLocales, string>>;
-
-	/** Placeholder values to interpolate into the translated string. */
-	readonly params?: TParams;
+	readonly translations: TTranslations;
 }

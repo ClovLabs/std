@@ -1,13 +1,9 @@
-import type { MessageEntry } from './type/message-entry';
+import type { CatalogFactory, ConsistentLocales, LocalesOf } from '#/type/translations';
 import type { LocalizedMessage } from './type/localized-message';
+import type { MessageEntry } from './type/message-entry';
 
-// oxlint-disable-next-line no-explicit-any
-export type MessageCatalog<TDefs extends Record<string, MessageEntry<any>>> = {
-	readonly [K in keyof TDefs]: TDefs[K] extends MessageEntry<infer P>
-		? [P] extends [Record<string, never>]
-			? () => LocalizedMessage
-			: (params: P) => LocalizedMessage
-		: never;
+export type MessageCatalog<TDefs extends Record<string, MessageEntry>> = {
+	readonly [K in keyof TDefs]: CatalogFactory<TDefs[K]['translations'], LocalizedMessage>;
 };
 
 /**
@@ -15,13 +11,12 @@ export type MessageCatalog<TDefs extends Record<string, MessageEntry<any>>> = {
  *
  * @template TDefs - Shape of the message definitions map.
  */
-// oxlint-disable-next-line no-explicit-any
-export interface DefineMessageCatalogOptions<TDefs extends Record<string, MessageEntry<any>>> {
+export interface DefineMessageCatalogOptions<TDefs extends Record<string, MessageEntry>> {
 	/** Locale used when no explicit locale is passed to `resolveMessage`. */
-	readonly defaultLocale: keyof TDefs[keyof TDefs]['translations'];
+	readonly defaultLocale: LocalesOf<TDefs>;
 
-	/** Map of message definitions keyed by message name. */
-	readonly definitions: TDefs;
+	/** Map of message definitions keyed by message name; every entry must cover the same locales. */
+	readonly definitions: TDefs & ConsistentLocales<TDefs>;
 }
 
 /**
@@ -34,21 +29,17 @@ export interface DefineMessageCatalogOptions<TDefs extends Record<string, Messag
  *
  * @returns An object whose keys mirror `definitions`, each a factory function.
  */
-// oxlint-disable-next-line no-explicit-any
-export const defineMessageCatalog = <TDefs extends Record<string, MessageEntry<any>>>(
+export const defineMessageCatalog = <const TDefs extends Record<string, MessageEntry>>(
 	options: DefineMessageCatalogOptions<TDefs>
 ): MessageCatalog<TDefs> => {
 	const catalog: Record<string, (params?: Record<string, string>) => LocalizedMessage> = {};
 
-	for (const [key, def] of Object.entries(options.definitions)) {
-		// oxlint-disable-next-line no-explicit-any
-		const msgDef: MessageEntry<any> = def;
+	for (const [key, msgDef] of Object.entries(options.definitions))
 		catalog[key] = (params: Record<string, string> = {}): LocalizedMessage => ({
 			translations: msgDef.translations,
 			params,
 			defaultLocale: options.defaultLocale as string
 		});
-	}
 
 	return catalog as MessageCatalog<TDefs>;
 };

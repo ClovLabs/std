@@ -1,14 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 
+import { entry } from '#/entry';
 import { defineExceptionCatalog } from '#/exception/define-exception-catalog';
 import { LocalizedHttpException } from '#/exception/localized-http-exception';
 import { resolveMessage } from '#/resolve-message';
-import { entry } from '#/entry';
 
 describe.concurrent('defineExceptionCatalog', (): void => {
 	test('should return an object with factory functions for each definition', (): void => {
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'en',
 			definitions: {
 				simple: entry({
@@ -23,7 +22,6 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 
 	test('should produce a LocalizedHttpException from a no-param entry', (): void => {
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'en',
 			definitions: {
 				simple: entry({
@@ -40,9 +38,8 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 		expect(error.httpStatusCode).toBe(404);
 	});
 
-	test('should set key to namespace.key', (): void => {
+	test('should set key to the definition key', (): void => {
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'en',
 			definitions: {
 				simple: entry({
@@ -52,15 +49,14 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 			}
 		});
 
-		expect(catalog.simple().key).toBe('test.simple');
+		expect(catalog.simple().key).toBe('simple');
 	});
 
 	test('should not interpolate params in the exception message', (): void => {
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'en',
 			definitions: {
-				withParams: entry<{ id: string }>({
+				withParams: entry({
 					status: 'BAD_REQUEST',
 					translations: { en: 'Invalid id: {{id}}' }
 				})
@@ -72,10 +68,9 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 
 	test('should not interpolate multiple params in the exception message', (): void => {
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'en',
 			definitions: {
-				range: entry<{ min: string; max: string }>({
+				range: entry({
 					status: 'BAD_REQUEST',
 					translations: { en: 'Value must be between {{min}} and {{max}}' }
 				})
@@ -89,10 +84,9 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 
 	test('should allow resolving the exception to a different locale', (): void => {
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'en',
 			definitions: {
-				withParams: entry<{ id: string }>({
+				withParams: entry({
 					status: 'BAD_REQUEST',
 					translations: {
 						en: 'Invalid id: {{id}}',
@@ -109,7 +103,6 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 
 	test('should store the correct defaultLocale', (): void => {
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'fr',
 			definitions: {
 				msg: entry({
@@ -125,7 +118,6 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 	test('should store translations on the exception', (): void => {
 		const translations = { en: 'Not found', fr: 'Introuvable' } as const;
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'en',
 			definitions: {
 				simple: entry({ status: 'NOT_FOUND', translations })
@@ -137,7 +129,6 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 
 	test('each invocation should produce a distinct exception instance', (): void => {
 		const catalog = defineExceptionCatalog({
-			namespace: 'test',
 			defaultLocale: 'en',
 			definitions: {
 				simple: entry({
@@ -154,9 +145,8 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 		expect(a.uuid).not.toBe(b.uuid);
 	});
 
-	test('should respect the namespace across different catalogs', (): void => {
+	test('should key each catalog independently by definition name', (): void => {
 		const authCatalog = defineExceptionCatalog({
-			namespace: 'auth',
 			defaultLocale: 'en',
 			definitions: {
 				denied: entry({
@@ -166,18 +156,6 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 			}
 		});
 
-		const dnsCatalog = defineExceptionCatalog({
-			namespace: 'dns',
-			defaultLocale: 'en',
-			definitions: {
-				denied: entry({
-					status: 'FORBIDDEN',
-					translations: { en: 'Access denied' }
-				})
-			}
-		});
-
-		expect(authCatalog.denied().key).toBe('auth.denied');
-		expect(dnsCatalog.denied().key).toBe('dns.denied');
+		expect(authCatalog.denied().key).toBe('denied');
 	});
 });
