@@ -1,6 +1,6 @@
 import { Exception } from '@dws-std/error';
 
-import { BASE32_ALPHABET, BASE32_CHARS } from '#/util/base32';
+import { BASE32_ALPHABET, BASE32_CHARS } from './base32';
 
 export const DECODE_BASE32_ERROR_KEYS = {
 	INVALID_CHAR: 'totp.decode-base32.invalid-char'
