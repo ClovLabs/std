@@ -12,8 +12,8 @@ const interpolate = (template: string, params: Readonly<Record<string, string>>)
  * a plain string for the requested locale.
  *
  * `{{placeholder}}` tokens are replaced with matching values from `target.params`.
- * Falls back to `target.defaultLocale` when `locale` is omitted.
- * Returns an empty string when the requested locale has no translation.
+ * Falls back to `target.defaultLocale` when `locale` is omitted or has no
+ * translation. Returns an empty string only when the default locale is missing too.
  *
  * @param target - Message or exception to resolve.
  * @param locale - Desired locale (e.g. `'fr'`). Defaults to `target.defaultLocale`.
@@ -23,7 +23,11 @@ const interpolate = (template: string, params: Readonly<Record<string, string>>)
 export const resolveMessage = (
 	target: LocalizedHttpException | LocalizedMessage,
 	locale?: string
-): string =>
-	target.params
-		? interpolate(target.translations[locale ?? target.defaultLocale] ?? '', target.params)
-		: (target.translations[locale ?? target.defaultLocale] ?? '');
+): string => {
+	const template =
+		target.translations[locale ?? target.defaultLocale] ??
+		target.translations[target.defaultLocale] ??
+		'';
+
+	return target.params ? interpolate(template, target.params) : template;
+};
