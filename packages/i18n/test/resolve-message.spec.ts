@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 
-import { resolveMessage } from '#/resolve-message';
-import type { LocalizedMessage } from '#/message/type/localized-message';
 import { LocalizedHttpException } from '#/exception/localized-http-exception';
+import type { LocalizedMessage } from '#/message/type/localized-message';
+import { resolveMessage } from '#/resolve-message';
 
 const makeMessage = (overrides: Partial<LocalizedMessage> = {}): LocalizedMessage => ({
 	translations: { en: 'Hello', fr: 'Bonjour' },
@@ -23,8 +23,14 @@ describe.concurrent('resolveMessage', (): void => {
 		expect(resolveMessage(msg, 'fr')).toBe('Bonjour');
 	});
 
-	test('should return an empty string when the requested locale does not exist', (): void => {
+	test('should fall back to the default locale when the requested locale does not exist', (): void => {
 		const msg = makeMessage();
+
+		expect(resolveMessage(msg, 'ja')).toBe('Hello');
+	});
+
+	test('should return an empty string when even the default locale is missing', (): void => {
+		const msg = makeMessage({ translations: {}, defaultLocale: 'en' });
 
 		expect(resolveMessage(msg, 'ja')).toBe('');
 	});
