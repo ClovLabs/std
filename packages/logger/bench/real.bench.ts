@@ -28,7 +28,7 @@ cleanup();
  * sans aucune écriture disque. Permet de comparer équitablement l'overhead de
  * sérialisation + dispatch contre pino qui sérialise toujours (même vers /dev/null).
  *
- * Important: ce sink tourne dans le worker et est recréé via `new Function(...)`,
+ * important: ce sink tourne dans le worker et est recréé via `new Function(...)`,
  * il ne doit donc référencer AUCUN binding de closure (pas de `do_not_optimize`,
  * pas de variable module). La mutation de `state.last` est un effet de bord
  * autosuffisant que l'optimiseur ne peut pas éliminer.
@@ -68,10 +68,7 @@ const nowaraFileLogger = new Logger({ batchTimeout: 10 }).registerSink(
 const pinoFileLogger = pino(pino.destination(PINO_LOG_FILE));
 
 // --- Loggers DevNull (overhead pur du dispatch, sans sérialisation) ---
-const nowaraDevNullLogger = new Logger({ batchTimeout: 10 }).registerSink(
-	'devnull',
-	devNullSink
-);
+const nowaraDevNullLogger = new Logger({ batchTimeout: 10 }).registerSink('devnull', devNullSink);
 
 barplot(() => {
 	summary(() =>
