@@ -60,8 +60,9 @@ const unauthorized = entry({
 	}
 });
 
-// This will produce a plain LocalizedMessage when used in a message catalog
-const welcome = entry<{ name: string }>({
+// This will produce a plain LocalizedMessage when used in a message catalog.
+// The `{{name}}` param is inferred from the template, no type argument needed.
+const welcome = entry({
 	translations: {
 		en: 'Welcome, {{name}}!',
 		fr: 'Bienvenue, {{name}} !'
@@ -71,13 +72,12 @@ const welcome = entry<{ name: string }>({
 
 ### Exception catalogs
 
-Group related exception entries under a namespace. Each key becomes a factory function you can call to throw a localized exception.
+Group related exception entries into a catalog. Each key becomes a factory function you can call to throw a localized exception, and is used as the exception's error `key`.
 
 ```ts
 import { defineExceptionCatalog, entry } from '@dws-std/i18n';
 
 const AUTH_ERRORS = defineExceptionCatalog({
-	namespace: 'auth',
 	defaultLocale: 'en',
 	definitions: {
 		invalidCredentials: entry({
@@ -87,7 +87,7 @@ const AUTH_ERRORS = defineExceptionCatalog({
 				fr: 'Identifiants invalides'
 			}
 		}),
-		emailTaken: entry<{ email: string }>({
+		emailTaken: entry({
 			status: 'CONFLICT',
 			translations: {
 				en: 'Email "{{email}}" is already taken',
@@ -100,7 +100,7 @@ const AUTH_ERRORS = defineExceptionCatalog({
 // Throws a LocalizedHttpException with status 401
 throw AUTH_ERRORS.invalidCredentials();
 
-// With parameters, type-checked, so you can't forget one
+// Params are inferred from the `{{email}}` placeholder, type-checked so you can't forget one
 throw AUTH_ERRORS.emailTaken({ email: 'user@example.com' });
 ```
 
@@ -125,6 +125,10 @@ const DNS_MESSAGES = defineMessageCatalog({
 
 const msg = DNS_MESSAGES.recordCreated();
 ```
+
+> **Locale consistency is enforced at compile time.** Every entry in a catalog must
+> cover the same set of locales - if one entry declares `de`, they all must, or `tsc`
+> errors on the entry that's missing it. No more silently untranslated locales.
 
 ### Resolving to a specific locale
 
