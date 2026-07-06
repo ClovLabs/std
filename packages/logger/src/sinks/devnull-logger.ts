@@ -1,4 +1,4 @@
-import type { LoggerSink } from '#/types/logger-sink';
+import type { LoggerSink } from '../types/logger-sink';
 
 /**
  * Creates a sink that discards all logs (like `/dev/null`).

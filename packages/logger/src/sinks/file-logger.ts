@@ -1,7 +1,7 @@
 import type { FileSink } from 'bun';
 
-import type { LogLevels } from '#/types/log-levels';
-import type { LoggerSink } from '#/types/logger-sink';
+import type { LogLevels } from '../types/log-levels';
+import type { LoggerSink } from '../types/logger-sink';
 
 /**
  * Creates a sink that appends JSON log entries to a file.

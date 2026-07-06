@@ -5,9 +5,9 @@
  * `LocalesOf`/`ConsistentLocales` enforcement stops catching a locale that is
  * present on one entry but missing on another.
  */
+import { entry } from '#/entry';
 import { defineExceptionCatalog } from '#/exception/define-exception-catalog';
 import { defineMessageCatalog } from '#/message/define-message-catalog';
-import { entry } from '#/entry';
 
 // OK — every entry covers en + fr.
 defineExceptionCatalog({

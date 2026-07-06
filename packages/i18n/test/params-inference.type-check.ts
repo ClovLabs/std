@@ -4,9 +4,9 @@
  * Not a runtime test (bun ignores it); `bunx tsc --noEmit` fails if the
  * derivation in `ParamsOf`/`CatalogFactory` regresses to a loose `Record`.
  */
+import { entry } from '#/entry';
 import { defineExceptionCatalog } from '#/exception/define-exception-catalog';
 import { defineMessageCatalog } from '#/message/define-message-catalog';
-import { entry } from '#/entry';
 
 const errors = defineExceptionCatalog({
 	defaultLocale: 'en',

@@ -1,4 +1,4 @@
-import type { OTPAlgorithm } from '#/type/otp-algorithm';
+import type { OTPAlgorithm } from './type/otp-algorithm';
 
 /** Parameters shared by every otpauth provisioning URI. */
 interface BaseOtpauthUrlParams {

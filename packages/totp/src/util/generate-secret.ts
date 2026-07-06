@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 
-import { BASE32_ALPHABET } from '#/util/base32';
+import { BASE32_ALPHABET } from './base32';
 
 /**
  * Generates a random base32-encoded secret suitable for both HOTP and TOTP.

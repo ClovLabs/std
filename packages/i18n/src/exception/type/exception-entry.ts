@@ -1,6 +1,6 @@
 import type { HttpStatusCode, HttpStatusKey } from '@dws-std/error';
 
-import type { Translations } from '#/type/translations';
+import type { Translations } from '../../type/translations';
 
 /**
  * Blueprint for a translatable HTTP exception.

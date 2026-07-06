@@ -93,11 +93,11 @@ await logger.close();
 
 ### Built-in Sinks
 
-| Factory      | Args        | Description                                                |
-| ------------ | ----------- | --------------------------------------------------------- |
-| `consoleSink`| _none_      | Writes JSON log entries to `console` (routed by level).   |
-| `fileSink`   | `path`      | Appends JSON log entries to a file via `Bun.FileSink`.    |
-| `devNullSink`| _none_      | Discards everything – useful for benchmarks / dry runs.  |
+| Factory       | Args   | Description                                             |
+| ------------- | ------ | ------------------------------------------------------- |
+| `consoleSink` | _none_ | Writes JSON log entries to `console` (routed by level). |
+| `fileSink`    | `path` | Appends JSON log entries to a file via `Bun.FileSink`.  |
+| `devNullSink` | _none_ | Discards everything – useful for benchmarks / dry runs. |
 
 ```ts
 import { Logger, devNullSink, fileSink } from '@dws-std/logger';

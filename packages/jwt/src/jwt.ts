@@ -60,7 +60,7 @@ export const signJWT = (
 
 	try {
 		return new SignJWT(finalPayload)
-			.setProtectedHeader({ alg: 'HS256', typ: 'JWT'})
+			.setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
 			.sign(textEncoder.encode(secret));
 	} catch (error) {
 		throw new Exception('Failed to sign JWT', {

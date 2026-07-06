@@ -1,5 +1,5 @@
-import type { LogLevels } from '#/types/log-levels';
-import type { LoggerSink } from '#/types/logger-sink';
+import type { LogLevels } from '../types/log-levels';
+import type { LoggerSink } from '../types/logger-sink';
 
 /**
  * Creates a sink that writes JSON log entries to the console, routed to the

@@ -1,9 +1,9 @@
 import { Exception } from '@dws-std/error';
 import { timingSafeEqual } from 'crypto';
 
-import type { OTPAlgorithm } from '#/type/otp-algorithm';
-import { createCounterBuffer } from '#/util/create-counter-buffer';
-import { decodeBase32 } from '#/util/decode-base32';
+import type { OTPAlgorithm } from './type/otp-algorithm';
+import { createCounterBuffer } from './util/create-counter-buffer';
+import { decodeBase32 } from './util/decode-base32';
 
 export const HOTP_ERROR_KEYS = {
 	INVALID_SECRET: 'totp.hotp.invalid-secret',

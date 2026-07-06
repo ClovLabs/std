@@ -1,4 +1,4 @@
-import type { Translations } from '#/type/translations';
+import type { Translations } from '../../type/translations';
 
 /**
  * Blueprint for a translatable message.
