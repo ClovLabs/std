@@ -4,9 +4,6 @@ run-name: '[Docs] by ${{ github.actor }}'
 on:
     workflow_dispatch:
 
-# Required secrets:
-# - SSH_KEY: SSH key for repository access
-
 permissions:
     contents: write
 
@@ -17,8 +14,6 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v6
-              with:
-                  ssh-key: ${{ secrets.SSH_KEY }}
 
             - name: Setup Bun Project
               uses: ./.github/actions/setup-bun-project
