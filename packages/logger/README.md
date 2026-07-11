@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/logger/logo-logger.png" alt="DWS Logger logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/logger/logo-logger.png" alt="Clov Logger logo" width="200" />
 </p>
 
-# 🎯 DWS Logger
+# 🎯 Clov Logger
 
 Logging in Bun often means choosing between "fast but dumb" or "smart but blocking".
-`@dws-std/logger` gives you both: a type-safe, sink-based system that never blocks your main thread.
+`@clov-std/logger` gives you both: a type-safe, sink-based system that never blocks your main thread.
 
 ## Why this package?
 
@@ -39,7 +39,7 @@ This package runs everything in a worker thread, batches automatically, and stil
 ## 🔧 Installation
 
 ```bash
-bun add @dws-std/logger
+bun add @clov-std/logger
 ```
 
 ## ⚙️ Usage
@@ -49,7 +49,7 @@ bun add @dws-std/logger
 Create a logger, attach a sink, and start logging:
 
 ```ts
-import { Logger, consoleSink } from '@dws-std/logger';
+import { Logger, consoleSink } from '@clov-std/logger';
 
 // Create a logger and register a console sink
 const logger = new Logger().registerSink('console', consoleSink);
@@ -74,7 +74,7 @@ await logger.close();
 Need logs going to different places? Register as many sinks as you want:
 
 ```ts
-import { Logger, consoleSink, fileSink } from '@dws-std/logger';
+import { Logger, consoleSink, fileSink } from '@clov-std/logger';
 
 // Register multiple sinks
 const logger = new Logger()
@@ -100,7 +100,7 @@ await logger.close();
 | `devNullSink` | _none_ | Discards everything – useful for benchmarks / dry runs. |
 
 ```ts
-import { Logger, devNullSink, fileSink } from '@dws-std/logger';
+import { Logger, devNullSink, fileSink } from '@clov-std/logger';
 
 const logger = new Logger()
 	.registerSink('applog', fileSink, './app.log')
@@ -116,7 +116,7 @@ worker, so its body must be **self-contained**: it may use its arguments, runtim
 module-scoped imports or variables from the calling file.
 
 ```ts
-import { Logger, type SinkFactory } from '@dws-std/logger';
+import { Logger, type SinkFactory } from '@clov-std/logger';
 
 // A self-contained factory: no module-scoped imports captured.
 const databaseSink: SinkFactory<{ query: string }, [dbUrl: string]> = (dbUrl: string) => {
@@ -163,7 +163,7 @@ guessing, no more runtime surprises.
 ### Single Typed Sink
 
 ```ts
-import { Logger, type LoggerSink, type LogLevels, type SinkFactory } from '@dws-std/logger';
+import { Logger, type LoggerSink, type LogLevels, type SinkFactory } from '@clov-std/logger';
 
 interface UserLog {
 	userId: number;
@@ -218,9 +218,7 @@ const apiLogSink: SinkFactory<ApiLog> = () => ({
 	}
 });
 
-const logger = new Logger()
-	.registerSink('user', userLogSink)
-	.registerSink('api', apiLogSink);
+const logger = new Logger().registerSink('user', userLogSink).registerSink('api', apiLogSink);
 
 // ✅ Logging to both sinks requires BOTH types combined
 logger.info(
@@ -247,7 +245,7 @@ When you mix typed sinks with untyped ones (like `consoleSink`, which accepts `u
 things stay flexible: the intersection with `unknown` lets extra properties through.
 
 ```ts
-import { Logger, consoleSink, type SinkFactory } from '@dws-std/logger';
+import { Logger, consoleSink, type SinkFactory } from '@clov-std/logger';
 
 interface DatabaseLog {
 	query: string;
@@ -281,7 +279,7 @@ logger.info(
 Things break. When they do, you'll want to know:
 
 ```ts
-import { Logger, consoleSink } from '@dws-std/logger';
+import { Logger, consoleSink } from '@clov-std/logger';
 
 const logger = new Logger().registerSink('console', consoleSink);
 
@@ -304,7 +302,7 @@ await logger.close();
 When you need to make sure everything is written before shutting down:
 
 ```ts
-import { Logger, consoleSink } from '@dws-std/logger';
+import { Logger, consoleSink } from '@clov-std/logger';
 
 const logger = new Logger().registerSink('console', consoleSink);
 
@@ -326,7 +324,7 @@ optional `flush()` method on `LoggerSink`).
 Fine-tune the batching and queue behavior:
 
 ```ts
-import { Logger, consoleSink } from '@dws-std/logger';
+import { Logger, consoleSink } from '@clov-std/logger';
 
 const logger = new Logger({
 	maxPendingLogs: 10_000, // Max queued logs (default: 10,000)
@@ -340,7 +338,7 @@ const logger = new Logger({
 
 ## 📚 API Reference
 
-Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
+Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
 
 ## ⚖️ License
 
@@ -348,4 +346,4 @@ MIT - Feel free to use it.
 
 ## 📧 Contact
 
-- GitHub: [Dominus-Web-Service](https://github.com/Dominus-Web-Service/packages)
+- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)

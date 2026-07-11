@@ -1,20 +1,20 @@
 {
-  "name": "@dws-std/logger",
+  "name": "@clov-std/logger",
   "version": "1.0.2",
   "description": "Type-safe logging library for Bun, modular sink pattern, transform streams, and immutable API design.",
   "keywords": [
     "bun",
-    "dws",
+    "clov",
     "open-source",
     "types",
     "typescript",
     "utilities"
   ],
   "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
+  "author": "Clov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
+    "url": "https://github.com/ClovLabs/std",
     "directory": "packages/logger"
   },
   "files": [
@@ -38,8 +38,8 @@
     "test": "bun test --pass-with-no-tests --coverage"
   },
   "dependencies": {
-    "@dws-std/common": "workspace:^",
-    "@dws-std/error": "workspace:^"
+    "@clov-std/common": "workspace:^",
+    "@clov-std/error": "workspace:^"
   },
   "devDependencies": {
     "@types/bun": "catalog:base",
@@ -51,7 +51,7 @@
     "typescript": "catalog:base"
   },
   "peerDependencies": {
-    "@dws-std/common": "workspace:^",
-    "@dws-std/error": "workspace:^"
+    "@clov-std/common": "workspace:^",
+    "@clov-std/error": "workspace:^"
   }
 }
