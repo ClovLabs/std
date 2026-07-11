@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://github.com/Dominus-Web-Service/std/blob/main/packages/registry/logo-registry.png" alt="DWS Registry logo" width="200" />
+  <img src="https://github.com/ClovLabs/std/blob/main/packages/registry/logo-registry.png" alt="Clov Registry logo" width="200" />
 </p>
 
-# 🎯 DWS Registry
+# 🎯 Clov Registry
 
 If you've ever copy-pasted a `getInstance()` pattern into yet another class, this package is for you.
 It gives you a single, centralized registry to store and retrieve instances — type-safe, predictable, and easy to test.
@@ -31,10 +31,10 @@ One registry, no duplication.
 ## 🔧 Installation
 
 ```bash
-bun add @dws-std/registry
+bun add @clov-std/registry
 ```
 
-> **Peer dependency:** `@dws-std/error` must be installed alongside.
+> **Peer dependency:** `@clov-std/error` must be installed alongside.
 
 ## ⚙️ Usage
 
@@ -43,7 +43,7 @@ bun add @dws-std/registry
 Register your instances once at startup. They're available everywhere after that.
 
 ```ts
-import { Registry } from '@dws-std/registry';
+import { Registry } from '@clov-std/registry';
 
 class DatabaseConnection {
 	private isConnected: boolean = false;
@@ -101,7 +101,7 @@ Registry.register('DatabaseConnection', new DatabaseConnection());
 
 ## 📚 API Reference
 
-Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
+Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
 
 ## ⚖️ License
 
@@ -109,4 +109,4 @@ MIT — Feel free to use it.
 
 ## 📧 Contact
 
-- GitHub: [Dominus-Web-Service](https://github.com/Dominus-Web-Service/packages)
+- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)
