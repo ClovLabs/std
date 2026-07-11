@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 import { describe, expect, test } from 'bun:test';
 
 import { PARSE_HUMAN_TIME_ERROR_KEYS, parseHumanTime } from '#/parse-human-time';

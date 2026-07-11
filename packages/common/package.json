@@ -1,10 +1,10 @@
 {
-  "name": "@dws-std/common",
+  "name": "@clov-std/common",
   "version": "1.3.1",
   "description": "Common utilities and types library for building robust applications.",
   "keywords": [
     "bun",
-    "dws",
+    "clov",
     "helpers",
     "open-source",
     "types",
@@ -12,10 +12,10 @@
     "utilities"
   ],
   "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
+  "author": "Clov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
+    "url": "https://github.com/ClovLabs/std",
     "directory": "packages/common"
   },
   "files": [
@@ -39,7 +39,7 @@
     "test": "bun test --pass-with-no-tests --coverage"
   },
   "dependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   },
   "devDependencies": {
     "@types/bun": "catalog:base",
@@ -49,6 +49,6 @@
     "typescript": "catalog:base"
   },
   "peerDependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   }
 }

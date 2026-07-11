@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 
 export const PARSE_HUMAN_TIME_ERROR_KEYS = {
 	INVALID_TIME_EXPRESSION: 'common.parse-human-time.invalid-time-expression'
