@@ -1,6 +1,6 @@
 // oxlint-disable typescript/ban-types
-import { HttpException } from '@dws-std/error';
-import { type KvStore, MemoryStore } from '@dws-std/kv-store';
+import { HttpException } from '@clov-std/error';
+import { type KvStore, MemoryStore } from '@clov-std/kv-store';
 import type { Server } from 'bun';
 import { Elysia, type HTTPHeaders, type StatusMap } from 'elysia';
 

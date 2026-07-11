@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/elysia-ratelimit/logo-elysia-ratelimit.png" alt="DWS Elysia Rate Limit logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/elysia-ratelimit/logo-elysia-ratelimit.png" alt="Clov Elysia Rate Limit logo" width="200" />
 </p>
 
-# 🚦 DWS Elysia Rate Limit
+# 🚦 Clov Elysia Rate Limit
 
 Rate limiting for Elysia routes, guards, and groups, as a macro.  
 Drop `rateLimit` on any endpoint and abusive traffic gets cut before it ever hits your logic.
@@ -15,7 +15,7 @@ You add `rateLimit: { limit: 10, window: 60 }` and you're done.
 By default it limits by client IP, which works great for auth endpoints.  
 For cases where many users share the same public IP (offices, corporate proxies), you can pass a `keyGenerator` to rate limit by IP + access token, session ID, API key, or any combination that makes sense.
 
-Storage is handled by `@dws-std/kv-store`, so you start with in-memory and move to Redis when you need to, without changing your routes.
+Storage is handled by `@clov-std/kv-store`, so you start with in-memory and move to Redis when you need to, without changing your routes.
 
 ## 📌 Table of Contents
 
@@ -37,7 +37,7 @@ Storage is handled by `@dws-std/kv-store`, so you start with in-memory and move 
 ## 🔧 Installation
 
 ```bash
-bun add @dws-std/elysia-ratelimit
+bun add @clov-std/elysia-ratelimit
 ```
 
 > **Peer dependencies:** `elysia` must be installed alongside.
@@ -49,7 +49,7 @@ bun add @dws-std/elysia-ratelimit
 The simplest form: pass `limit` (max requests) and `window` (time in seconds). Each client IP gets its own counter.
 
 ```ts
-import { rateLimitPlugin } from '@dws-std/elysia-ratelimit';
+import { rateLimitPlugin } from '@clov-std/elysia-ratelimit';
 import { Elysia } from 'elysia';
 
 new Elysia()
@@ -65,8 +65,8 @@ new Elysia()
 By default, counters are kept in memory. Pass a `BunRedisStore` (or any `KvStore` adapter) for persistence across restarts and multi-instance deployments.
 
 ```ts
-import { BunRedisStore } from '@dws-std/kv-store';
-import { rateLimitPlugin } from '@dws-std/elysia-ratelimit';
+import { BunRedisStore } from '@clov-std/kv-store';
+import { rateLimitPlugin } from '@clov-std/elysia-ratelimit';
 import { Elysia } from 'elysia';
 
 const store = new BunRedisStore('redis://localhost:6379');
@@ -85,7 +85,7 @@ Useful for authenticated routes where many users share the same public IP (offic
 Each user has their own counter, independent of their network.
 
 ```ts
-import { rateLimitPlugin } from '@dws-std/elysia-ratelimit';
+import { rateLimitPlugin } from '@clov-std/elysia-ratelimit';
 import { Elysia } from 'elysia';
 
 new Elysia()
@@ -104,7 +104,7 @@ new Elysia()
 
 ## 📚 API Reference
 
-Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
+Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
 
 ## ⚖️ License
 
@@ -112,4 +112,4 @@ MIT — see [LICENSE.md](LICENSE.md).
 
 ## 📧 Contact
 
-Maintained by [Dominus Web Services](https://github.com/Dominus-Web-Service).
+Maintained by [Clov](https://github.com/ClovLabs).

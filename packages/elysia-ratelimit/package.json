@@ -1,10 +1,10 @@
 {
-  "name": "@dws-std/elysia-ratelimit",
+  "name": "@clov-std/elysia-ratelimit",
   "version": "1.2.1",
   "description": "Rate limiting plugin for Elysia framework.",
   "keywords": [
     "bun",
-    "dws",
+    "clov",
     "elysia",
     "macro",
     "open-source",
@@ -13,10 +13,10 @@
     "typescript"
   ],
   "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
+  "author": "Clov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
+    "url": "https://github.com/ClovLabs/std",
     "directory": "packages/elysia-ratelimit"
   },
   "files": [
@@ -40,8 +40,8 @@
     "test": "bun test --pass-with-no-tests --coverage"
   },
   "dependencies": {
-    "@dws-std/error": "workspace:^",
-    "@dws-std/kv-store": "workspace:^",
+    "@clov-std/error": "workspace:^",
+    "@clov-std/kv-store": "workspace:^",
     "elysia": "^1.4.29"
   },
   "devDependencies": {
@@ -52,8 +52,8 @@
     "typescript": "catalog:base"
   },
   "peerDependencies": {
-    "@dws-std/error": "workspace:^",
-    "@dws-std/kv-store": "workspace:^",
+    "@clov-std/error": "workspace:^",
+    "@clov-std/kv-store": "workspace:^",
     "elysia": "^1.4.29"
   }
 }
