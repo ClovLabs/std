@@ -1,20 +1,20 @@
 {
-  "name": "@dws-std/error",
+  "name": "@clov-std/error",
   "version": "2.3.1",
   "description": "Structured TypeScript exceptions with UUID v7 tracking, HTTP status codes, and automatic timestamps.",
   "keywords": [
     "bun",
-    "dws",
+    "clov",
     "error",
     "exceptions",
     "open-source",
     "typescript"
   ],
   "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
+  "author": "Clov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
+    "url": "https://github.com/ClovLabs/std",
     "directory": "packages/error"
   },
   "files": [
