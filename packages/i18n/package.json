@@ -1,10 +1,10 @@
 {
-  "name": "@dws-std/i18n",
+  "name": "@clov-std/i18n",
   "version": "1.5.1",
   "description": "Type-safe i18n for TypeScript, define localized exception and message catalogs with compile-time validated parameters.",
   "keywords": [
     "bun",
-    "dws",
+    "clov",
     "i18n",
     "internationalization",
     "localization",
@@ -13,10 +13,10 @@
     "typescript"
   ],
   "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
+  "author": "Clov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
+    "url": "https://github.com/ClovLabs/std",
     "directory": "packages/i18n"
   },
   "files": [
@@ -40,7 +40,7 @@
     "test": "bun test --pass-with-no-tests --coverage"
   },
   "dependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   },
   "devDependencies": {
     "@types/bun": "catalog:base",
@@ -50,6 +50,6 @@
     "typescript": "catalog:base"
   },
   "peerDependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   }
 }

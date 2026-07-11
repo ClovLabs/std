@@ -1,4 +1,4 @@
-import { HttpException, type HttpExceptionOptions } from '@dws-std/error';
+import { HttpException, type HttpExceptionOptions } from '@clov-std/error';
 
 import type { Translations } from '../type/translations';
 
