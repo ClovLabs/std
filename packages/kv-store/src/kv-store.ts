@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 
 export const KV_STORE_ERROR_KEYS = {
 	INVALID_KEY: 'kv-store.invalid-key',

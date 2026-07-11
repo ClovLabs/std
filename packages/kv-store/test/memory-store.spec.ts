@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { MEMORY_STORE_ERROR_KEYS, MemoryStore } from '#/memory-store';

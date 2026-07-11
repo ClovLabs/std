@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 import { RedisClient, type RedisOptions } from 'bun';
 
 import { KvStore } from './kv-store';

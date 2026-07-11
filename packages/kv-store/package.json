@@ -1,11 +1,11 @@
 {
-  "name": "@dws-std/kv-store",
+  "name": "@clov-std/kv-store",
   "version": "1.1.1",
   "description": "Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter.",
   "keywords": [
     "bun",
     "cache",
-    "dws",
+    "clov",
     "key-value",
     "kv-store",
     "memory",
@@ -15,10 +15,10 @@
     "typescript"
   ],
   "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
+  "author": "Clov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
+    "url": "https://github.com/ClovLabs/std",
     "directory": "packages/kv-store"
   },
   "files": [
@@ -42,7 +42,7 @@
     "test": "bun test --pass-with-no-tests --coverage"
   },
   "dependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   },
   "devDependencies": {
     "@types/bun": "catalog:base",
@@ -52,6 +52,6 @@
     "typescript": "catalog:base"
   },
   "peerDependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   }
 }
