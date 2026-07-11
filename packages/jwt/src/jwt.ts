@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 import { SignJWT, errors, jwtVerify, type JWTPayload, type JWTVerifyResult } from 'jose';
 
 export const JWT_ERROR_KEYS = {
@@ -49,9 +49,9 @@ export const signJWT = (
 		});
 
 	const finalPayload: JWTPayload = {
-		iss: 'DWS-Issuer',
+		iss: 'Clov-Issuer',
 		sub: '',
-		aud: ['DWS-Audience'],
+		aud: ['Clov-Audience'],
 		nbf: nowSeconds,
 		iat: nowSeconds,
 		exp,
