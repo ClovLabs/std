@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 
 import { BASE32_ALPHABET, BASE32_CHARS } from './base32';
 

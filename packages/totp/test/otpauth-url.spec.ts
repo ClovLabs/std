@@ -8,15 +8,15 @@ describe.concurrent('buildOtpauthUrl', () => {
 			type: 'totp',
 			secret: 'JBSWY3DPEHPK3PXP',
 			accountName: 'alice@example.com',
-			issuer: 'DWS'
+			issuer: 'Clov'
 		});
 		const parsed = new URL(url);
 
 		expect(parsed.protocol).toBe('otpauth:');
 		expect(parsed.host).toBe('totp');
-		expect(decodeURIComponent(parsed.pathname.slice(1))).toBe('DWS:alice@example.com');
+		expect(decodeURIComponent(parsed.pathname.slice(1))).toBe('Clov:alice@example.com');
 		expect(parsed.searchParams.get('secret')).toBe('JBSWY3DPEHPK3PXP');
-		expect(parsed.searchParams.get('issuer')).toBe('DWS');
+		expect(parsed.searchParams.get('issuer')).toBe('Clov');
 		expect(parsed.searchParams.get('algorithm')).toBe('SHA1');
 		expect(parsed.searchParams.get('digits')).toBe('6');
 		expect(parsed.searchParams.get('period')).toBe('30');
@@ -28,7 +28,7 @@ describe.concurrent('buildOtpauthUrl', () => {
 			type: 'hotp',
 			secret: 'JBSWY3DPEHPK3PXP',
 			accountName: 'bob@example.com',
-			issuer: 'DWS',
+			issuer: 'Clov',
 			counter: 42
 		});
 		const parsed = new URL(url);
@@ -43,7 +43,7 @@ describe.concurrent('buildOtpauthUrl', () => {
 			type: 'totp',
 			secret: 'JBSWY3DPEHPK3PXP',
 			accountName: 'alice@example.com',
-			issuer: 'DWS',
+			issuer: 'Clov',
 			algorithm: 'SHA-256',
 			digits: 8,
 			period: 60
