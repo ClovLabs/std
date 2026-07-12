@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 import { beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import type { JWTPayload } from 'jose';
 
@@ -85,9 +85,9 @@ describe.concurrent('JWT Core Functions', () => {
 			const result = await verifyJWT(token, testSecret);
 
 			const { payload: decodedPayload } = result;
-			expect(decodedPayload.iss).toBe('DWS-Issuer');
+			expect(decodedPayload.iss).toBe('Clov-Issuer');
 			expect(decodedPayload.sub).toBe('');
-			expect(decodedPayload.aud).toEqual(['DWS-Audience']);
+			expect(decodedPayload.aud).toEqual(['Clov-Audience']);
 			expect(decodedPayload.nbf).toBeTypeOf('number');
 			expect(decodedPayload.iat).toBeTypeOf('number');
 			expect(decodedPayload.exp).toBeTypeOf('number');
@@ -161,9 +161,9 @@ describe.concurrent('JWT Core Functions', () => {
 			const token = await signJWT(testSecret, {});
 
 			const result = await verifyJWT(token, testSecret);
-			expect(result.payload.iss).toBe('DWS-Issuer');
+			expect(result.payload.iss).toBe('Clov-Issuer');
 			expect(result.payload.sub).toBe('');
-			expect(result.payload.aud).toEqual(['DWS-Audience']);
+			expect(result.payload.aud).toEqual(['Clov-Audience']);
 			expect(result.payload.nbf).toBeTypeOf('number');
 			expect(result.payload.iat).toBeTypeOf('number');
 			expect(result.payload.exp).toBeTypeOf('number');
@@ -307,7 +307,7 @@ describe.concurrent('JWT Core Functions', () => {
 			const token = await signJWT(testSecret, { sub: 'test-user' });
 
 			// Correct issuer should pass
-			const result = await verifyJWT(token, testSecret, { issuer: 'DWS-Issuer' });
+			const result = await verifyJWT(token, testSecret, { issuer: 'Clov-Issuer' });
 			expect(result.payload.sub).toBe('test-user');
 
 			// Wrong issuer should throw
@@ -324,7 +324,7 @@ describe.concurrent('JWT Core Functions', () => {
 			const token = await signJWT(testSecret, { sub: 'test-user' });
 
 			// Correct audience should pass
-			const result = await verifyJWT(token, testSecret, { audience: 'DWS-Audience' });
+			const result = await verifyJWT(token, testSecret, { audience: 'Clov-Audience' });
 			expect(result.payload.sub).toBe('test-user');
 
 			// Wrong audience should throw

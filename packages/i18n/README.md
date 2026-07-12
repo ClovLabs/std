@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/i18n/logo-i18n.png" alt="DWS I18n logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/i18n/logo-i18n.png" alt="Clov I18n logo" width="200" />
 </p>
 
-# 🌐 DWS I18n
+# 🌐 Clov I18n
 
 Type-safe internationalization for TypeScript.
 Define your translation catalogs once, and get localized messages and HTTP exceptions with full traceability, all validated at compile time.
@@ -13,7 +13,7 @@ Internationalization is often treated as an afterthought, strings scattered acro
 This package takes a different approach: you declare structured catalogs with `entry()`, and the compiler does the rest.  
 Parameters, locales, HTTP statuses, if something's wrong, you'll know before your code even runs.
 
-It also plays nicely with `@dws-std/error`. Exception catalogs produce `LocalizedHttpException` instances that carry translations,
+It also plays nicely with `@clov-std/error`. Exception catalogs produce `LocalizedHttpException` instances that carry translations,
 a UUID v7, and an HTTP status code, so your error handling stays consistent and traceable.
 
 ## 📌 Table of Contents
@@ -32,15 +32,15 @@ a UUID v7, and an HTTP status code, so your error handling stays consistent and 
 - 🚨 **Localized exceptions** : `defineExceptionCatalog` gives you factory functions that create `LocalizedHttpException` instances, complete with status codes and UUID tracking.
 - 💬 **Localized messages** : `defineMessageCatalog` does the same for plain messages : confirmations, notifications, anything that isn't an error.
 - 🔗 **Template interpolation** : Use `{{param}}` placeholders in translations; `resolveMessage` fills them in.
-- 🔍 **UUID v7 tracking** : Every exception inherits traceability from `@dws-std/error`.
+- 🔍 **UUID v7 tracking** : Every exception inherits traceability from `@clov-std/error`.
 
 ## 🔧 Installation
 
 ```bash
-bun add @dws-std/i18n
+bun add @clov-std/i18n
 ```
 
-> **Peer dependency:** `@dws-std/error` must be installed alongside.
+> **Peer dependency:** `@clov-std/error` must be installed alongside.
 
 ## ⚙️ Usage
 
@@ -49,7 +49,7 @@ bun add @dws-std/i18n
 `entry()` is the building block. Give it a `status` and it becomes an exception entry; leave `status` out and it's a plain message entry.
 
 ```ts
-import { entry } from '@dws-std/i18n';
+import { entry } from '@clov-std/i18n';
 
 // This will produce a LocalizedHttpException when used in an exception catalog
 const unauthorized = entry({
@@ -75,7 +75,7 @@ const welcome = entry({
 Group related exception entries into a catalog. Each key becomes a factory function you can call to throw a localized exception, and is used as the exception's error `key`.
 
 ```ts
-import { defineExceptionCatalog, entry } from '@dws-std/i18n';
+import { defineExceptionCatalog, entry } from '@clov-std/i18n';
 
 const AUTH_ERRORS = defineExceptionCatalog({
 	defaultLocale: 'en',
@@ -109,7 +109,7 @@ throw AUTH_ERRORS.emailTaken({ email: 'user@example.com' });
 Same idea, but for things that aren't errors, success confirmations, notifications, labels, etc.
 
 ```ts
-import { defineMessageCatalog, entry } from '@dws-std/i18n';
+import { defineMessageCatalog, entry } from '@clov-std/i18n';
 
 const DNS_MESSAGES = defineMessageCatalog({
 	defaultLocale: 'en',
@@ -135,7 +135,7 @@ const msg = DNS_MESSAGES.recordCreated();
 `resolveMessage` takes a `LocalizedHttpException` or a `LocalizedMessage` and returns the interpolated string for the locale you want.
 
 ```ts
-import { resolveMessage } from '@dws-std/i18n';
+import { resolveMessage } from '@clov-std/i18n';
 
 const error = AUTH_ERRORS.emailTaken({ email: 'a@b.com' });
 
@@ -145,7 +145,7 @@ resolveMessage(error, 'fr'); // → "L'email "a@b.com" est déjà utilisé"
 
 ## 📚 API Reference
 
-Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
+Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
 
 ## ⚖️ License
 
@@ -153,4 +153,4 @@ MIT - Feel free to use it.
 
 ## 📧 Contact
 
-- GitHub: [Dominus-Web-Service](https://github.com/Dominus-Web-Service/packages)
+- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)

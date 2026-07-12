@@ -13,12 +13,12 @@
 			"packages/totp"
 		],
 		"out": "docs",
-		"name": "DWS Packages",
+		"name": "Clov Packages",
 		"hideGenerator": true,
 		"customFooterHtml": "<p>Generated with ❤️</p>",
 		"externalSymbolLinkMappings": {
-			"@dws-std/error": {
-				"Exception": "https://dominus-web-service.github.io/std/classes/_dws-std_error.Exception.html"
+			"@clov-std/error": {
+				"Exception": "https://clovlabs.github.io/std/classes/_clov-std_error.Exception.html"
 			}
 		},
 		"packageOptions": {

@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/jwt/logo-jwt.png" alt="DWS JWT logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/jwt/logo-jwt.png" alt="Clov JWT logo" width="200" />
 </p>
 
-# 🔐 DWS JWT
+# 🔐 Clov JWT
 
 Signing and verifying JWTs shouldn't require boilerplate.  
-`@dws-std/jwt` wraps [jose](https://github.com/panva/jose) with sane defaults — HS256, standard claims pre-filled — so you can focus on what matters instead of re-reading the JWT spec.
+`@clov-std/jwt` wraps [jose](https://github.com/panva/jose) with sane defaults — HS256, standard claims pre-filled — so you can focus on what matters instead of re-reading the JWT spec.
 
 ## 📌 Table of Contents
 
@@ -19,7 +19,7 @@ Signing and verifying JWTs shouldn't require boilerplate.
 ## 🔧 Installation
 
 ```bash
-bun add @dws-std/jwt
+bun add @clov-std/jwt
 ```
 
 ## ⚙️ Usage
@@ -30,7 +30,7 @@ Signs a payload and returns a JWT string.
 All standard claims (`iss`, `sub`, `aud`, `jti`, `nbf`, `iat`, `exp`) are included automatically - just pass your custom data and let the function handle the rest.
 
 ```ts
-import { signJWT } from '@dws-std/jwt';
+import { signJWT } from '@clov-std/jwt';
 
 // Default expiration: 15 minutes
 const token = await signJWT(secret, { userId: 42, role: 'admin' });
@@ -57,7 +57,7 @@ const token = await signJWT(secret, {
 Verifies a token and returns the decoded payload. Throws if anything is wrong.
 
 ```ts
-import { verifyJWT } from '@dws-std/jwt';
+import { verifyJWT } from '@clov-std/jwt';
 
 const { payload } = await verifyJWT(token, secret);
 console.log(payload.userId);
@@ -74,7 +74,7 @@ const { payload } = await verifyJWT(token, secret, {
 
 ## 🚨 Error handling
 
-All errors are `Exception` instances from `@dws-std/error` with a `key` you can check:
+All errors are `Exception` instances from `@clov-std/error` with a `key` you can check:
 
 | Key                     | When                                                            |
 | ----------------------- | --------------------------------------------------------------- |
@@ -85,8 +85,8 @@ All errors are `Exception` instances from `@dws-std/error` with a `key` you can 
 | `jwt.unauthorized`      | Invalid signature, malformed token, or claim validation failure |
 
 ```ts
-import { Exception } from '@dws-std/error';
-import { JWT_ERROR_KEYS, verifyJWT } from '@dws-std/jwt';
+import { Exception } from '@clov-std/error';
+import { JWT_ERROR_KEYS, verifyJWT } from '@clov-std/jwt';
 
 try {
 	const { payload } = await verifyJWT(token, secret);

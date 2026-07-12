@@ -1,5 +1,5 @@
-import { TypedEventEmitter } from '@dws-std/common';
-import { Exception } from '@dws-std/error';
+import { TypedEventEmitter } from '@clov-std/common';
+import { Exception } from '@clov-std/error';
 import type { BunMessageEvent } from 'bun';
 
 import type { LoggerEvent } from './events/logger-events';

@@ -31,31 +31,24 @@ on:
 # - SSH_PRIVATE_KEY: Private SSH key for pushing to repo
 
 permissions:
-    id-token: write
-    contents: write
+    contents: read
 
 jobs:
     # ─── Validate package exists ────────────────────────
     validate:
         name: Validate
         runs-on: ubuntu-latest
-        outputs:
-            pkg-name: ${{ steps.info.outputs.name }}
-            pkg-version: ${{ steps.info.outputs.version }}
         steps:
             - name: Checkout
               uses: actions/checkout@v6
 
             - name: Check package exists
-              id: info
               run: |
                   PKG_DIR="packages/${{ inputs.package }}"
                   if [ ! -f "$PKG_DIR/package.json" ]; then
                     echo "::error::Package '${{ inputs.package }}' not found in packages/"
                     exit 1
                   fi
-                  echo "name=$(jq -r .name "$PKG_DIR/package.json")" >> "$GITHUB_OUTPUT"
-                  echo "version=$(jq -r .version "$PKG_DIR/package.json")" >> "$GITHUB_OUTPUT"
 
     # ─── Build all packages (dependency order) ──────────
     build:
@@ -100,6 +93,9 @@ jobs:
         name: Release
         needs: [validate, ci]
         runs-on: ubuntu-latest
+        permissions:
+            id-token: write
+            contents: write
         steps:
             - name: Checkout
               uses: actions/checkout@v6
@@ -125,54 +121,10 @@ jobs:
             - name: Bump version
               id: version
               working-directory: packages/${{ inputs.package }}
-              run: |
-                  CURRENT=$(jq -r .version package.json)
-
-                  # Split current version (strip any existing prerelease suffix)
-                  IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT%%-*}"
-
-                  case "${{ inputs.bump }}" in
-                    major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-                    minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-                    patch) PATCH=$((PATCH + 1)) ;;
-                  esac
-
-                  BASE="${MAJOR}.${MINOR}.${PATCH}"
-
-                  case "${{ inputs.channel }}" in
-                    stable)
-                      VERSION="${BASE}"
-                      NPM_TAG="latest"
-                      PRERELEASE="false"
-                      ;;
-                    canary|alpha)
-                      SHORT_SHA="${GITHUB_SHA:0:7}"
-                      DATE=$(date +%Y%m%d)
-                      VERSION="${BASE}-${{ inputs.channel }}.${DATE}.${SHORT_SHA}"
-                      NPM_TAG="${{ inputs.channel }}"
-                      PRERELEASE="true"
-                      ;;
-                  esac
-                  jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
-                  PKG_NAME=$(jq -r .name package.json)
-                  TAG="${PKG_NAME}@${VERSION}"
-
-                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-                  echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-                  echo "npm-tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
-                  echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
-                  echo "pkg-name=$PKG_NAME" >> "$GITHUB_OUTPUT"
-
-                  {
-                    echo "### Version Bump"
-                    echo "| Field | Value |"
-                    echo "|-------|-------|"
-                    echo "| Package | $PKG_NAME |"
-                    echo "| Previous | $CURRENT |"
-                    echo "| New | $VERSION |"
-                    echo "| Tag | $TAG |"
-                    echo "| NPM Tag | $NPM_TAG |"
-                  } >> "$GITHUB_STEP_SUMMARY"
+              env:
+                  BUMP: ${{ inputs.bump }}
+                  CHANNEL: ${{ inputs.channel }}
+              run: bash "$GITHUB_WORKSPACE/.github/scripts/bump-version.sh"
 
             - name: Check version not already published
               working-directory: packages/${{ inputs.package }}
@@ -197,80 +149,14 @@ jobs:
 
             - name: Generate changelog
               id: changelog
-              run: |
-                  PKG_NAME="${{ steps.version.outputs.pkg-name }}"
-                  PKG_DIR="packages/${{ inputs.package }}"
-
-                  # Find last tag for the current release channel
-                  case "${{ inputs.channel }}" in
-                    stable)
-                      # Strict semver only: PKG_NAME@X.Y.Z — excludes any prerelease suffix
-                      LAST_TAG=$(git tag --list "${PKG_NAME}@*" --sort=-version:refname \
-                        | grep -E '^.+@[0-9]+\.[0-9]+\.[0-9]+$' \
-                        | head -n1 || true)
-                      ;;
-                    canary)
-                      LAST_TAG=$(git tag --list "${PKG_NAME}@*-canary.*" --sort=-version:refname \
-                        | head -n1 || true)
-                      ;;
-                    alpha)
-                      LAST_TAG=$(git tag --list "${PKG_NAME}@*-alpha.*" --sort=-version:refname \
-                        | head -n1 || true)
-                      ;;
-                  esac
-
-                  if [ -n "$LAST_TAG" ]; then
-                    COMMITS=$(git log "${LAST_TAG}..HEAD" --pretty=format:"%s (%h)" -- "${PKG_DIR}/")
-                  else
-                    COMMITS=$(git log --pretty=format:"%s (%h)" -- "${PKG_DIR}/")
-                  fi
-
-                  if [ -z "$COMMITS" ]; then
-                    echo "- Release ${{ steps.version.outputs.version }}" > /tmp/changelog.md
-                  else
-                    # Group commits by conventional commit type
-                    FEAT="" FIX="" PERF="" REFACTOR="" DOCS="" TEST="" BUILD="" STYLE="" CI="" CHORE="" OTHER=""
-
-                    while IFS= read -r line; do
-                      case "$line" in
-                        feat*)    FEAT="${FEAT}\n- ${line}" ;;
-                        fix*)     FIX="${FIX}\n- ${line}" ;;
-                        perf*)    PERF="${PERF}\n- ${line}" ;;
-                        refactor*) REFACTOR="${REFACTOR}\n- ${line}" ;;
-                        docs*)    DOCS="${DOCS}\n- ${line}" ;;
-                        test*)    TEST="${TEST}\n- ${line}" ;;
-                        build*)   BUILD="${BUILD}\n- ${line}" ;;
-                        style*)   STYLE="${STYLE}\n- ${line}" ;;
-                        ci*)      CI="${CI}\n- ${line}" ;;
-                        chore*)   CHORE="${CHORE}\n- ${line}" ;;
-                        *)        OTHER="${OTHER}\n- ${line}" ;;
-                      esac
-                    done <<< "$COMMITS"
-
-                    {
-                      [ -n "$FEAT" ]     && printf "### 🚀 Features\n%b\n\n" "$FEAT"
-                      [ -n "$FIX" ]      && printf "### 🐛 Bug Fixes\n%b\n\n" "$FIX"
-                      [ -n "$PERF" ]     && printf "### ⚡ Performance\n%b\n\n" "$PERF"
-                      [ -n "$REFACTOR" ] && printf "### ♻️ Refactors\n%b\n\n" "$REFACTOR"
-                      [ -n "$DOCS" ]     && printf "### 📚 Documentation\n%b\n\n" "$DOCS"
-                      [ -n "$TEST" ]     && printf "### 🧪 Tests\n%b\n\n" "$TEST"
-                      [ -n "$BUILD" ]    && printf "### 🏗️ Build\n%b\n\n" "$BUILD"
-                      [ -n "$STYLE" ]    && printf "### 🎨 Style\n%b\n\n" "$STYLE"
-                      [ -n "$CI" ]       && printf "### 🔧 CI\n%b\n\n" "$CI"
-                      [ -n "$CHORE" ]    && printf "### 🧹 Chores\n%b\n\n" "$CHORE"
-                      [ -n "$OTHER" ]    && printf "### 📝 Other\n%b\n\n" "$OTHER"
-                    } > /tmp/changelog.md
-                  fi
-
-                  # Truncate if exceeding GitHub Release body limit (125 000 chars)
-                  MAX_CHARS=124000
-                  if [ "$(wc -c < /tmp/changelog.md)" -gt "$MAX_CHARS" ]; then
-                    head -c "$MAX_CHARS" /tmp/changelog.md > /tmp/changelog_trimmed.md
-                    printf "\n\n---\n*Changelog truncated — see [full diff](https://github.com/${{ github.repository }}/compare/%s...%s) for all changes.*\n" \
-                      "${LAST_TAG:-$(git rev-list --max-parents=0 HEAD | head -1)}" \
-                      "${{ steps.version.outputs.tag }}" >> /tmp/changelog_trimmed.md
-                    mv /tmp/changelog_trimmed.md /tmp/changelog.md
-                  fi
+              env:
+                  PKG_NAME: ${{ steps.version.outputs.pkg-name }}
+                  PKG_DIR: packages/${{ inputs.package }}
+                  CHANNEL: ${{ inputs.channel }}
+                  VERSION: ${{ steps.version.outputs.version }}
+                  TAG: ${{ steps.version.outputs.tag }}
+                  REPO: ${{ github.repository }}
+              run: bash .github/scripts/generate-changelog.sh
 
             - name: Commit version bump
               if: inputs.channel == 'stable'

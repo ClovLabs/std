@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 import { timingSafeEqual } from 'crypto';
 
 import type { OTPAlgorithm } from './type/otp-algorithm';

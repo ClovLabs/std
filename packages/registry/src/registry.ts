@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 
 /** Error codes thrown by the {@link Registry} class. */
 export const REGISTRY_ERROR_KEYS = {

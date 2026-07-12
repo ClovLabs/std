@@ -1,20 +1,20 @@
 {
-  "name": "@dws-std/registry",
+  "name": "@clov-std/registry",
   "version": "1.3.1",
   "description": "Centralized, type-safe registry for managing named instances.",
   "keywords": [
     "bun",
-    "dws",
+    "clov",
     "open-source",
     "registry",
     "types",
     "typescript"
   ],
   "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
+  "author": "Clov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
+    "url": "https://github.com/ClovLabs/std",
     "directory": "packages/registry"
   },
   "files": [
@@ -38,7 +38,7 @@
     "test": "bun test --pass-with-no-tests --coverage"
   },
   "dependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   },
   "devDependencies": {
     "@types/bun": "catalog:base",
@@ -48,6 +48,6 @@
     "typescript": "catalog:base"
   },
   "peerDependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   }
 }

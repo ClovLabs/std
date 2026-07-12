@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/totp/logo-totp.png" alt="DWS TOTP logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/totp/logo-totp.png" alt="Clov TOTP logo" width="200" />
 </p>
 
-# 🔐 DWS TOTP
+# 🔐 Clov TOTP
 
 Generate and verify HOTP and TOTP codes with sensible defaults.
 
-`@dws-std/totp` supports base32 secrets, raw byte secrets, custom digits, custom algorithms, verification windows, secret generation, `otpauth://` provisioning URIs, and structured errors via `@dws-std/error`.
+`@clov-std/totp` supports base32 secrets, raw byte secrets, custom digits, custom algorithms, verification windows, secret generation, `otpauth://` provisioning URIs, and structured errors via `@clov-std/error`.
 
 ## 📌 Table of Contents
 
@@ -26,7 +26,7 @@ Generate and verify HOTP and TOTP codes with sensible defaults.
 ## 🔧 Installation
 
 ```bash
-bun add @dws-std/totp
+bun add @clov-std/totp
 ```
 
 ## ⚙️ Usage
@@ -36,7 +36,7 @@ bun add @dws-std/totp
 Generates an HOTP code from a secret and a counter.
 
 ```ts
-import { generateHOTP } from '@dws-std/totp';
+import { generateHOTP } from '@clov-std/totp';
 
 const otp = await generateHOTP({
 	secret: 'JBSWY3DPEHPK3PXP',
@@ -71,7 +71,7 @@ const otp = await generateHOTP({
 Verifies an HOTP code for a given counter. Use `window` to accept future counters.
 
 ```ts
-import { verifyHOTP } from '@dws-std/totp';
+import { verifyHOTP } from '@clov-std/totp';
 
 const isValid = await verifyHOTP({
 	secret: 'JBSWY3DPEHPK3PXP',
@@ -98,7 +98,7 @@ That checks counters `42`, `43`, `44`, and `45`.
 Generates a TOTP code from a secret and the current time.
 
 ```ts
-import { generateTOTP } from '@dws-std/totp';
+import { generateTOTP } from '@clov-std/totp';
 
 const otp = await generateTOTP({
 	secret: 'JBSWY3DPEHPK3PXP'
@@ -136,7 +136,7 @@ const otp = await generateTOTP({
 Verifies a TOTP code for the current time or a provided timestamp.
 
 ```ts
-import { verifyTOTP } from '@dws-std/totp';
+import { verifyTOTP } from '@clov-std/totp';
 
 const isValid = await verifyTOTP({
 	secret: 'JBSWY3DPEHPK3PXP',
@@ -169,7 +169,7 @@ Generates a random base32-encoded secret, suitable for both HOTP and TOTP.
 The argument is the number of chars (each carries 5 bits of entropy).
 
 ```ts
-import { generateOTPSecret } from '@dws-std/totp';
+import { generateOTPSecret } from '@clov-std/totp';
 
 const secret = generateOTPSecret(32);
 
@@ -182,7 +182,7 @@ Builds an `otpauth://` provisioning URI (Key Uri Format) you can encode into a Q
 The `type` field selects between time-based and counter-based credentials.
 
 ```ts
-import { buildOtpauthUrl, generateOTPSecret } from '@dws-std/totp';
+import { buildOtpauthUrl, generateOTPSecret } from '@clov-std/totp';
 
 const secret = generateOTPSecret(32);
 
@@ -190,9 +190,9 @@ const url = buildOtpauthUrl({
 	type: 'totp',
 	secret,
 	accountName: 'alice@example.com',
-	issuer: 'DWS'
+	issuer: 'Clov'
 });
-// otpauth://totp/DWS%3Aalice%40example.com?secret=...&issuer=DWS&algorithm=SHA1&digits=6&period=30
+// otpauth://totp/Clov%3Aalice%40example.com?secret=...&issuer=Clov&algorithm=SHA1&digits=6&period=30
 ```
 
 For HOTP, pass a `counter` instead of a `period`:
@@ -202,17 +202,17 @@ const url = buildOtpauthUrl({
 	type: 'hotp',
 	secret,
 	accountName: 'alice@example.com',
-	issuer: 'DWS',
+	issuer: 'Clov',
 	counter: 0
 });
-// otpauth://hotp/DWS%3Aalice%40example.com?secret=...&issuer=DWS&algorithm=SHA1&digits=6&counter=0
+// otpauth://hotp/Clov%3Aalice%40example.com?secret=...&issuer=Clov&algorithm=SHA1&digits=6&counter=0
 ```
 
 `digits` defaults to `6` and `algorithm` to `'SHA-1'`. The algorithm is normalised to the dash-less spelling the URI format expects (`SHA-256` -> `SHA256`).
 
 ## 🚨 Error handling
 
-All runtime errors are thrown as `Exception` instances from `@dws-std/error`.
+All runtime errors are thrown as `Exception` instances from `@clov-std/error`.
 
 | Key                   | When                                              |
 | --------------------- | ------------------------------------------------- |
@@ -223,8 +223,8 @@ All runtime errors are thrown as `Exception` instances from `@dws-std/error`.
 | `totp.hmac_failed`    | The underlying HMAC operation failed unexpectedly |
 
 ```ts
-import { Exception } from '@dws-std/error';
-import { TOTP_ERROR_KEYS, generateTOTP } from '@dws-std/totp';
+import { Exception } from '@clov-std/error';
+import { TOTP_ERROR_KEYS, generateTOTP } from '@clov-std/totp';
 
 try {
 	const otp = await generateTOTP({
@@ -241,7 +241,7 @@ try {
 
 ## 📚 API Reference
 
-Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
+Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
 
 ## ⚖️ License
 
@@ -249,4 +249,4 @@ MIT - Feel free to use it.
 
 ## 📧 Contact
 
-- GitHub: [Dominus-Web-Service](https://github.com/Dominus-Web-Service/packages)
+- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)

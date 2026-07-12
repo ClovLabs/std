@@ -1,4 +1,4 @@
-import { HttpException } from '@dws-std/error';
+import { HttpException } from '@clov-std/error';
 import { describe, expect, test } from 'bun:test';
 
 import { LocalizedHttpException } from '#/exception/localized-http-exception';

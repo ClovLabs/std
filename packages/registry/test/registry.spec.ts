@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import { Registry, REGISTRY_ERROR_KEYS } from '#/registry';

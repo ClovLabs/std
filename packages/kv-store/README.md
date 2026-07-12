@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/kv-store/logo-kv-store.png" alt="DWS KV Store logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/kv-store/logo-kv-store.png" alt="Clov KV Store logo" width="200" />
 </p>
 
-# 🗃️ DWS KV Store
+# 🗃️ Clov KV Store
 
 A lightweight, abstract key-value store with TTL support, increment/decrement operations, and built-in input validation.  
 Swap between in-memory and Redis without changing a single line of business logic.
@@ -12,7 +12,7 @@ Swap between in-memory and Redis without changing a single line of business logi
 Every project eventually needs a key-value store — for caching, rate-limiting, sessions, counters, etc.  
 You either couple yourself to a specific backend or build your own abstraction every time.
 
-`@dws-std/kv-store` gives you a clean `KvStore` base class with two ready-to-use adapters:
+`@clov-std/kv-store` gives you a clean `KvStore` base class with two ready-to-use adapters:
 
 - **`MemoryStore`** — in-memory Map with TTL, automatic expired-entry cleanup, and configurable max size.
 - **`BunRedisStore`** — thin wrapper around Bun's native `RedisClient`, same API, no surprises.
@@ -35,12 +35,12 @@ Both share the same interface, so switching from memory to Redis (or writing you
 - 🛡️ **Built-in Validation** : Keys, TTL values, and amounts are validated before reaching the storage layer.
 - 🧠 **MemoryStore** : Zero-dependency in-memory store with background cleanup and optional max size.
 - 🔴 **BunRedisStore** : Native Bun Redis adapter, async by default.
-- 📦 **Zero External Dependencies** : Only depends on `@dws-std/error`.
+- 📦 **Zero External Dependencies** : Only depends on `@clov-std/error`.
 
 ## 🔧 Installation
 
 ```bash
-bun add @dws-std/kv-store
+bun add @clov-std/kv-store
 ```
 
 ## ⚙️ Usage
@@ -48,7 +48,7 @@ bun add @dws-std/kv-store
 ### MemoryStore — In-Memory
 
 ```ts
-import { MemoryStore } from '@dws-std/kv-store';
+import { MemoryStore } from '@clov-std/kv-store';
 
 const store = new MemoryStore();
 
@@ -79,7 +79,7 @@ const store = new MemoryStore(
 ### BunRedisStore — Redis
 
 ```ts
-import { BunRedisStore } from '@dws-std/kv-store';
+import { BunRedisStore } from '@clov-std/kv-store';
 
 const store = new BunRedisStore('redis://localhost:6379');
 await store.connect();
@@ -98,7 +98,7 @@ store.close();
 Extend `KvStore` and implement the abstract methods:
 
 ```ts
-import { KvStore } from '@dws-std/kv-store';
+import { KvStore } from '@clov-std/kv-store';
 
 class MyStore extends KvStore {
 	get<T>(key: string): T | null {
@@ -132,7 +132,7 @@ Use `KvStore._validateKey()`, `KvStore._validateTtl()`, and `KvStore._validateAm
 
 ## 📚 API Reference
 
-Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
+Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
 
 ## ⚖️ License
 
@@ -140,4 +140,4 @@ MIT — Feel free to use it.
 
 ## 📧 Contact
 
-- GitHub: [Dominus-Web-Service](https://github.com/Dominus-Web-Service/packages)
+- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)

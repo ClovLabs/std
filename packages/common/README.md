@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/Dominus-Web-Service/std@main/packages/common/logo-common.png" alt="DWS Common logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/common/logo-common.png" alt="Clov Common logo" width="200" />
 </p>
 
-# 🧰 DWS Common
+# 🧰 Clov Common
 
 Small utilities you'll want everywhere, but don't belong to any specific domain.  
-Instead of copy-pasting the same helpers across every project, `@dws-std/common` collects them in one place so you can just import and move on.
+Instead of copy-pasting the same helpers across every project, `@clov-std/common` collects them in one place so you can just import and move on.
 
 ## 📌 Table of Contents
 
@@ -17,7 +17,7 @@ Instead of copy-pasting the same helpers across every project, `@dws-std/common`
 ## 🔧 Installation
 
 ```bash
-bun add @dws-std/common
+bun add @clov-std/common
 ```
 
 ## 🛠️ Utilities
@@ -28,7 +28,7 @@ Converts a human-readable time expression into a numeric value in the unit of yo
 Useful anywhere you need to define durations without sprinkling magic numbers — JWT expiry, TTLs, rate-limit windows, you name it.
 
 ```ts
-import { parseHumanTime } from '@dws-std/common';
+import { parseHumanTime } from '@clov-std/common';
 
 parseHumanTime('2 hours'); // 7200 (seconds by default)
 parseHumanTime('30 mins'); // 1800
@@ -69,7 +69,7 @@ Throws an `Exception` if the expression is invalid or the unit is unrecognised.
 
 ## 📚 API Reference
 
-Full docs: [https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
+Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
 
 ## ⚖️ License
 
@@ -77,4 +77,4 @@ MIT - Feel free to use it.
 
 ## 📧 Contact
 
-- GitHub: [Dominus-Web-Service](https://github.com/Dominus-Web-Service/packages)
+- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)

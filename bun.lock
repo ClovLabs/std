@@ -3,13 +3,13 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "dws-packages",
+      "name": "clov-std",
     },
     "packages/common": {
-      "name": "@dws-std/common",
-      "version": "1.3.0",
+      "name": "@clov-std/common",
+      "version": "1.3.1",
       "dependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
       "devDependencies": {
         "@types/bun": "catalog:base",
@@ -19,15 +19,15 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
     },
     "packages/elysia-ratelimit": {
-      "name": "@dws-std/elysia-ratelimit",
-      "version": "1.2.0",
+      "name": "@clov-std/elysia-ratelimit",
+      "version": "1.2.1",
       "dependencies": {
-        "@dws-std/error": "workspace:^",
-        "@dws-std/kv-store": "workspace:^",
+        "@clov-std/error": "workspace:^",
+        "@clov-std/kv-store": "workspace:^",
         "elysia": "^1.4.29",
       },
       "devDependencies": {
@@ -38,14 +38,14 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@dws-std/error": "workspace:^",
-        "@dws-std/kv-store": "workspace:^",
+        "@clov-std/error": "workspace:^",
+        "@clov-std/kv-store": "workspace:^",
         "elysia": "^1.4.29",
       },
     },
     "packages/error": {
-      "name": "@dws-std/error",
-      "version": "2.3.0",
+      "name": "@clov-std/error",
+      "version": "2.3.1",
       "devDependencies": {
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
@@ -55,10 +55,10 @@
       },
     },
     "packages/i18n": {
-      "name": "@dws-std/i18n",
-      "version": "1.4.0",
+      "name": "@clov-std/i18n",
+      "version": "1.5.1",
       "dependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
       "devDependencies": {
         "@types/bun": "catalog:base",
@@ -68,14 +68,14 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
     },
     "packages/jwt": {
-      "name": "@dws-std/jwt",
-      "version": "1.4.0",
+      "name": "@clov-std/jwt",
+      "version": "1.4.1",
       "dependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
         "jose": "^6.2.3",
       },
       "devDependencies": {
@@ -86,14 +86,14 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
     },
     "packages/kv-store": {
-      "name": "@dws-std/kv-store",
-      "version": "1.1.0",
+      "name": "@clov-std/kv-store",
+      "version": "1.1.1",
       "dependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
       "devDependencies": {
         "@types/bun": "catalog:base",
@@ -103,15 +103,15 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
     },
     "packages/logger": {
-      "name": "@dws-std/logger",
-      "version": "1.0.0",
+      "name": "@clov-std/logger",
+      "version": "1.0.2",
       "dependencies": {
-        "@dws-std/common": "workspace:^",
-        "@dws-std/error": "workspace:^",
+        "@clov-std/common": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
       "devDependencies": {
         "@types/bun": "catalog:base",
@@ -123,15 +123,15 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@dws-std/common": "workspace:^",
-        "@dws-std/error": "workspace:^",
+        "@clov-std/common": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
     },
     "packages/registry": {
-      "name": "@dws-std/registry",
-      "version": "1.3.0",
+      "name": "@clov-std/registry",
+      "version": "1.3.1",
       "dependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
       "devDependencies": {
         "@types/bun": "catalog:base",
@@ -141,14 +141,14 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
     },
     "packages/totp": {
-      "name": "@dws-std/totp",
-      "version": "1.3.0",
+      "name": "@clov-std/totp",
+      "version": "1.3.2",
       "dependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
       "devDependencies": {
         "@types/bun": "catalog:base",
@@ -158,7 +158,7 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@dws-std/error": "workspace:^",
+        "@clov-std/error": "workspace:^",
       },
     },
   },
@@ -174,23 +174,23 @@
   "packages": {
     "@borewit/text-codec": ["@borewit/text-codec@0.2.2", "", {}, "sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ=="],
 
-    "@dws-std/common": ["@dws-std/common@workspace:packages/common"],
+    "@clov-std/common": ["@clov-std/common@workspace:packages/common"],
 
-    "@dws-std/elysia-ratelimit": ["@dws-std/elysia-ratelimit@workspace:packages/elysia-ratelimit"],
+    "@clov-std/elysia-ratelimit": ["@clov-std/elysia-ratelimit@workspace:packages/elysia-ratelimit"],
 
-    "@dws-std/error": ["@dws-std/error@workspace:packages/error"],
+    "@clov-std/error": ["@clov-std/error@workspace:packages/error"],
 
-    "@dws-std/i18n": ["@dws-std/i18n@workspace:packages/i18n"],
+    "@clov-std/i18n": ["@clov-std/i18n@workspace:packages/i18n"],
 
-    "@dws-std/jwt": ["@dws-std/jwt@workspace:packages/jwt"],
+    "@clov-std/jwt": ["@clov-std/jwt@workspace:packages/jwt"],
 
-    "@dws-std/kv-store": ["@dws-std/kv-store@workspace:packages/kv-store"],
+    "@clov-std/kv-store": ["@clov-std/kv-store@workspace:packages/kv-store"],
 
-    "@dws-std/logger": ["@dws-std/logger@workspace:packages/logger"],
+    "@clov-std/logger": ["@clov-std/logger@workspace:packages/logger"],
 
-    "@dws-std/registry": ["@dws-std/registry@workspace:packages/registry"],
+    "@clov-std/registry": ["@clov-std/registry@workspace:packages/registry"],
 
-    "@dws-std/totp": ["@dws-std/totp@workspace:packages/totp"],
+    "@clov-std/totp": ["@clov-std/totp@workspace:packages/totp"],
 
     "@oxfmt/binding-android-arm-eabi": ["@oxfmt/binding-android-arm-eabi@0.56.0", "", { "os": "android", "cpu": "arm" }, "sha512-CSCxi7ovYojgfdPOdUb9T508HKeAdDIKeRGg7x8IZwVJrWz9gVgX7MbUnFqtQAE4QvoNo07mj2JlwnOzJw4qqA=="],
 

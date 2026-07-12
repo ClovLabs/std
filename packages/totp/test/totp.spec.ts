@@ -1,4 +1,4 @@
-import { Exception } from '@dws-std/error';
+import { Exception } from '@clov-std/error';
 import { describe, expect, test } from 'bun:test';
 
 import { generateHOTP, HOTP_ERROR_KEYS } from '#/hotp';

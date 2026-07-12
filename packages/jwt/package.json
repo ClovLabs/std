@@ -1,10 +1,10 @@
 {
-  "name": "@dws-std/jwt",
+  "name": "@clov-std/jwt",
   "version": "1.4.1",
   "description": "JWT utilities and helpers for secure token management.",
   "keywords": [
     "bun",
-    "dws",
+    "clov",
     "helpers",
     "jwt",
     "open-source",
@@ -14,10 +14,10 @@
     "utilities"
   ],
   "license": "MIT",
-  "author": "Dominus Web Services (DWS)",
+  "author": "Clov",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Dominus-Web-Service/std",
+    "url": "https://github.com/ClovLabs/std",
     "directory": "packages/jwt"
   },
   "files": [
@@ -41,7 +41,7 @@
     "test": "bun test --pass-with-no-tests --coverage"
   },
   "dependencies": {
-    "@dws-std/error": "workspace:^",
+    "@clov-std/error": "workspace:^",
     "jose": "^6.2.3"
   },
   "devDependencies": {
@@ -52,6 +52,6 @@
     "typescript": "catalog:base"
   },
   "peerDependencies": {
-    "@dws-std/error": "workspace:^"
+    "@clov-std/error": "workspace:^"
   }
 }

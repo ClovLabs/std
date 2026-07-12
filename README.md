@@ -1,21 +1,21 @@
-# DWS Standard Library
+# Clov Standard Library
 
-The shared TypeScript toolkit behind **Dominus Web Services**.
-Everything lives in this monorepo, is built with [Bun](https://bun.sh/), and published on npm under the `@dws-std/` scope.
+The shared TypeScript toolkit behind **Clov**.
+Everything lives in this monorepo, is built with [Bun](https://bun.sh/), and published on npm under the `@clov-std/` scope.
 
 ## Packages
 
 | Package                                                  | What it does                                                                                                            |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [`@dws-std/common`](packages/common)                     | Common utilities and types library for building robust applications.                                                    |
-| [`@dws-std/elysia-ratelimit`](packages/elysia-ratelimit) | Elysia plugin for flexible, type-safe rate limiting with support for custom key generators and various backends.        |
-| [`@dws-std/error`](packages/error)                       | Structured TypeScript exceptions with UUID v7 tracking, HTTP status codes, and automatic timestamps.                    |
-| [`@dws-std/i18n`](packages/i18n)                         | Type-safe i18n for TypeScript — define localized exception and message catalogs with compile-time validated parameters. |
-| [`@dws-std/jwt`](packages/jwt)                           | JWT utilities and helpers for secure token management.                                                                  |
-| [`@dws-std/kv-store`](packages/kv-store)                 | Type-safe key-value store abstraction with support for multiple backends.                                               |
-| [`@dws-std/logger`](packages/logger)                     | Type-safe logging library with support for structured logs and multiple output formats.                                 |
-| [`@dws-std/registry`](packages/registry)                 | Centralized, type-safe registry for managing named instances.                                                           |
-| [`@dws-std/totp`](packages/totp)                         | Time-based One-Time Password (TOTP) implementation in TypeScript.                                                       |
+| [`@clov-std/common`](packages/common)                     | Common utilities and types library for building robust applications.                                                    |
+| [`@clov-std/elysia-ratelimit`](packages/elysia-ratelimit) | Elysia plugin for flexible, type-safe rate limiting with support for custom key generators and various backends.        |
+| [`@clov-std/error`](packages/error)                       | Structured TypeScript exceptions with UUID v7 tracking, HTTP status codes, and automatic timestamps.                    |
+| [`@clov-std/i18n`](packages/i18n)                         | Type-safe i18n for TypeScript — define localized exception and message catalogs with compile-time validated parameters. |
+| [`@clov-std/jwt`](packages/jwt)                           | JWT utilities and helpers for secure token management.                                                                  |
+| [`@clov-std/kv-store`](packages/kv-store)                 | Type-safe key-value store abstraction with support for multiple backends.                                               |
+| [`@clov-std/logger`](packages/logger)                     | Type-safe logging library with support for structured logs and multiple output formats.                                 |
+| [`@clov-std/registry`](packages/registry)                 | Centralized, type-safe registry for managing named instances.                                                           |
+| [`@clov-std/totp`](packages/totp)                         | Time-based One-Time Password (TOTP) implementation in TypeScript.                                                       |
 
 ## Getting Started
 
@@ -38,21 +38,21 @@ bun install
 
 ```
 packages/
-├── common/              # @dws-std/common
-├── elysia-ratelimit/    # @dws-std/elysia-ratelimit
-├── error/               # @dws-std/error
-├── i18n/                # @dws-std/i18n
-├── jwt/                 # @dws-std/jwt
-├── kv-store/            # @dws-std/kv-store
-├── logger/              # @dws-std/logger
-├── registry/            # @dws-std/registry
-└── totp/                # @dws-std/totp
+├── common/              # @clov-std/common
+├── elysia-ratelimit/    # @clov-std/elysia-ratelimit
+├── error/               # @clov-std/error
+├── i18n/                # @clov-std/i18n
+├── jwt/                 # @clov-std/jwt
+├── kv-store/            # @clov-std/kv-store
+├── logger/              # @clov-std/logger
+├── registry/            # @clov-std/registry
+└── totp/                # @clov-std/totp
 ```
 
 ## Documentation
 
-[https://dominus-web-service.github.io/std/](https://dominus-web-service.github.io/std/)
+[https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
 
 ## License
 
-MIT - [Dominus Web Services (DWS)](https://github.com/Dominus-Web-Service)
+MIT - [Clov](https://github.com/ClovLabs)
