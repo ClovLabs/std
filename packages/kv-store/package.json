@@ -1,6 +1,6 @@
 {
   "name": "@clov-std/kv-store",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter.",
   "keywords": [
     "bun",
