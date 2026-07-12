@@ -1,6 +1,6 @@
 {
   "name": "@clov-std/jwt",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "JWT utilities and helpers for secure token management.",
   "keywords": [
     "bun",
