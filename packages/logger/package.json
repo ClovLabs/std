@@ -1,6 +1,6 @@
 {
   "name": "@clov-std/logger",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Type-safe logging library for Bun, modular sink pattern, transform streams, and immutable API design.",
   "keywords": [
     "bun",
