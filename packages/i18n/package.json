@@ -1,6 +1,6 @@
 {
   "name": "@clov-std/i18n",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Type-safe i18n for TypeScript, define localized exception and message catalogs with compile-time validated parameters.",
   "keywords": [
     "bun",
