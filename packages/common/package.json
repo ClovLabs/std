@@ -1,6 +1,6 @@
 {
   "name": "@clov-std/common",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Common utilities and types library for building robust applications.",
   "keywords": [
     "bun",
