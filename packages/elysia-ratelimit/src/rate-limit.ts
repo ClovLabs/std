@@ -1,5 +1,5 @@
 // oxlint-disable typescript/ban-types
-import { HttpException } from '@clov-std/error';
+import { Exception } from '@clov-std/error';
 import { type KvStore, MemoryStore } from '@clov-std/kv-store';
 import type { Server } from 'bun';
 import { Elysia, type HTTPHeaders, type StatusMap } from 'elysia';
@@ -102,10 +102,9 @@ export const rateLimitPlugin = (
 
 					if (count > limit) {
 						set.status = 429;
-						throw new HttpException('Too Many Requests', {
+						throw new Exception('Too Many Requests', {
 							key: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
-							cause: { limit, window, remaining: 0, reset: resetTime },
-							status: 429
+							cause: { limit, window, remaining: 0, reset: resetTime }
 						});
 					}
 				}
