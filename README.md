@@ -9,7 +9,7 @@ Everything lives in this monorepo, is built with [Bun](https://bun.sh/), and pub
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | [`@clov-std/common`](packages/common)                     | Common utilities and types library for building robust applications.                                                    |
 | [`@clov-std/elysia-ratelimit`](packages/elysia-ratelimit) | Elysia plugin for flexible, type-safe rate limiting with support for custom key generators and various backends.        |
-| [`@clov-std/error`](packages/error)                       | Structured TypeScript exceptions with UUID v7 tracking, HTTP status codes, and automatic timestamps.                    |
+| [`@clov-std/error`](packages/error)                       | Structured TypeScript exceptions with a machine-readable error key and a typed cause.                    |
 | [`@clov-std/i18n`](packages/i18n)                         | Type-safe i18n for TypeScript — define localized exception and message catalogs with compile-time validated parameters. |
 | [`@clov-std/jwt`](packages/jwt)                           | JWT utilities and helpers for secure token management.                                                                  |
 | [`@clov-std/kv-store`](packages/kv-store)                 | Type-safe key-value store abstraction with support for multiple backends.                                               |
