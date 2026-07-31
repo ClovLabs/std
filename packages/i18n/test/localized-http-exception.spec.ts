@@ -1,11 +1,12 @@
-import { HttpException } from '@clov-std/error';
+import { Exception } from '@clov-std/error';
 import { describe, expect, test } from 'bun:test';
 
+import { LocalizedException } from '#/exception/localized-exception';
 import { LocalizedHttpException } from '#/exception/localized-http-exception';
 import { resolveMessage } from '#/resolve-message';
 
 describe.concurrent('LocalizedHttpException', (): void => {
-	test('should extend HttpException and Error', (): void => {
+	test('should extend LocalizedException, Exception and Error', (): void => {
 		const error = new LocalizedHttpException('ns.key', {
 			status: 'NOT_FOUND',
 			translations: { en: 'Not found' },
@@ -13,7 +14,8 @@ describe.concurrent('LocalizedHttpException', (): void => {
 		});
 
 		expect(error).toBeInstanceOf(LocalizedHttpException);
-		expect(error).toBeInstanceOf(HttpException);
+		expect(error).toBeInstanceOf(LocalizedException);
+		expect(error).toBeInstanceOf(Exception);
 		expect(error).toBeInstanceOf(Error);
 	});
 

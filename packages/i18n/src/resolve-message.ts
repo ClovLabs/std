@@ -1,4 +1,4 @@
-import type { LocalizedHttpException } from './exception/localized-http-exception';
+import type { LocalizedException } from './exception/localized-exception';
 import type { LocalizedMessage } from './message/type/localized-message';
 
 const interpolate = (template: string, params: Readonly<Record<string, string>>): string =>
@@ -8,12 +8,10 @@ const interpolate = (template: string, params: Readonly<Record<string, string>>)
 	);
 
 /**
- * Turns a {@link LocalizedMessage} or {@link LocalizedHttpException} into
- * a plain string for the requested locale.
+ * Turns a {@link LocalizedMessage} or {@link LocalizedException} into a plain string for
+ * the requested locale, replacing `{{placeholder}}` tokens with values from `target.params`.
  *
- * `{{placeholder}}` tokens are replaced with matching values from `target.params`.
- * Falls back to `target.defaultLocale` when `locale` is omitted or has no
- * translation. Returns an empty string only when the default locale is missing too.
+ * Falls back to `target.defaultLocale`, then to an empty string.
  *
  * @param target - Message or exception to resolve.
  * @param locale - Desired locale (e.g. `'fr'`). Defaults to `target.defaultLocale`.
@@ -21,7 +19,7 @@ const interpolate = (template: string, params: Readonly<Record<string, string>>)
  * @returns Translated string with placeholders interpolated.
  */
 export const resolveMessage = (
-	target: LocalizedHttpException | LocalizedMessage,
+	target: LocalizedException | LocalizedMessage,
 	locale?: string
 ): string => {
 	const template =

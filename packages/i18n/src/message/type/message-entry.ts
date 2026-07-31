@@ -1,11 +1,7 @@
 import type { Translations } from '../../type/translations';
 
 /**
- * Blueprint for a translatable message.
- *
- * Used inside a message catalog created with `defineMessageCatalog`.
- * Interpolation params are derived from the `{{placeholder}}` tokens in
- * `translations`, so there is nothing extra to declare.
+ * Blueprint for a translatable message, used inside `defineMessageCatalog`.
  *
  * @template TTranslations - Locale-to-template map (e.g. `{ en: 'Hi {{name}}' }`).
  */
