@@ -5,9 +5,19 @@ on:
     workflow_dispatch:
         inputs:
             package:
-                description: 'Package to deploy (folder name in packages/)'
+                description: 'Package to deploy'
                 required: true
-                type: string
+                type: choice
+                options:
+                    - common
+                    - elysia-ratelimit
+                    - error
+                    - i18n
+                    - jwt
+                    - kv-store
+                    - logger
+                    - registry
+                    - totp
             bump:
                 description: 'Version bump type'
                 required: true
@@ -21,9 +31,9 @@ on:
                 required: true
                 type: choice
                 options:
-                    - stable
-                    - canary
                     - alpha
+                    - canary
+                    - stable
 
 # Required secrets:
 # - GPG_KEY: GPG key for signing commits/tags
@@ -33,42 +43,14 @@ on:
 permissions:
     contents: read
 
+concurrency:
+    group: deploy-${{ inputs.package }}
+    cancel-in-progress: false
+
 jobs:
-    # ─── Validate package exists ────────────────────────
-    validate:
-        name: Validate
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v6
-
-            - name: Check package exists
-              run: |
-                  PKG_DIR="packages/${{ inputs.package }}"
-                  if [ ! -f "$PKG_DIR/package.json" ]; then
-                    echo "::error::Package '${{ inputs.package }}' not found in packages/"
-                    exit 1
-                  fi
-
-    # ─── Build all packages (dependency order) ──────────
-    build:
-        name: CI — Build
-        needs: validate
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v6
-
-            - name: Setup Bun Project
-              uses: ./.github/actions/setup-bun-project
-
-            - name: Build
-              run: bun run build
-
-    # ─── Lint & Test in parallel (after build gate) ─────
+    # ─── Lint & Test the targeted package ───────────────
     ci:
         name: CI — ${{ matrix.check }}
-        needs: build
         runs-on: ubuntu-latest
         strategy:
             fail-fast: true
@@ -81,6 +63,7 @@ jobs:
             - name: Setup Bun Project
               uses: ./.github/actions/setup-bun-project
 
+            # Root build resolves workspace dependency order
             - name: Build
               run: bun run build
 
@@ -91,7 +74,7 @@ jobs:
     # ─── Release ────────────────────────────────────────
     release:
         name: Release
-        needs: [validate, ci]
+        needs: ci
         runs-on: ubuntu-latest
         permissions:
             id-token: write
@@ -145,7 +128,7 @@ jobs:
 
             - name: Publish to NPM
               working-directory: packages/${{ inputs.package }}
-              run: npm publish *.tgz --access public --tag ${{ steps.version.outputs.npm-tag }} --provenance
+              run: npm publish ./*.tgz --access public --tag ${{ steps.version.outputs.npm-tag }} --provenance
 
             - name: Generate changelog
               id: changelog
