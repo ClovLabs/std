@@ -14,18 +14,16 @@
 <section class="tsd-panel">
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="resolvemessage"><span class="tsd-kind-call-signature">resolveMessage</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">target</span><span class="tsd-signature-symbol">:</span> <a href="../classes/_clov-std_i18n.LocalizedHttpException.html" class="tsd-signature-type tsd-kind-class">LocalizedHttpException</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">|</span> <a href="../interfaces/_clov-std_i18n.LocalizedMessage.html" class="tsd-signature-type tsd-kind-interface">LocalizedMessage</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">locale</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><a href="#resolvemessage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="resolvemessage"><span class="tsd-kind-call-signature">resolveMessage</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">target</span><span class="tsd-signature-symbol">:</span> <a href="../classes/_clov-std_i18n.LocalizedException.html" class="tsd-signature-type tsd-kind-class">LocalizedException</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">|</span> <a href="../interfaces/_clov-std_i18n.LocalizedMessage.html" class="tsd-signature-type tsd-kind-interface">LocalizedMessage</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">locale</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><a href="#resolvemessage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>Turns a <a href="../interfaces/_clov-std_i18n.LocalizedMessage.html" class="tsd-kind-interface">LocalizedMessage</a> or <a href="../classes/_clov-std_i18n.LocalizedHttpException.html" class="tsd-kind-class">LocalizedHttpException</a> into
-a plain string for the requested locale.</p>
-<p><code>{{placeholder}}</code> tokens are replaced with matching values from <code>target.params</code>.
-Falls back to <code>target.defaultLocale</code> when <code>locale</code> is omitted or has no
-translation. Returns an empty string only when the default locale is missing too.</p>
+<div class="tsd-comment tsd-typography"><p>Turns a <a href="../interfaces/_clov-std_i18n.LocalizedMessage.html" class="tsd-kind-interface">LocalizedMessage</a> or <a href="../classes/_clov-std_i18n.LocalizedException.html" class="tsd-kind-class">LocalizedException</a> into a plain string for
+the requested locale, replacing <code>{{placeholder}}</code> tokens with values from <code>target.params</code>.</p>
+<p>Falls back to <code>target.defaultLocale</code>, then to an empty string.</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
-<li><span><span class="tsd-kind-parameter">target</span>: <a href="../classes/_clov-std_i18n.LocalizedHttpException.html" class="tsd-signature-type tsd-kind-class">LocalizedHttpException</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">|</span> <a href="../interfaces/_clov-std_i18n.LocalizedMessage.html" class="tsd-signature-type tsd-kind-interface">LocalizedMessage</a></span>
+<li><span><span class="tsd-kind-parameter">target</span>: <a href="../classes/_clov-std_i18n.LocalizedException.html" class="tsd-signature-type tsd-kind-class">LocalizedException</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span> <span class="tsd-signature-symbol">|</span> <a href="../interfaces/_clov-std_i18n.LocalizedMessage.html" class="tsd-signature-type tsd-kind-interface">LocalizedMessage</a></span>
 <div class="tsd-comment tsd-typography"><p>Message or exception to resolve.</p>
 </div></li>
 <li><span><code class="tsd-tag">Optional</code><span class="tsd-kind-parameter">locale</span>: <span class="tsd-signature-type">string</span></span>
@@ -34,7 +32,7 @@ translation. Returns an empty string only when the default locale is missing too
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4><p>Translated string with placeholders interpolated.</p>
 <aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/ClovLabs/std/blob/8fe4d5f0343183bd041ffd83fc6f3f2c8840a940/packages/i18n/src/resolve-message.ts#L23">packages/i18n/src/resolve-message.ts:23</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/ClovLabs/std/blob/abd2db407b2c68a3cef7bf944fea2b7c07945137/packages/i18n/src/resolve-message.ts#L21">packages/i18n/src/resolve-message.ts:21</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
