@@ -1,19 +1,59 @@
 // oxlint-disable promise/no-await-in-loop
 import { describe, expect, test } from 'bun:test';
-import { Elysia } from 'elysia';
+import { Elysia, status } from 'elysia';
 
-import { RATE_LIMIT_ERROR_KEYS, rateLimitPlugin } from '#/rate-limit';
+import { RATE_LIMIT_ERROR_KEYS, RateLimitException, rateLimitPlugin } from '#/rate-limit';
 
-describe.concurrent('rateLimitPlugin', () => {
+interface RateLimitBody {
+	type: string;
+	title: string;
+	detail?: string;
+}
+
+/**
+ * Mirrors an API error plugin: a handler for the rate limit exception, then a catch-all.
+ * The catch-all is registered last on purpose, Elysia runs the first matching handler.
+ */
+const errorPlugin = new Elysia({ name: 'error-plugin' })
+	.error(RateLimitException, ({ error }) =>
+		status(429, {
+			type: 'request.rateLimitExceeded',
+			title: 'Too many requests. Please try again later.',
+			detail: `Retry in ${error.cause?.reset ?? 0}s.`
+		})
+	)
+	.error(({ error }) =>
+		status(500, {
+			type: 'internal',
+			title: 'Internal Server Error',
+			detail: error.message
+		})
+	)
+	.as('global');
+
+/** Same idea, but matching on the error key so the API keeps no dependency on the class. */
+const keyErrorPlugin = new Elysia({ name: 'key-error-plugin' })
+	.error(({ error }) =>
+		(error as { key?: string }).key === RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED
+			? status(429, {
+					type: 'request.rateLimitExceeded',
+					title: 'Too many requests. Please try again later.'
+				})
+			: status(500, {
+					type: 'internal',
+					title: 'Internal Server Error',
+					detail: error.message
+				})
+	)
+	.as('global');
+
+describe.concurrent('rateLimitPlugin without an error handler', () => {
 	test('should return correct rate limit headers for valid requests', async () => {
 		const ip = '127.0.0.1';
 		const limit = 3;
-		const app = new Elysia().use(rateLimitPlugin()).get('/test', () => 'OK', {
-			rateLimit: {
-				limit,
-				window: 60
-			}
-		});
+		const app = new Elysia()
+			.use(rateLimitPlugin())
+			.get('/test', { rateLimit: { limit, window: 60 } }, () => 'OK');
 
 		for (let i = 0; i < limit; ++i) {
 			const response = await app.handle(
@@ -32,18 +72,12 @@ describe.concurrent('rateLimitPlugin', () => {
 		}
 	});
 
-	test('should return 429 when rate limit is exceeded', async () => {
+	test('should answer 429 with the documented body on its own', async () => {
 		const ip = '10.0.0.1';
 		const limit = 2;
 		const app = new Elysia()
 			.use(rateLimitPlugin())
-			.onError(({ error, set }) => {
-				set.status = 429;
-				return { error: (error as unknown as { key?: string }).key ?? 'unknown' };
-			})
-			.get('/limited', () => 'OK', {
-				rateLimit: { limit, window: 60 }
-			});
+			.get('/limited', { rateLimit: { limit, window: 60 } }, () => 'OK');
 
 		for (let i = 0; i < limit; ++i)
 			await app.handle(
@@ -59,16 +93,37 @@ describe.concurrent('rateLimitPlugin', () => {
 		);
 
 		expect(response.status).toEqual(429);
-		const body = (await response.json()) as { error: string };
-		expect(body.error).toEqual(RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED);
+		const body = (await response.json()) as RateLimitBody;
+		expect(body).toEqual({
+			type: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
+			title: 'Too Many Requests'
+		});
+	});
+
+	test('should keep the rate limit headers on the 429', async () => {
+		const ip = '10.0.0.2';
+		const app = new Elysia()
+			.use(rateLimitPlugin())
+			.get('/headers', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		await app.handle(
+			new Request('http://localhost/headers', { headers: { 'x-forwarded-for': ip } })
+		);
+		const response = await app.handle(
+			new Request('http://localhost/headers', { headers: { 'x-forwarded-for': ip } })
+		);
+
+		expect(response.status).toEqual(429);
+		expect(response.headers.get('X-RateLimit-Limit')).toEqual('1');
 		expect(response.headers.get('X-RateLimit-Remaining')).toEqual('0');
+		expect(parseInt(response.headers.get('X-RateLimit-Reset') ?? '0', 10)).toBeGreaterThan(0);
 	});
 
 	test('should track different IPs separately', async () => {
 		const limit = 1;
-		const app = new Elysia().use(rateLimitPlugin()).get('/per-ip', () => 'OK', {
-			rateLimit: { limit, window: 60 }
-		});
+		const app = new Elysia()
+			.use(rateLimitPlugin())
+			.get('/per-ip', { rateLimit: { limit, window: 60 } }, () => 'OK');
 
 		const responseA = await app.handle(
 			new Request('http://localhost/per-ip', {
@@ -89,13 +144,7 @@ describe.concurrent('rateLimitPlugin', () => {
 		const limit = 1;
 		const app = new Elysia()
 			.use(rateLimitPlugin())
-			.onError(({ set }) => {
-				set.status = 429;
-				return 'limited';
-			})
-			.get('/xff', () => 'OK', {
-				rateLimit: { limit, window: 60 }
-			});
+			.get('/xff', { rateLimit: { limit, window: 60 } }, () => 'OK');
 
 		// First request with chained IPs
 		const response1 = await app.handle(
@@ -118,8 +167,8 @@ describe.concurrent('rateLimitPlugin', () => {
 		const limit = 1;
 		const app = new Elysia()
 			.use(rateLimitPlugin())
-			.get('/route-a', () => 'A', { rateLimit: { limit, window: 60 } })
-			.get('/route-b', () => 'B', { rateLimit: { limit, window: 60 } });
+			.get('/route-a', { rateLimit: { limit, window: 60 } }, () => 'A')
+			.get('/route-b', { rateLimit: { limit, window: 60 } }, () => 'B');
 
 		const ip = '5.5.5.5';
 
@@ -142,13 +191,7 @@ describe.concurrent('rateLimitPlugin', () => {
 		const limit = 1;
 		const app = new Elysia()
 			.use(rateLimitPlugin())
-			.onError(({ set }) => {
-				set.status = 429;
-				return 'limited';
-			})
-			.get('/real-ip', () => 'OK', {
-				rateLimit: { limit, window: 60 }
-			});
+			.get('/real-ip', { rateLimit: { limit, window: 60 } }, () => 'OK');
 
 		const response1 = await app.handle(
 			new Request('http://localhost/real-ip', {
@@ -167,20 +210,18 @@ describe.concurrent('rateLimitPlugin', () => {
 
 	test('should use custom keyGenerator for rate limiting', async () => {
 		const limit = 1;
-		const app = new Elysia()
-			.use(rateLimitPlugin())
-			.onError(({ set }) => {
-				set.status = 429;
-				return 'limited';
-			})
-			.get('/custom-key', () => 'OK', {
+		const app = new Elysia().use(rateLimitPlugin()).get(
+			'/custom-key',
+			{
 				rateLimit: {
 					limit,
 					window: 60,
 					keyGenerator: ({ ip, request }) =>
 						`${ip}:${request.headers.get('authorization') ?? 'anon'}`
 				}
-			});
+			},
+			() => 'OK'
+		);
 
 		// Same IP, different tokens — should NOT share the limit
 		const response1 = await app.handle(
@@ -208,19 +249,17 @@ describe.concurrent('rateLimitPlugin', () => {
 
 	test('should rate limit by session when keyGenerator uses session id', async () => {
 		const limit = 1;
-		const app = new Elysia()
-			.use(rateLimitPlugin())
-			.onError(({ set }) => {
-				set.status = 429;
-				return 'limited';
-			})
-			.get('/session', () => 'OK', {
+		const app = new Elysia().use(rateLimitPlugin()).get(
+			'/session',
+			{
 				rateLimit: {
 					limit,
 					window: 60,
 					keyGenerator: ({ request }) => request.headers.get('x-session-id') ?? 'unknown'
 				}
-			});
+			},
+			() => 'OK'
+		);
 
 		// Same IP but different sessions — should NOT share the limit
 		const response1 = await app.handle(
@@ -249,20 +288,18 @@ describe.concurrent('rateLimitPlugin', () => {
 	test('should rate limit authenticated routes by ip + accessToken', async () => {
 		const limit = 2;
 		const sharedIp = '42.42.42.42';
-		const app = new Elysia()
-			.use(rateLimitPlugin())
-			.onError(({ set }) => {
-				set.status = 429;
-				return 'limited';
-			})
-			.get('/api/data', () => 'OK', {
+		const app = new Elysia().use(rateLimitPlugin()).get(
+			'/api/data',
+			{
 				rateLimit: {
 					limit,
 					window: 60,
 					keyGenerator: ({ ip, request }) =>
 						`${ip}:${request.headers.get('authorization') ?? ip}`
 				}
-			});
+			},
+			() => 'OK'
+		);
 
 		// User A (same office IP) exhausts their limit
 		for (let i = 0; i < limit; ++i) {
@@ -311,5 +348,102 @@ describe.concurrent('rateLimitPlugin', () => {
 			})
 		);
 		expect(blockedB.status).toEqual(429);
+	});
+});
+
+describe.concurrent('rateLimitPlugin behind an application error plugin', () => {
+	const exceed = async (app: { handle: (request: Request) => Promise<Response> }, ip: string) => {
+		await app.handle(
+			new Request('http://localhost/guarded', {
+				headers: { 'x-forwarded-for': ip }
+			})
+		);
+		return app.handle(
+			new Request('http://localhost/guarded', {
+				headers: { 'x-forwarded-for': ip }
+			})
+		);
+	};
+
+	test('should answer the body built by the error plugin, not the default one', async () => {
+		const app = new Elysia()
+			.use(errorPlugin)
+			.use(rateLimitPlugin())
+			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		const response = await exceed(app, '20.0.0.1');
+
+		expect(response.status).toEqual(429);
+		const body = (await response.json()) as RateLimitBody;
+		expect(body.type).toEqual('request.rateLimitExceeded');
+		expect(body.title).toEqual('Too many requests. Please try again later.');
+		// `cause` carries the counter state, so the handler can build its own detail.
+		expect(body.detail).toEqual('Retry in 60s.');
+	});
+
+	test('should keep the rate limit headers set before the throw', async () => {
+		const app = new Elysia()
+			.use(errorPlugin)
+			.use(rateLimitPlugin())
+			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		const response = await exceed(app, '20.0.0.2');
+
+		expect(response.status).toEqual(429);
+		expect(response.headers.get('X-RateLimit-Limit')).toEqual('1');
+		expect(response.headers.get('X-RateLimit-Remaining')).toEqual('0');
+	});
+
+	test('should not be swallowed by the catch-all whichever plugin is mounted first', async () => {
+		const errorFirst = new Elysia()
+			.use(errorPlugin)
+			.use(rateLimitPlugin())
+			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+		const rateLimitFirst = new Elysia()
+			.use(rateLimitPlugin())
+			.use(errorPlugin)
+			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		const responses = [
+			await exceed(errorFirst, '21.0.0.1'),
+			await exceed(rateLimitFirst, '21.0.0.2')
+		];
+
+		for (const response of responses) {
+			expect(response.status).toEqual(429);
+			const body = (await response.json()) as RateLimitBody;
+			expect(body.type).toEqual('request.rateLimitExceeded');
+		}
+	});
+
+	test('should be reachable by an error plugin matching on the error key', async () => {
+		const app = new Elysia()
+			.use(keyErrorPlugin)
+			.use(rateLimitPlugin())
+			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		const response = await exceed(app, '22.0.0.1');
+
+		expect(response.status).toEqual(429);
+		const body = (await response.json()) as RateLimitBody;
+		expect(body.type).toEqual('request.rateLimitExceeded');
+	});
+
+	test('should leave unrelated errors to the catch-all', async () => {
+		const app = new Elysia()
+			.use(errorPlugin)
+			.use(rateLimitPlugin())
+			.get('/boom', { rateLimit: { limit: 5, window: 60 } }, () => {
+				throw new Error('boom');
+			});
+
+		const response = await app.handle(
+			new Request('http://localhost/boom', { headers: { 'x-forwarded-for': '23.0.0.1' } })
+		);
+
+		expect(response.status).toEqual(500);
+		const body = (await response.json()) as RateLimitBody;
+		expect(body.type).toEqual('internal');
+		expect(body.detail).toEqual('boom');
 	});
 });
