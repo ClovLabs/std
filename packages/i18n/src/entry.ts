@@ -1,20 +1,19 @@
-import type { HttpStatusCode, HttpStatusKey } from '@clov-std/error';
-
+import type { HttpStatusCode, HttpStatusKey } from './constant/http-status-codes';
 import type { ExceptionEntry } from './exception/type/exception-entry';
 import type { MessageEntry } from './message/type/message-entry';
 import type { Translations } from './type/translations';
 
 /**
- * Creates a single catalog entry for use inside `defineExceptionCatalog` or `defineMessageCatalog`.
+ * Creates a single catalog entry for `defineExceptionCatalog` or `defineMessageCatalog`.
  *
- * When `status` is included in the definition the return type narrows to
- * {@link ExceptionEntry}; without it the return type is {@link MessageEntry}.
- * Translations are captured as literals so interpolation params can be inferred
- * from their `{{placeholder}}` tokens - no type arguments needed.
+ * With a `status` the entry is an {@link ExceptionEntry} and yields a
+ * `LocalizedHttpException`; without one it is a {@link MessageEntry} and yields a plain
+ * `LocalizedException`. Translations are captured as literals, so interpolation params
+ * are inferred from their `{{placeholder}}` tokens.
  *
- * @param definition - Translations (and optional status) for this entry.
+ * @param definition - Translations, plus a status for an HTTP exception entry.
  *
- * @returns The definition object, typed as either {@link ExceptionEntry} or {@link MessageEntry} based on the presence of `status`.
+ * @returns The definition object, narrowed by the presence of `status`.
  */
 export function entry<const TTranslations extends Translations>(definition: {
 	readonly status: HttpStatusKey | HttpStatusCode;

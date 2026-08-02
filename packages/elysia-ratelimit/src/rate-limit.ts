@@ -1,14 +1,77 @@
 // oxlint-disable typescript/ban-types
-import { HttpException } from '@clov-std/error';
-import { type KvStore, MemoryStore } from '@clov-std/kv-store';
+import { Exception } from '@clov-std/error';
+import { MemoryStore, type KvStore } from '@clov-std/kv-store';
 import type { Server } from 'bun';
-import { Elysia, type HTTPHeaders, type StatusMap } from 'elysia';
-
-import { rateLimitContract } from './rate-limit.contract';
+import { Elysia, t, type HTTPHeaders } from 'elysia';
 
 export const RATE_LIMIT_ERROR_KEYS = {
 	RATE_LIMIT_EXCEEDED: 'elysia-ratelimit.exceeded'
 } as const;
+
+/** Counter state at the moment the limit was exceeded, attached as the exception `cause`. */
+export interface RateLimitExceeded {
+	/** Maximum requests allowed within the window. */
+	readonly limit: number;
+
+	/** Window length in seconds. */
+	readonly window: number;
+
+	/** Seconds until the counter resets. */
+	readonly reset: number;
+}
+
+/**
+ * Shape of the `429` body.
+ *
+ * `type` is a plain string, not a literal: an application error handler is free to answer
+ * with its own key (a localized catalog entry, for instance). `detail` is optional for the
+ * same reason, the plugin never sets it.
+ */
+const rateLimitResponseSchema = t.Object({
+	type: t.String({
+		description: `Error key. Defaults to \`${RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED}\`.`
+	}),
+	title: t.String({
+		description: 'Short, human-readable summary of the error.'
+	}),
+	detail: t.Optional(
+		t.String({
+			description: 'Explanation specific to this occurrence.'
+		})
+	)
+});
+
+/**
+ * Thrown when a caller exceeds its allowance.
+ *
+ * `status` and `response` are read by Elysia's error fallback, so an application that
+ * installs no error handler still answers a real `429` with the documented body. They are
+ * only a default: any `.error()` handler registered by the application runs first and wins,
+ * which is what lets an API localize this error from its own catalog. Match on
+ * {@link Exception.key}, not on the message.
+ */
+export class RateLimitException extends Exception<RateLimitExceeded> {
+	/** HTTP status used by Elysia's error fallback. */
+	public readonly status = 429;
+
+	/** Default body used by Elysia's error fallback. */
+	public readonly response: { readonly type: string; readonly title: string } = {
+		type: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
+		title: 'Too Many Requests'
+	};
+
+	/**
+	 * Creates a new rate limit exception.
+	 *
+	 * @param cause - Counter state at the moment the limit was exceeded.
+	 */
+	public constructor(cause: RateLimitExceeded) {
+		super('Too Many Requests', {
+			key: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
+			cause
+		});
+	}
+}
 
 export interface RateLimitKeyContext {
 	request: Request;
@@ -22,6 +85,17 @@ export interface RateLimitMacroOptions {
 	keyGenerator?: (context: RateLimitKeyContext) => string;
 }
 
+interface RateLimitTransformContext {
+	set: { headers: HTTPHeaders };
+	request: Request;
+	server: Server<unknown> | null;
+}
+
+type RateLimitMacro = (options: RateLimitMacroOptions) => {
+	response: { 429: typeof rateLimitResponseSchema };
+	transform: (context: RateLimitTransformContext) => Promise<void>;
+};
+
 export const extractClientIp = (request: Request, server: Server<unknown> | null): string => {
 	const forwarded = request.headers.get('x-forwarded-for');
 	if (forwarded) {
@@ -34,80 +108,46 @@ export const extractClientIp = (request: Request, server: Server<unknown> | null
 export const rateLimitPlugin = (
 	store: KvStore = new MemoryStore()
 ): Elysia<
-	'rateLimitPlugin',
-	{ decorator: {}; derive: {}; resolve: {}; store: {} },
+	'',
+	'local',
+	{ decorator: {}; derive: {}; store: {} },
+	{ typebox: {}; error: [] },
 	{
-		typebox: {
-			RateLimitError: (typeof rateLimitContract)[429];
-		};
-		error: {};
-	},
-	{
+		schema: {};
+		schemas: {};
 		macro: Partial<{ readonly rateLimit: RateLimitMacroOptions }>;
 		macroFn: {
-			rateLimit: (options: RateLimitMacroOptions) => {
-				response: { 429: 'RateLimitError' };
-				transform: ({
-					set,
-					request,
-					server
-				}: {
-					set: {
-						headers: HTTPHeaders;
-						status?: number | keyof StatusMap;
-					};
-					request: Request;
-					server: Server<unknown> | null;
-				}) => Promise<void>;
-			};
+			rateLimit: RateLimitMacro;
 		};
 		parser: {};
 		response: {};
-		schema: {};
-		standaloneSchema: {};
 	}
 > =>
-	new Elysia<'rateLimitPlugin'>({
-		name: 'rateLimitPlugin',
-		seed: store
-	})
-		.model({
-			RateLimitError: rateLimitContract[429]
-		})
-		.macro({
-			rateLimit: ({ limit, window, keyGenerator }: RateLimitMacroOptions) => ({
-				response: {
-					429: 'RateLimitError'
-				} as const,
-				// Uses transform because it's the first per-route hook in Elysia's lifecycle,
-				// running before derive, resolve, and beforeHandle.
-				// onRequest would be ideal but it's global, it can't be scoped to macro-enabled routes.
-				// A pending PR (https://github.com/elysiajs/elysia/pull/1557) would expose routes
-				// in introspect, allowing onRequest with route filtering.
-				transform: async ({ set, request, server }): Promise<void> => {
-					const route = `${request.method}:${new URL(request.url).pathname}`;
-					const ip = extractClientIp(request, server);
-					const discriminator = keyGenerator ? keyGenerator({ request, server, ip }) : ip;
-					const key = `ratelimit:${route}:${discriminator}`;
+	new Elysia().macro({
+		rateLimit: (({ limit, window, keyGenerator }) => ({
+			response: { 429: rateLimitResponseSchema },
+			// Uses transform because it's the first per-route hook in Elysia's lifecycle,
+			// running before derive, resolve, and beforeHandle.
+			// onRequest would be ideal but it's global, it can't be scoped to macro-enabled routes.
+			// A pending PR (https://github.com/elysiajs/elysia/pull/1557) would expose routes
+			// in introspect, allowing onRequest with route filtering.
+			transform: async ({ set, request, server }): Promise<void> => {
+				const route = `${request.method}:${new URL(request.url).pathname}`;
+				const ip = extractClientIp(request, server);
+				const discriminator = keyGenerator ? keyGenerator({ request, server, ip }) : ip;
+				const key = `ratelimit:${route}:${discriminator}`;
 
-					const count = await store.increment(key);
-					if (count === 1) await store.expire(key, window);
+				const count = await store.increment(key);
+				if (count === 1) await store.expire(key, window);
 
-					const remaining = Math.max(0, limit - count);
-					const resetTime = await store.ttl(key);
+				const remaining = Math.max(0, limit - count);
+				const reset = await store.ttl(key);
 
-					set.headers['X-RateLimit-Limit'] = limit.toString();
-					set.headers['X-RateLimit-Remaining'] = remaining.toString();
-					set.headers['X-RateLimit-Reset'] = resetTime.toString();
+				set.headers['X-RateLimit-Limit'] = limit.toString();
+				set.headers['X-RateLimit-Remaining'] = remaining.toString();
+				set.headers['X-RateLimit-Reset'] = reset.toString();
 
-					if (count > limit) {
-						set.status = 429;
-						throw new HttpException('Too Many Requests', {
-							key: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
-							cause: { limit, window, remaining: 0, reset: resetTime },
-							status: 429
-						});
-					}
-				}
-			})
-		});
+				if (count > limit) throw new RateLimitException({ limit, window, reset });
+			}
+		})) satisfies RateLimitMacro
+	});

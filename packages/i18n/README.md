@@ -5,7 +5,7 @@
 # 🌐 Clov I18n
 
 Type-safe internationalization for TypeScript.
-Define your translation catalogs once, and get localized messages and HTTP exceptions with full traceability, all validated at compile time.
+Define your translation catalogs once, and get localized messages and throwable exceptions, all validated at compile time.
 
 ## Why this package?
 
@@ -13,8 +13,10 @@ Internationalization is often treated as an afterthought, strings scattered acro
 This package takes a different approach: you declare structured catalogs with `entry()`, and the compiler does the rest.  
 Parameters, locales, HTTP statuses, if something's wrong, you'll know before your code even runs.
 
-It also plays nicely with `@clov-std/error`. Exception catalogs produce `LocalizedHttpException` instances that carry translations,
-a UUID v7, and an HTTP status code, so your error handling stays consistent and traceable.
+It also plays nicely with `@clov-std/error`. Exception catalogs produce throwable exceptions that carry their own
+translations and error key, so your error handling stays consistent: declare a `status` on an entry and you get a
+`LocalizedHttpException` ready for an API response, omit it and you get a plain `LocalizedException` for
+applications with no HTTP layer.
 
 ## 📌 Table of Contents
 
@@ -29,10 +31,10 @@ a UUID v7, and an HTTP status code, so your error handling stays consistent and 
 
 - 🔒 **Type-safe catalogs** : Parameters, locales, and HTTP status are all validated at compile time thanks to `entry()`.
 - 🌍 **Multi-locale** : Each entry holds all its translations; pick the right one at call-time.
-- 🚨 **Localized exceptions** : `defineExceptionCatalog` gives you factory functions that create `LocalizedHttpException` instances, complete with status codes and UUID tracking.
+- 🚨 **Localized exceptions** : `defineExceptionCatalog` gives you factory functions that create throwable exceptions, with a status code when the entry declares one.
 - 💬 **Localized messages** : `defineMessageCatalog` does the same for plain messages : confirmations, notifications, anything that isn't an error.
 - 🔗 **Template interpolation** : Use `{{param}}` placeholders in translations; `resolveMessage` fills them in.
-- 🔍 **UUID v7 tracking** : Every exception inherits traceability from `@clov-std/error`.
+- 🔑 **Stable error keys** : Every exception carries its definition key, inherited from `@clov-std/error`, so handlers branch on `error.key`.
 
 ## 🔧 Installation
 
@@ -104,6 +106,27 @@ throw AUTH_ERRORS.invalidCredentials();
 throw AUTH_ERRORS.emailTaken({ email: 'user@example.com' });
 ```
 
+Omit `status` and the entry produces a plain `LocalizedException` instead, for a worker, a CLI, or any
+application that has no HTTP status to return. Both kinds can live in the same catalog, and the return
+type of each factory tells you which one you get.
+
+```ts
+const JOB_ERRORS = defineExceptionCatalog({
+	defaultLocale: 'en',
+	definitions: {
+		cancelled: entry({
+			translations: {
+				en: 'Job {{id}} was cancelled',
+				fr: 'La tâche {{id}} a été annulée'
+			}
+		})
+	}
+});
+
+// LocalizedException: same key, same translations, no httpStatusCode
+throw JOB_ERRORS.cancelled({ id: '42' });
+```
+
 ### Message catalogs
 
 Same idea, but for things that aren't errors, success confirmations, notifications, labels, etc.
@@ -132,7 +155,7 @@ const msg = DNS_MESSAGES.recordCreated();
 
 ### Resolving to a specific locale
 
-`resolveMessage` takes a `LocalizedHttpException` or a `LocalizedMessage` and returns the interpolated string for the locale you want.
+`resolveMessage` takes a `LocalizedException` (HTTP or not) or a `LocalizedMessage` and returns the interpolated string for the locale you want.
 
 ```ts
 import { resolveMessage } from '@clov-std/i18n';

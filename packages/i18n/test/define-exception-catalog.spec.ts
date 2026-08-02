@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { entry } from '#/entry';
 import { defineExceptionCatalog } from '#/exception/define-exception-catalog';
+import { LocalizedException } from '#/exception/localized-exception';
 import { LocalizedHttpException } from '#/exception/localized-http-exception';
 import { resolveMessage } from '#/resolve-message';
 
@@ -142,7 +143,6 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 		const b = catalog.simple();
 
 		expect(a).not.toBe(b);
-		expect(a.uuid).not.toBe(b.uuid);
 	});
 
 	test('should key each catalog independently by definition name', (): void => {
@@ -157,5 +157,62 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 		});
 
 		expect(authCatalog.denied().key).toBe('denied');
+	});
+
+	test('should produce a plain LocalizedException from a status-less entry', (): void => {
+		const catalog = defineExceptionCatalog({
+			defaultLocale: 'en',
+			definitions: {
+				cancelled: entry({
+					translations: { en: 'Job cancelled', fr: 'Tâche annulée' }
+				})
+			}
+		});
+
+		const error = catalog.cancelled();
+
+		expect(error).toBeInstanceOf(LocalizedException);
+		expect(error).not.toBeInstanceOf(LocalizedHttpException);
+		expect('httpStatusCode' in error).toBe(false);
+		expect(error.key).toBe('cancelled');
+		expect(resolveMessage(error, 'fr')).toBe('Tâche annulée');
+	});
+
+	test('should pick the right class per entry in a mixed catalog', (): void => {
+		const catalog = defineExceptionCatalog({
+			defaultLocale: 'en',
+			definitions: {
+				notFound: entry({
+					status: 'NOT_FOUND',
+					translations: { en: 'Not found', fr: 'Introuvable' }
+				}),
+				cancelled: entry({
+					translations: { en: 'Job {{id}} cancelled', fr: 'Tâche {{id}} annulée' }
+				})
+			}
+		});
+
+		const httpError = catalog.notFound();
+		const plainError = catalog.cancelled({ id: '42' });
+
+		expect(httpError).toBeInstanceOf(LocalizedHttpException);
+		expect(httpError.httpStatusCode).toBe(404);
+
+		expect(plainError).toBeInstanceOf(LocalizedException);
+		expect(plainError).not.toBeInstanceOf(LocalizedHttpException);
+		expect(resolveMessage(plainError, 'fr')).toBe('Tâche 42 annulée');
+	});
+
+	test('a status-less exception should still be throwable and catchable', (): void => {
+		const catalog = defineExceptionCatalog({
+			defaultLocale: 'en',
+			definitions: {
+				cancelled: entry({ translations: { en: 'Job cancelled' } })
+			}
+		});
+
+		expect((): void => {
+			throw catalog.cancelled();
+		}).toThrow(LocalizedException);
 	});
 });

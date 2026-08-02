@@ -1,7 +1,6 @@
 import { describe, expectTypeOf, test } from 'bun:test';
 
 import { Exception } from '#/exception';
-import { HttpException } from '#/http-exception';
 
 describe.concurrent('Generic type TCause', (): void => {
 	test('Exception cause should be typed when generic is provided', (): void => {
@@ -21,20 +20,6 @@ describe.concurrent('Generic type TCause', (): void => {
 		const error = new Exception('default');
 
 		expectTypeOf(error.cause).toEqualTypeOf<unknown>();
-	});
-
-	test('HttpException cause should be typed when generic is provided', (): void => {
-		interface ApiCause {
-			endpoint: string;
-			method: string;
-		}
-
-		const error = new HttpException<ApiCause>('api failed', {
-			status: 'BAD_REQUEST',
-			cause: { endpoint: '/users', method: 'POST' }
-		});
-
-		expectTypeOf(error.cause).toEqualTypeOf<ApiCause | undefined>();
 	});
 
 	test('const generic should preserve literal types', (): void => {

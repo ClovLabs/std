@@ -12,10 +12,11 @@ export interface ExceptionOptions<TCause = unknown> {
 }
 
 /**
- * Base exception that extends the native `Error` with structured metadata.
+ * Base exception that extends the native `Error` with a machine-readable `key` and a
+ * typed `cause`.
  *
- * Every instance carries a unique UUID v7, a creation timestamp,
- * an optional error code, and an optional typed cause.
+ * Carries no request id and no timestamp: those belong to whatever handles the error.
+ * Subclass this if an application needs them on the instance.
  *
  * @template TCause - Type of the underlying cause.
  */
@@ -25,12 +26,6 @@ export class Exception<const TCause = unknown> extends Error {
 
 	/** Application-specific error key (e.g. `'auth.tokenExpired'`). */
 	public readonly key: string | undefined;
-
-	/** Timestamp of when this exception was created. */
-	public readonly date: Date = new Date();
-
-	/** Unique identifier (UUID v7) for this exception instance. */
-	public readonly uuid: string = Bun.randomUUIDv7();
 
 	/**
 	 * Creates a new exception.

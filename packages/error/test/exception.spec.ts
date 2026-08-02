@@ -56,30 +56,6 @@ describe.concurrent('Exception', (): void => {
 		expect(new CustomError('b').name).toBe('CustomError');
 	});
 
-	test('should generate a valid UUID v7', (): void => {
-		const error = new Exception('uuid test');
-
-		expect(error.uuid).toMatch(
-			/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-		);
-	});
-
-	test('should generate unique UUIDs across instances', (): void => {
-		const a = new Exception('a');
-		const b = new Exception('b');
-
-		expect(a.uuid).not.toBe(b.uuid);
-	});
-
-	test('should capture a date close to creation time', (): void => {
-		const before = Date.now();
-		const error = new Exception('date test');
-		const after = Date.now();
-
-		expect(error.date.getTime()).toBeGreaterThanOrEqual(before);
-		expect(error.date.getTime()).toBeLessThanOrEqual(after);
-	});
-
 	test('should produce a stack trace excluding the constructor frame', (): void => {
 		const error = new Exception('stack test');
 

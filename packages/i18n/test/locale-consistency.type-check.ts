@@ -1,9 +1,10 @@
 /**
- * Compile-time guard for catalog-wide locale consistency.
+ * Compile-time guard for catalog-wide locale consistency and entry exactness.
  *
  * Not a runtime test (bun ignores it); `bunx tsc --noEmit` fails if the
- * `LocalesOf`/`ConsistentLocales` enforcement stops catching a locale that is
- * present on one entry but missing on another.
+ * `LocalesOf`/`ExactEntries` enforcement stops catching a locale that is
+ * present on one entry but missing on another, or a key that doesn't belong
+ * on an entry at all.
  */
 import { entry } from '#/entry';
 import { defineExceptionCatalog } from '#/exception/define-exception-catalog';
@@ -41,5 +42,30 @@ defineMessageCatalog({
 	defaultLocale: 'jp',
 	definitions: {
 		a: entry({ translations: { en: 'a', fr: 'a' } })
+	}
+});
+
+// A raw entry literal (no `entry()` call) carries nothing beyond status + translations.
+defineExceptionCatalog({
+	defaultLocale: 'en',
+	definitions: {
+		example: {
+			status: 500,
+			// @ts-expect-error — `oui` is not part of an entry.
+			oui: 3,
+			translations: { en: 'An example error occurred.' }
+		}
+	}
+});
+
+// Same on a message entry, where `status` doesn't belong either.
+defineMessageCatalog({
+	defaultLocale: 'en',
+	definitions: {
+		hi: {
+			// @ts-expect-error — `status` is not part of a message entry.
+			status: 500,
+			translations: { en: 'Hi' }
+		}
 	}
 });

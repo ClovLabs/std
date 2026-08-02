@@ -1,13 +1,8 @@
-import type { HttpStatusCode, HttpStatusKey } from '@clov-std/error';
-
+import type { HttpStatusCode, HttpStatusKey } from '../../constant/http-status-codes';
 import type { Translations } from '../../type/translations';
 
 /**
- * Blueprint for a translatable HTTP exception.
- *
- * Used inside an exception catalog created with `defineExceptionCatalog`.
- * Interpolation params are derived from the `{{placeholder}}` tokens in
- * `translations`, so there is nothing extra to declare.
+ * Blueprint for a translatable HTTP exception, used inside `defineExceptionCatalog`.
  *
  * @template TTranslations - Locale-to-template map (e.g. `{ en: 'Bad {{id}}' }`).
  */

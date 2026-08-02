@@ -1,4 +1,4 @@
-import type { CatalogFactory, ConsistentLocales, LocalesOf } from '../type/translations';
+import type { CatalogFactory, ExactEntries, LocalesOf } from '../type/translations';
 import type { LocalizedMessage } from './type/localized-message';
 import type { MessageEntry } from './type/message-entry';
 
@@ -15,15 +15,19 @@ export interface DefineMessageCatalogOptions<TDefs extends Record<string, Messag
 	/** Locale used when no explicit locale is passed to `resolveMessage`. */
 	readonly defaultLocale: LocalesOf<TDefs>;
 
-	/** Map of message definitions keyed by message name; every entry must cover the same locales. */
-	readonly definitions: TDefs & ConsistentLocales<TDefs>;
+	/**
+	 * Map of message definitions keyed by message name. Every entry must cover the same
+	 * locales, and carries nothing beyond its `translations`.
+	 */
+	readonly definitions: TDefs &
+		ExactEntries<TDefs, { readonly translations: Record<LocalesOf<TDefs>, string> }>;
 }
 
 /**
  * Builds a typed message catalog from a set of {@link MessageEntry} definitions.
  *
- * Each key in `definitions` becomes a factory function that creates
- * a {@link LocalizedMessage} pre-filled with the right translations and default locale.
+ * Each key becomes a factory returning a {@link LocalizedMessage} pre-filled with its
+ * translations and the default locale.
  *
  * @param options - Default locale and message definitions.
  *

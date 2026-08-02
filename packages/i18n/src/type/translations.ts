@@ -2,11 +2,10 @@
 export type Translations = Readonly<Record<string, string>>;
 
 /**
- * Names of `{{placeholder}}` tokens inside a template string.
+ * Names of the `{{placeholder}}` tokens inside a template string.
  *
- * ponytail: loosely mirrors the runtime interpolation regex (`{{\w+}}`) - it also
- * captures names with spaces/dots (e.g. `{{ x }}`), which the regex would leave
- * untouched. Real placeholders are identifiers, so don't put spaces in `{{...}}`.
+ * Matches more loosely than the runtime regex (`{{\w+}}`): `{{ x }}` is captured here
+ * but left untouched at runtime, so keep placeholders to plain identifiers.
  */
 type PlaceholderNames<TTemplate extends string> =
 	TTemplate extends `${string}{{${infer Name}}}${infer Rest}`
@@ -43,10 +42,13 @@ export type LocalesOf<TDefs extends EntryMap> = {
 }[keyof TDefs];
 
 /**
- * Forces every entry to cover the full {@link LocalesOf} union - intersect it with
- * `TDefs` on the `definitions` option so a locale present on any entry is required
- * on all of them (catches a translation forgotten on a single entry at compile time).
+ * Contextual shape for every entry of a catalog, intersected with `TDefs` on the
+ * `definitions` option: it pins `translations` to the catalog-wide locale set, drives
+ * autocompletion, and maps any key outside `TShape` to `never`.
+ *
+ * That `never` is the only way to reject a stray key: `TDefs` is inferred from the
+ * literal, so TypeScript's excess property check never fires on it.
  */
-export type ConsistentLocales<TDefs extends EntryMap> = {
-	[K in keyof TDefs]: { readonly translations: Record<LocalesOf<TDefs>, string> };
+export type ExactEntries<TDefs extends EntryMap, TShape> = {
+	[K in keyof TDefs]: TShape & Record<Exclude<keyof TDefs[K], keyof TShape>, never>;
 };

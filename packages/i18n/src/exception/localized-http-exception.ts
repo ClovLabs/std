@@ -1,6 +1,9 @@
-import { HttpException, type HttpExceptionOptions } from '@clov-std/error';
-
-import type { Translations } from '../type/translations';
+import {
+	HTTP_STATUS_CODES,
+	type HttpStatusCode,
+	type HttpStatusKey
+} from '../constant/http-status-codes';
+import { LocalizedException, type LocalizedExceptionOptions } from './localized-exception';
 
 /**
  * Options accepted by the {@link LocalizedHttpException} constructor.
@@ -9,49 +12,36 @@ import type { Translations } from '../type/translations';
  */
 export interface LocalizedHttpExceptionOptions<
 	TCause = unknown
-> extends HttpExceptionOptions<TCause> {
-	/** All available translations keyed by locale. */
-	readonly translations: Translations;
-
-	/** Parameter values to interpolate into `{{placeholder}}` tokens. */
-	readonly params?: Readonly<Record<string, string>> | undefined;
-
-	/** Locale used to build the default `message` string. */
-	readonly defaultLocale: string;
+> extends LocalizedExceptionOptions<TCause> {
+	/**
+	 * HTTP status for this exception.
+	 *
+	 * Accepts a key name (`'NOT_FOUND'`) or a numeric code (`404`).
+	 */
+	readonly status: HttpStatusKey | HttpStatusCode;
 }
 
 /**
- * HTTP exception that carries translated messages.
+ * Localized exception bound to an HTTP status code.
  *
- * The `message` property contains the raw template for the default locale.
- * Use {@link resolveMessage} to get the interpolated string for any locale.
+ * Adds a resolved `httpStatusCode` to {@link LocalizedException}, so an API error handler
+ * answers with the right status without a second lookup.
  *
  * @template TCause - Type of the underlying cause.
  */
-export class LocalizedHttpException<const TCause = unknown> extends HttpException<TCause> {
-	/** All available translations keyed by locale. */
-	public readonly translations: Translations;
-
-	/** Parameter values interpolated into `{{placeholder}}` tokens. */
-	public readonly params: Readonly<Record<string, string>> | undefined;
-
-	/** Locale used to build the default `message` string. */
-	public readonly defaultLocale: string;
+export class LocalizedHttpException<const TCause = unknown> extends LocalizedException<TCause> {
+	/** Resolved numeric HTTP status code (e.g. `404`). */
+	public readonly httpStatusCode: number;
 
 	/**
 	 * Creates a new localized HTTP exception.
 	 *
 	 * @param key - Application-specific error key (e.g. `'dns.invalidRecordType'`).
-	 * @param init - Translations, params, status, and cause.
+	 * @param init - Status, translations, params, and cause.
 	 */
 	public constructor(key: string, init: LocalizedHttpExceptionOptions<TCause>) {
-		super(init.translations[init.defaultLocale] ?? '', {
-			cause: init.cause,
-			status: init.status,
-			key
-		});
-		this.translations = init.translations;
-		this.params = init.params;
-		this.defaultLocale = init.defaultLocale;
+		super(key, init);
+		this.httpStatusCode =
+			typeof init.status === 'number' ? init.status : HTTP_STATUS_CODES[init.status];
 	}
 }

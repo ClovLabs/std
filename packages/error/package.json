@@ -1,7 +1,7 @@
 {
   "name": "@clov-std/error",
-  "version": "2.3.2",
-  "description": "Structured TypeScript exceptions with UUID v7 tracking, HTTP status codes, and automatic timestamps.",
+  "version": "3.0.0",
+  "description": "Structured TypeScript exceptions with a machine-readable error key and a typed cause.",
   "keywords": [
     "bun",
     "clov",

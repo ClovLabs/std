@@ -6,20 +6,26 @@
 
 If you've ever debugged a production incident with nothing but a generic `Error("something went wrong")`,
 you know the pain.  
-This package gives your errors structure, every exception carries a UUID v7, a timestamp, and an optional HTTP status code,
-so you can always trace what happened and when.
+This package gives your errors structure, every exception carries a machine-readable `key`,
+so you can always branch on what happened instead of grepping a message string.
 
 ## Why this package?
 
 Vanilla `Error` objects lack context.  
-You end up manually adding IDs, timestamps, and status codes everywhere, or worse, you don't, and debugging becomes a guessing game.
+Catching one leaves you matching on `error.message` strings, which breaks the day someone rewords the message.
 
-`@clov-std/error` solves that with two classes:
+`@clov-std/error` solves that with one class:
 
-- **`Exception`** - a richer base error with automatic UUID v7 tracking, timestamps, and an optional error code.
-- **`HttpException`** - extends `Exception` with an HTTP status code, perfect for API error responses.
+- **`Exception`** - a richer base error carrying a stable `key` and a typed `cause`.
+
+The `key` is the point. A low-level library can throw `Exception` with `key: 'jwt.expired'` without knowing anything
+about HTTP status codes or locales, and the layer that _does_ know (your API, your i18n catalog) maps that key to a
+status and a translated message. One direction of dependency, no HTTP concern leaking into a token signer.
 
 No dependencies, no bloat. Just structured errors that make your life easier.
+
+> Looking for HTTP status codes and localized messages? That's [`@clov-std/i18n`](https://www.npmjs.com/package/@clov-std/i18n),
+> whose `LocalizedHttpException` extends `Exception`.
 
 ## 📌 Table of Contents
 
@@ -32,10 +38,10 @@ No dependencies, no bloat. Just structured errors that make your life easier.
 
 ## ✨ Features
 
-- 🔍 **UUID v7 Tracking** : Every exception gets a unique, time-sortable ID out of the box.
-- 📅 **Built-in Context** : Timestamp, error code, and cause are baked into each instance.
-- 🌐 **HTTP-Aware** : `HttpException` maps to any standard HTTP status for clean API responses.
-- 📦 **Zero Dependencies** : Pure TypeScript, tiny footprint.
+- 🔑 **Stable Error Keys** : Branch on `error.key`, never on `error.message`.
+- 🔗 **Typed Cause** : `cause` keeps its shape through the generic, so wrapping an error doesn't lose its type.
+- 🧹 **Clean Stack Traces** : The constructor frame is stripped, and `name` reflects the actual subclass.
+- 📦 **Zero Dependencies** : Pure TypeScript, no runtime globals, tiny footprint.
 
 ## 🔧 Installation
 
@@ -53,11 +59,20 @@ Use `Exception` whenever you need a traceable error with more context than a pla
 import { Exception } from '@clov-std/error';
 
 throw new Exception('Configuration file not found', {
-	code: 'CONFIG_NOT_FOUND'
+	key: 'config.notFound'
 });
 ```
 
-Every instance automatically carries a `uuid` and a `date`, so you can correlate it in your logs without any extra work.
+The `key` is what callers should switch on:
+
+```ts
+try {
+	await verifyToken(token);
+} catch (err) {
+	if (err instanceof Exception && err.key === 'jwt.expired') return refresh();
+	throw err;
+}
+```
 
 You can also wrap a root cause to preserve the original error:
 
@@ -71,27 +86,26 @@ try {
 }
 ```
 
-### HttpException - API Errors
+### What's deliberately not here
 
-When you're building an API and need an error tied to an HTTP status code, reach for `HttpException`.  
-Pass a status key like `'BAD_REQUEST'` or a numeric code like `400`, both work.
+No request id, no timestamp. Both belong to the layer that _handles_ the error: a request handler
+already has an `x-request-id` (or mints one), and a log sink already stamps every line with a time.
+Putting them on the error means every throw pays for identity nobody reads.
 
-```ts
-import { HttpException } from '@clov-std/error';
-
-throw new HttpException('Invalid email address', {
-	status: 'BAD_REQUEST',
-	code: 'INVALID_EMAIL'
-});
-```
-
-If you don't specify a status, it defaults to `500 Internal Server Error`, so unexpected failures are covered too:
+If an application genuinely needs them on the instance, that's a subclass:
 
 ```ts
-import { HttpException } from '@clov-std/error';
-
-throw new HttpException('Something broke');
+class TracedException extends Exception {
+	public readonly uuid: string = crypto.randomUUID();
+	public readonly date: Date = new Date();
+}
 ```
+
+### HTTP and localized errors
+
+`Exception` deliberately knows nothing about HTTP. When you need a status code and a translated message,
+use `LocalizedHttpException` from [`@clov-std/i18n`](https://www.npmjs.com/package/@clov-std/i18n), which extends
+this class, so a single `catch (err) { if (err instanceof Exception) ... }` still covers both.
 
 ## 📚 API Reference
 
