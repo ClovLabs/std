@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@clov-std/error": "workspace:^",
-    "jose": "^6.2.3"
+    "jose": "^6.2.7"
   },
   "devDependencies": {
     "@types/bun": "catalog:base",
