@@ -22,6 +22,7 @@ Storage is handled by `@clov-std/kv-store`, so you start with in-memory and move
 - [Features](#-features)
 - [Installation](#-installation)
 - [Usage](#-usage)
+- [Error handling](#-error-handling)
 - [API Reference](#-api-reference)
 - [License](#-license)
 - [Contact](#-contact)
@@ -33,14 +34,15 @@ Storage is handled by `@clov-std/kv-store`, so you start with in-memory and move
 - 🗃️ **KvStore-agnostic** : Works with `MemoryStore` out of the box; swap in `BunRedisStore` or your own adapter.
 - ⚡ **Early rejection** : Runs in `transform`, the first per-route hook, before auth guards and handlers.
 - 📡 **Standard headers** : Automatically sets `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`.
+- 🧯 **Works with or without an error plugin** : Answers a real `429` on its own, and steps aside when your application handles the error itself.
 
 ## 🔧 Installation
 
 ```bash
-bun add @clov-std/elysia-ratelimit
+bun add @clov-std/elysia-ratelimit elysia typebox
 ```
 
-> **Peer dependencies:** `elysia` must be installed alongside.
+> **Peer dependencies:** `elysia` (v2) and `typebox` must be installed alongside.
 
 ## ⚙️ Usage
 
@@ -54,9 +56,11 @@ import { Elysia } from 'elysia';
 
 new Elysia()
 	.use(rateLimitPlugin())
-	.post('/auth/login', () => authenticate(), {
-		rateLimit: { limit: 10, window: 60 } // 10 requests per minute per IP
-	})
+	.post(
+		'/auth/login',
+		{ rateLimit: { limit: 10, window: 60 } }, // 10 requests per minute per IP
+		() => authenticate()
+	)
 	.listen(3000);
 ```
 
@@ -73,9 +77,7 @@ const store = new BunRedisStore('redis://localhost:6379');
 
 new Elysia()
 	.use(rateLimitPlugin(store))
-	.post('/auth/login', () => authenticate(), {
-		rateLimit: { limit: 10, window: 60 }
-	})
+	.post('/auth/login', { rateLimit: { limit: 10, window: 60 } }, () => authenticate())
 	.listen(3000);
 ```
 
@@ -90,17 +92,76 @@ import { Elysia } from 'elysia';
 
 new Elysia()
 	.use(rateLimitPlugin())
-	.get('/api/data', () => getData(), {
-		rateLimit: {
-			limit: 100,
-			window: 60,
-			keyGenerator: ({ ip, request }) => `${ip}:${request.headers.get('authorization') ?? ip}`
-		}
-	})
+	.get(
+		'/api/data',
+		{
+			rateLimit: {
+				limit: 100,
+				window: 60,
+				keyGenerator: ({ ip, request }) =>
+					`${ip}:${request.headers.get('authorization') ?? ip}`
+			}
+		},
+		() => getData()
+	)
 	.listen(3000);
 ```
 
 > **Tip:** `extractClientIp` is exported if you need it inside your own `keyGenerator`.
+
+## 🧯 Error handling
+
+When the allowance is exceeded, the plugin throws a `RateLimitException` carrying:
+
+- `key` — always `RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED`, i.e. `'elysia-ratelimit.exceeded'`
+- `cause` — `{ limit, window, reset }`, the counter state at that moment
+- `status` and `response` — the default answer, read by Elysia's error fallback
+
+### Without an error plugin
+
+The default applies and the route answers a real `429`, which is also the response the macro
+declares for OpenAPI:
+
+```json
+{ "type": "elysia-ratelimit.exceeded", "title": "Too Many Requests" }
+```
+
+The `X-RateLimit-*` headers are set before the throw, so they are present on the `429` as well.
+
+### With an error plugin
+
+That default is only a fallback. Any `.error()` handler your application registers runs first and
+wins, which is how an API answers with its own localized body.
+
+```ts
+import { RateLimitException, rateLimitPlugin } from '@clov-std/elysia-ratelimit';
+import { Elysia, status } from 'elysia';
+
+new Elysia()
+	.error(RateLimitException, ({ error }) =>
+		status(429, {
+			type: 'request.rateLimitExceeded',
+			title: 'Too many requests. Please try again later.',
+			detail: `Retry in ${error.cause?.reset ?? 0}s.`
+		})
+	)
+	.use(rateLimitPlugin())
+	.get('/api/data', { rateLimit: { limit: 100, window: 60 } }, () => getData())
+	.listen(3000);
+```
+
+Matching on the key works too, if you would rather not import the class:
+
+```ts
+.error(({ error }) =>
+	(error as { key?: string }).key === RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED
+		? status(429, { type: 'request.rateLimitExceeded', title: 'Too many requests.' })
+		: status(500, { type: 'internal', title: 'Internal Server Error' })
+)
+```
+
+> **Note:** Elysia runs the first matching `.error()` handler. If your error plugin registers a
+> catch-all, register it after the specific handlers, otherwise it swallows them.
 
 ## 📚 API Reference
 
