@@ -22,7 +22,7 @@ Before implementing:
 - No features beyond what was asked.
 - No abstractions for single-use code.
 - No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
+- Don't add speculative error handling. Preserve validation and errors at trust boundaries.
 - If you write 200 lines and it could be 50, rewrite it.
 
 Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
@@ -65,9 +65,23 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+After behavior changes, run the smallest relevant check. If none can run, say so explicitly.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## Codebase Discovery
+
+This project uses `codebase-memory-mcp` to maintain a code knowledge graph. Prefer its graph tools over text search when discovering code:
+
+1. `search_graph` — find functions, classes, routes, and variables.
+2. `trace_path` — trace callers, callees, data flow, and impact.
+3. `get_code_snippet` — read a specific symbol after locating it.
+4. `query_graph` — answer complex relationship questions.
+5. `get_architecture` — get the high-level project structure.
+
+Use text search only for string literals, error messages, configuration, or when the graph is insufficient. If the project has not been indexed, run `index_repository` first.
 
 ## TypeScript and Project
 
@@ -82,22 +96,14 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
     - Never use `any`; use `unknown` when the type is not known safely
     - Prefer `interface` for extendable object shapes
     - Use `type` for unions, intersections, mapped types, utility types, and function signatures
-4. Control structures: omit curly braces for single-statement bodies when it stays readable.
-5. Imports:
-    - Use `#/` for internal imports
+4. Imports:
+    - Use configured internal aliases (such as `#/`)
     - Do not import barrel files except as public entry points
     - Remove imports made unused by your changes
-6. Function style:
+5. Function style:
     - Use standard method syntax for class methods
     - Prefer arrow functions for helpers, callbacks, and higher-order functions unless `function` syntax is required
-7. Match the existing project style over personal preference.
-
-## Contribution Principles
-
-1. Follow language-specific best practices and idiomatic patterns.
-2. Preserve the existing code structure and modular organization.
-3. Keep changes focused on the requested task.
-4. Do not introduce new tooling, dependencies, patterns, or conventions unless explicitly requested.
+6. Match the existing project style and linting configuration over personal preference.
 
 ## Commit Message Convention
 
