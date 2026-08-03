@@ -27,13 +27,13 @@ describe.concurrent('LocalizedException', (): void => {
 		expect('httpStatusCode' in error).toBe(false);
 	});
 
-	test('should set key from the first constructor argument', (): void => {
+	test('should set code from the first constructor argument', (): void => {
 		const error = new LocalizedException('queue.retryExhausted', {
 			translations: { en: 'Retries exhausted' },
 			defaultLocale: 'en'
 		});
 
-		expect(error.key).toBe('queue.retryExhausted');
+		expect(error.code).toBe('queue.retryExhausted');
 	});
 
 	test('should set message to the raw default locale template', (): void => {
