@@ -31,6 +31,7 @@ applications with no HTTP layer.
 
 - 🔒 **Type-safe catalogs** : Parameters, locales, and HTTP status are all validated at compile time thanks to `entry()`.
 - 🌍 **Multi-locale** : Each entry holds all its translations; pick the right one at call-time.
+- 🤝 **Locale negotiation** : `defineLocaleNegotiator` turns a raw `Accept-Language` header into one of your catalog locales, quality values included.
 - 🚨 **Localized exceptions** : `defineExceptionCatalog` gives you factory functions that create throwable exceptions, with a status code when the entry declares one.
 - 💬 **Localized messages** : `defineMessageCatalog` does the same for plain messages : confirmations, notifications, anything that isn't an error.
 - 🔗 **Template interpolation** : Use `{{param}}` placeholders in translations; `resolveMessage` fills them in.
@@ -165,6 +166,44 @@ const error = AUTH_ERRORS.emailTaken({ email: 'a@b.com' });
 resolveMessage(error); // default locale → "Email "a@b.com" is already taken"
 resolveMessage(error, 'fr'); // → "L'email "a@b.com" est déjà utilisé"
 ```
+
+### Negotiating the locale from a request
+
+`resolveMessage` expects a single locale, and a raw `Accept-Language` header is not one:
+`fr-CA,fr;q=0.9,en;q=0.8` matches no catalog key, so every message silently falls back to the
+default locale. `defineLocaleNegotiator` closes that gap.
+
+```ts
+import { defineLocaleNegotiator } from '@clov-std/i18n';
+
+const negotiateLocale = defineLocaleNegotiator({
+	supported: ['en', 'fr', 'it'],
+	fallback: 'en'
+});
+
+negotiateLocale('fr-CA,fr;q=0.9,en;q=0.8'); // → 'fr'
+negotiateLocale('it;q=0.5,fr;q=0.9'); // → 'fr', quality values beat header order
+negotiateLocale('fr;q=0,it'); // → 'it', q=0 explicitly refuses a locale
+negotiateLocale('ja'); // → 'en', nothing acceptable
+negotiateLocale(); // → 'en'
+```
+
+Define it once, then feed it to `resolveMessage` wherever a request is handled.
+
+```ts
+const lang = negotiateLocale(request.headers.get('accept-language') ?? undefined);
+
+resolveMessage(error, lang);
+```
+
+The return type is narrowed to `'en' | 'fr' | 'it'`, so a locale none of your catalogs cover
+can't reach `resolveMessage` in the first place.
+
+> **Keep `supported` lowercase.** Ranges are matched case-insensitively against it, each one
+> as a whole tag (`pt-br`) before its language subtag (`pt`).
+
+> **Responses that vary by locale need `Vary: Accept-Language`.** Without it a shared cache
+> keys on the URL alone and will serve one visitor's language to the next.
 
 ## 📚 API Reference
 
