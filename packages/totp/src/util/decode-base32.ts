@@ -2,8 +2,8 @@ import { Exception } from '@clov-std/error';
 
 import { BASE32_ALPHABET, BASE32_CHARS } from './base32';
 
-export const DECODE_BASE32_ERROR_KEYS = {
-	INVALID_CHAR: 'totp.decode-base32.invalid-char'
+export const DECODE_BASE32_ERROR_CODES = {
+	INVALID_CHARACTER: 'totp.base32.invalid-character'
 } as const;
 
 /**
@@ -21,7 +21,7 @@ export const decodeBase32 = (input: string): Uint8Array<ArrayBuffer> => {
 	for (const char of sanitized)
 		if (!BASE32_CHARS.has(char))
 			throw new Exception(`Invalid base32 character: '${char}'`, {
-				key: DECODE_BASE32_ERROR_KEYS.INVALID_CHAR,
+				code: DECODE_BASE32_ERROR_CODES.INVALID_CHARACTER,
 				cause: { input, invalidCharacter: char }
 			});
 

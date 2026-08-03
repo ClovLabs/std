@@ -4,8 +4,8 @@ import { timingSafeEqual } from 'crypto';
 import { generateHOTP } from './hotp';
 import type { OTPAlgorithm } from './type/otp-algorithm';
 
-export const TOTP_ERROR_KEYS = {
-	INVALID_PERIOD: 'totp.invalid-period'
+export const TOTP_ERROR_CODES = {
+	PERIOD_INVALID: 'totp.period.invalid'
 } as const;
 
 /** Options for TOTP code generation. */
@@ -49,7 +49,7 @@ export const generateTOTP = (options: GenerateTOTPOptions): Promise<string> => {
 
 	if (period <= 0)
 		throw new Exception('Period must be a positive number', {
-			key: TOTP_ERROR_KEYS.INVALID_PERIOD,
+			code: TOTP_ERROR_CODES.PERIOD_INVALID,
 			cause: { period }
 		});
 
@@ -79,7 +79,7 @@ export const verifyTOTP = async (options: VerifyTOTPOptions): Promise<boolean> =
 
 	if (period <= 0)
 		throw new Exception('Period must be a positive number', {
-			key: TOTP_ERROR_KEYS.INVALID_PERIOD,
+			code: TOTP_ERROR_CODES.PERIOD_INVALID,
 			cause: { period }
 		});
 

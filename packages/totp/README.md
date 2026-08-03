@@ -214,17 +214,17 @@ const url = buildOtpauthUrl({
 
 All runtime errors are thrown as `Exception` instances from `@clov-std/error`.
 
-| Key                   | When                                              |
-| --------------------- | ------------------------------------------------- |
-| `totp.invalid_secret` | The provided secret is empty                      |
-| `totp.invalid_digits` | `digits` is outside the supported range           |
-| `totp.invalid_period` | `period` is `0` or negative                       |
-| `totp.invalid_base32` | A base32 secret contains invalid characters       |
-| `totp.hmac_failed`    | The underlying HMAC operation failed unexpectedly |
+| Code                            | Constant                                      | When                                              |
+| ------------------------------- | --------------------------------------------- | ------------------------------------------------- |
+| `totp.secret.invalid`           | `HOTP_ERROR_CODES.SECRET_INVALID`             | The provided secret is empty                      |
+| `totp.digits.invalid`           | `HOTP_ERROR_CODES.DIGITS_INVALID`             | `digits` is outside the supported range           |
+| `totp.period.invalid`           | `TOTP_ERROR_CODES.PERIOD_INVALID`             | `period` is `0` or negative                       |
+| `totp.base32.invalid-character` | `DECODE_BASE32_ERROR_CODES.INVALID_CHARACTER` | A base32 secret contains invalid characters       |
+| `totp.hmac.failed`              | `HOTP_ERROR_CODES.HMAC_FAILED`                | The underlying HMAC operation failed unexpectedly |
 
 ```ts
 import { Exception } from '@clov-std/error';
-import { TOTP_ERROR_KEYS, generateTOTP } from '@clov-std/totp';
+import { DECODE_BASE32_ERROR_CODES, generateTOTP } from '@clov-std/totp';
 
 try {
 	const otp = await generateTOTP({
@@ -232,7 +232,7 @@ try {
 	});
 } catch (error) {
 	if (error instanceof Exception) {
-		if (error.key === TOTP_ERROR_KEYS.INVALID_BASE32) {
+		if (error.code === DECODE_BASE32_ERROR_CODES.INVALID_CHARACTER) {
 			// Reject or log the malformed secret
 		}
 	}

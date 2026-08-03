@@ -1,8 +1,8 @@
 import { Exception } from '@clov-std/error';
 import { describe, expect, test } from 'bun:test';
 
-import { generateHOTP, HOTP_ERROR_KEYS } from '#/hotp';
-import { generateTOTP, TOTP_ERROR_KEYS, verifyTOTP } from '#/totp';
+import { generateHOTP, HOTP_ERROR_CODES } from '#/hotp';
+import { generateTOTP, TOTP_ERROR_CODES, verifyTOTP } from '#/totp';
 
 // RFC 6238 Appendix B — test values
 // Secret = "12345678901234567890" (ASCII) for SHA-1
@@ -105,24 +105,24 @@ describe.concurrent('generateTOTP', () => {
 	});
 
 	describe.concurrent('error handling', () => {
-		test.each([0, -1, -30])('should throw INVALID_PERIOD for period=%i', async (period) => {
+		test.each([0, -1, -30])('should throw PERIOD_INVALID for period=%i', async (period) => {
 			try {
 				await generateTOTP({ secret: RFC6238_SHA1_SECRET, period });
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(TOTP_ERROR_KEYS.INVALID_PERIOD);
+				expect((error as Exception).code).toBe(TOTP_ERROR_CODES.PERIOD_INVALID);
 				expect((error as Exception).cause).toEqual({ period });
 			}
 		});
 
-		test('should throw INVALID_SECRET for empty secret', async () => {
+		test('should throw SECRET_INVALID for empty secret', async () => {
 			try {
 				await generateTOTP({ secret: new Uint8Array(0) });
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(HOTP_ERROR_KEYS.INVALID_SECRET);
+				expect((error as Exception).code).toBe(HOTP_ERROR_CODES.SECRET_INVALID);
 			}
 		});
 	});
@@ -222,7 +222,7 @@ describe.concurrent('verifyTOTP', () => {
 	});
 
 	describe.concurrent('error handling', () => {
-		test('should throw INVALID_PERIOD for zero period', async () => {
+		test('should throw PERIOD_INVALID for zero period', async () => {
 			try {
 				await verifyTOTP({
 					secret: RFC6238_SHA1_SECRET,
@@ -232,7 +232,7 @@ describe.concurrent('verifyTOTP', () => {
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(TOTP_ERROR_KEYS.INVALID_PERIOD);
+				expect((error as Exception).code).toBe(TOTP_ERROR_CODES.PERIOD_INVALID);
 			}
 		});
 	});

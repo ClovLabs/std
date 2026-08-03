@@ -5,10 +5,10 @@ import type { OTPAlgorithm } from './type/otp-algorithm';
 import { createCounterBuffer } from './util/create-counter-buffer';
 import { decodeBase32 } from './util/decode-base32';
 
-export const HOTP_ERROR_KEYS = {
-	INVALID_SECRET: 'totp.hotp.invalid-secret',
-	INVALID_DIGITS: 'totp.hotp.invalid-digits',
-	HMAC_FAILED: 'totp.hotp.hmac-failed'
+export const HOTP_ERROR_CODES = {
+	SECRET_INVALID: 'totp.secret.invalid',
+	DIGITS_INVALID: 'totp.digits.invalid',
+	HMAC_FAILED: 'totp.hmac.failed'
 } as const;
 
 /** Options for HOTP code generation. */
@@ -70,12 +70,12 @@ export const generateHOTP = async (options: GenerateHOTPOptions): Promise<string
 	const secretBytes = typeof secret === 'string' ? decodeBase32(secret) : new Uint8Array(secret);
 	if (secretBytes.length === 0)
 		throw new Exception('Secret must not be empty', {
-			key: HOTP_ERROR_KEYS.INVALID_SECRET
+			code: HOTP_ERROR_CODES.SECRET_INVALID
 		});
 
 	if (digits < 1 || digits > 10)
 		throw new Exception('Digits must be between 1 and 10', {
-			key: HOTP_ERROR_KEYS.INVALID_DIGITS,
+			code: HOTP_ERROR_CODES.DIGITS_INVALID,
 			cause: { digits }
 		});
 
@@ -88,7 +88,7 @@ export const generateHOTP = async (options: GenerateHOTPOptions): Promise<string
 	} catch (error) {
 		if (error instanceof Exception) throw error;
 		throw new Exception('HMAC computation failed', {
-			key: HOTP_ERROR_KEYS.HMAC_FAILED,
+			code: HOTP_ERROR_CODES.HMAC_FAILED,
 			cause: error
 		});
 	}
