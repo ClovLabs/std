@@ -12,7 +12,7 @@
 <li><a href="" aria-current="page">Exception</a></li></ul>
 <h1>Class Exception&lt;TCause&gt;</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>Base exception that extends the native <code>Error</code> with a machine-readable <code>key</code> and a
+<div class="tsd-comment tsd-typography"><p>Base exception that extends the native <code>Error</code> with a machine-readable <code>code</code> and a
 typed <code>cause</code>.</p>
 <p>Carries no request id and no timestamp: those belong to whatever handles the error.
 Subclass this if an application needs them on the instance.</p>
@@ -23,14 +23,16 @@ Subclass this if an application needs them on the instance.</p>
 <li><span id="tcause"><span class="tsd-signature-keyword">const</span> <span class="tsd-kind-type-parameter">TCause</span> = <span class="tsd-signature-type">unknown</span></span>
 <div class="tsd-comment tsd-typography"><p>Type of the underlying cause.</p>
 </div></li></ul></section>
-<section class="tsd-panel tsd-hierarchy" data-refl="1165">
-<h4>Hierarchy</h4>
+<section class="tsd-panel tsd-hierarchy" data-refl="1145">
+<h4>Hierarchy (<a href="../hierarchy.html#@clov-std/error.Exception">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><span class="tsd-signature-type">Error</span>
 <ul class="tsd-hierarchy">
-<li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">Exception</span></li></ul></li></ul></section><aside class="tsd-sources">
+<li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">Exception</span>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><a href="_clov-std_error.HttpException.html" class="tsd-signature-type tsd-kind-class">HttpException</a></li></ul></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/ClovLabs/std/blob/abd2db407b2c68a3cef7bf944fea2b7c07945137/packages/error/src/exception.ts#L23">packages/error/src/exception.ts:23</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/ClovLabs/std/blob/18c460e2ae54b6999b7a95fc47dfc1717db9bb6d/packages/error/src/exception.ts#L23">packages/error/src/exception.ts:23</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -43,7 +45,7 @@ Subclass this if an application needs them on the instance.</p>
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#cause" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>cause</span></a>
-<a href="#key" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>key</span></a>
+<a href="#code" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>code</span></a>
 <a href="#message" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>message</span></a>
 <a href="#name" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>name</span></a>
 <a href="#stack" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>stack?</span></a>
@@ -84,7 +86,7 @@ Subclass this if an application needs them on the instance.</p>
 <h4 class="tsd-returns-title">Returns <a href="" class="tsd-signature-type tsd-kind-class">Exception</a><span class="tsd-signature-symbol">&lt;</span><a class="tsd-signature-type tsd-kind-type-parameter" href="#tcause">TCause</a><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <p>Overrides Error.constructor</p>
 <ul>
-<li>Defined in <a href="https://github.com/ClovLabs/std/blob/abd2db407b2c68a3cef7bf944fea2b7c07945137/packages/error/src/exception.ts#L36">packages/error/src/exception.ts:36</a></li></ul></aside></div></li></ul></section></section></details>
+<li>Defined in <a href="https://github.com/ClovLabs/std/blob/18c460e2ae54b6999b7a95fc47dfc1717db9bb6d/packages/error/src/exception.ts#L36">packages/error/src/exception.ts:36</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -95,14 +97,14 @@ Subclass this if an application needs them on the instance.</p>
 </div><aside class="tsd-sources">
 <p>Overrides Error.cause</p>
 <ul>
-<li>Defined in <a href="https://github.com/ClovLabs/std/blob/abd2db407b2c68a3cef7bf944fea2b7c07945137/packages/error/src/exception.ts#L25">packages/error/src/exception.ts:25</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/ClovLabs/std/blob/18c460e2ae54b6999b7a95fc47dfc1717db9bb6d/packages/error/src/exception.ts#L25">packages/error/src/exception.ts:25</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
-<h3 class="tsd-anchor-link" id="key"><code class="tsd-tag">Readonly</code><span>key</span><a href="#key" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">key</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
-<div class="tsd-comment tsd-typography"><p>Application-specific error key (e.g. <code>'auth.tokenExpired'</code>).</p>
+<h3 class="tsd-anchor-link" id="code"><code class="tsd-tag">Readonly</code><span>code</span><a href="#code" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">code</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>Application-specific error code (e.g. <code>'jwt.token.expired'</code>).</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/ClovLabs/std/blob/abd2db407b2c68a3cef7bf944fea2b7c07945137/packages/error/src/exception.ts#L28">packages/error/src/exception.ts:28</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/ClovLabs/std/blob/18c460e2ae54b6999b7a95fc47dfc1717db9bb6d/packages/error/src/exception.ts#L28">packages/error/src/exception.ts:28</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited tsd-is-external">
 <h3 class="tsd-anchor-link" id="message"><span>message</span><a href="#message" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">message</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
@@ -254,7 +256,7 @@ details of error generation from the user. For instance:</p>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Constructors</summary>
 <div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
-<div><a href="#cause"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>cause</span></a><a href="#key"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>key</span></a><a href="#message" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>message</span></a><a href="#name" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>name</span></a><a href="#stack" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>stack</span></a><a href="#stacktracelimit" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>stack<wbr/>Trace<wbr/>Limit</span></a></div></details>
+<div><a href="#cause"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>cause</span></a><a href="#code"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>code</span></a><a href="#message" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>message</span></a><a href="#name" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>name</span></a><a href="#stack" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>stack</span></a><a href="#stacktracelimit" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>stack<wbr/>Trace<wbr/>Limit</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
 <div><a href="#capturestacktrace" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>capture<wbr/>Stack<wbr/>Trace</span></a><a href="#iserror" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>is<wbr/>Error</span></a><a href="#preparestacktrace" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>prepare<wbr/>Stack<wbr/>Trace</span></a></div></details></div></details></div>
 <div class="site-menu">
