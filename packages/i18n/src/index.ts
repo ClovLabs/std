@@ -25,5 +25,10 @@ export {
 } from './message/define-message-catalog';
 export type { LocalizedMessage } from './message/type/localized-message';
 export type { MessageEntry } from './message/type/message-entry';
+export {
+	defineLocaleNegotiator,
+	type DefineLocaleNegotiatorOptions,
+	type LocaleNegotiator
+} from './negotiate-locale';
 export { resolveMessage } from './resolve-message';
 export type { Translations } from './type/translations';
