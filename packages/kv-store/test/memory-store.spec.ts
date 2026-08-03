@@ -1,7 +1,7 @@
 import { Exception } from '@clov-std/error';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { MEMORY_STORE_ERROR_KEYS, MemoryStore } from '#/memory-store';
+import { MEMORY_STORE_ERROR_CODES, MemoryStore } from '#/memory-store';
 
 describe.concurrent('MemoryStore', () => {
 	describe('Basic Operations', () => {
@@ -162,7 +162,7 @@ describe.concurrent('MemoryStore', () => {
 				expect.unreachable('should have thrown');
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(MEMORY_STORE_ERROR_KEYS.NOT_A_NUMBER);
+				expect((error as Exception).code).toBe(MEMORY_STORE_ERROR_CODES.VALUE_NOT_NUMERIC);
 			}
 			store.destroy();
 		});
@@ -176,7 +176,7 @@ describe.concurrent('MemoryStore', () => {
 				expect.unreachable('should have thrown');
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(MEMORY_STORE_ERROR_KEYS.NOT_A_NUMBER);
+				expect((error as Exception).code).toBe(MEMORY_STORE_ERROR_CODES.VALUE_NOT_NUMERIC);
 			}
 			store.destroy();
 		});
@@ -356,7 +356,7 @@ describe.concurrent('MemoryStore', () => {
 				expect.unreachable('should have thrown');
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(MEMORY_STORE_ERROR_KEYS.STORE_IS_FULL);
+				expect((error as Exception).code).toBe(MEMORY_STORE_ERROR_CODES.STORE_FULL);
 			}
 			store.destroy();
 		});

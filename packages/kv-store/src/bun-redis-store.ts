@@ -3,8 +3,8 @@ import { RedisClient, type RedisOptions } from 'bun';
 
 import { KvStore } from './kv-store';
 
-export const BUN_REDIS_STORE_ERROR_KEYS = {
-	CONNECTION_FAILED: 'kv-store.bun-redis-store.connection-failed'
+export const BUN_REDIS_STORE_ERROR_CODES = {
+	CONNECTION_FAILED: 'kv-store.connection.failed'
 } as const;
 
 export class BunRedisStore extends KvStore {
@@ -23,7 +23,7 @@ export class BunRedisStore extends KvStore {
 			await this.redis.connect();
 		} catch (error) {
 			throw new Exception('Failed to connect to Redis', {
-				key: BUN_REDIS_STORE_ERROR_KEYS.CONNECTION_FAILED,
+				code: BUN_REDIS_STORE_ERROR_CODES.CONNECTION_FAILED,
 				cause: error instanceof Error ? error : new Error(String(error))
 			});
 		}

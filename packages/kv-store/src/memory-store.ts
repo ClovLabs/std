@@ -2,9 +2,9 @@ import { Exception } from '@clov-std/error';
 
 import { KvStore } from './kv-store';
 
-export const MEMORY_STORE_ERROR_KEYS = {
-	STORE_IS_FULL: 'kv-store.memory-store.store-is-full',
-	NOT_A_NUMBER: 'kv-store.memory-store.not-a-number'
+export const MEMORY_STORE_ERROR_CODES = {
+	STORE_FULL: 'kv-store.store.full',
+	VALUE_NOT_NUMERIC: 'kv-store.value.not-numeric'
 } as const;
 
 interface MemoryStoreEntry {
@@ -76,7 +76,7 @@ export class MemoryStore extends KvStore {
 		KvStore.validateTtl(ttlSec);
 
 		if (this.store.size >= this.maxSize && !this.store.has(key))
-			throw new Exception('Store is full', { key: MEMORY_STORE_ERROR_KEYS.STORE_IS_FULL });
+			throw new Exception('Store is full', { code: MEMORY_STORE_ERROR_CODES.STORE_FULL });
 
 		const exp = ttlSec ? Date.now() + ttlSec * 1000 : -1;
 		this.store.set(key, { value, exp });
@@ -165,7 +165,7 @@ export class MemoryStore extends KvStore {
 			else {
 				if (entry.value !== null && typeof entry.value !== 'number')
 					throw new Exception('Value is not a number', {
-						key: MEMORY_STORE_ERROR_KEYS.NOT_A_NUMBER,
+						code: MEMORY_STORE_ERROR_CODES.VALUE_NOT_NUMERIC,
 						cause: { key, value: entry.value }
 					});
 				currentValue = entry.value ?? 0;
