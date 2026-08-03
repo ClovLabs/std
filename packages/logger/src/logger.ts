@@ -56,14 +56,14 @@ export interface LoggerOptions {
 	flushOnBeforeExit?: boolean;
 }
 
-export const LOGGER_ERROR_KEYS = {
-	SINK_ALREADY_ADDED: 'logger.sink-already-added',
-	NO_SINKS_PROVIDED: 'logger.no-sinks-provided',
-	SINK_LOG_ERROR: 'logger.sink-log-error',
-	SINK_CLOSE_ERROR: 'logger.sink-close-error',
-	REGISTER_SINK_ERROR: 'logger.register-sink-error',
-	BEFORE_EXIT_FLUSH_ERROR: 'logger.before-exit-flush-error',
-	BEFORE_EXIT_CLOSE_ERROR: 'logger.before-exit-close-error'
+export const LOGGER_ERROR_CODES = {
+	SINK_DUPLICATE: 'logger.sink.duplicate',
+	SINKS_MISSING: 'logger.sinks.missing',
+	SINK_WRITE_FAILED: 'logger.sink.write-failed',
+	SINK_CLOSE_FAILED: 'logger.sink.close-failed',
+	SINK_REGISTRATION_FAILED: 'logger.sink.registration-failed',
+	EXIT_FLUSH_FAILED: 'logger.exit.flush-failed',
+	EXIT_CLOSE_FAILED: 'logger.exit.close-failed'
 } as const;
 
 /**
@@ -192,7 +192,7 @@ export class Logger<
 	): Logger<TSinks & Record<TSinkName, (...args: TSinkArgs) => TSink>> {
 		if (this.sinks[sinkName as keyof TSinks] !== undefined)
 			throw new Exception('Sink is already registered', {
-				key: LOGGER_ERROR_KEYS.SINK_ALREADY_ADDED,
+				code: LOGGER_ERROR_CODES.SINK_DUPLICATE,
 				cause: { sinkName }
 			});
 		this.worker.postMessage({
@@ -307,7 +307,7 @@ export class Logger<
 	): void {
 		if (this.sinkKeys.length === 0)
 			throw new Exception('No sinks provided', {
-				key: LOGGER_ERROR_KEYS.NO_SINKS_PROVIDED,
+				code: LOGGER_ERROR_CODES.SINKS_MISSING,
 				cause: { level, object }
 			});
 
@@ -453,7 +453,7 @@ export class Logger<
 					this.emit(
 						'sinkError',
 						new Exception('Sink failed to log message', {
-							key: LOGGER_ERROR_KEYS.SINK_LOG_ERROR,
+							code: LOGGER_ERROR_CODES.SINK_WRITE_FAILED,
 							cause: {
 								sinkName: event.data.sinkName,
 								object: event.data.object,
@@ -467,7 +467,7 @@ export class Logger<
 					this.emit(
 						'sinkError',
 						new Exception('Sink failed to close', {
-							key: LOGGER_ERROR_KEYS.SINK_CLOSE_ERROR,
+							code: LOGGER_ERROR_CODES.SINK_CLOSE_FAILED,
 							cause: { sinkName: event.data.sinkName, error: event.data.error }
 						})
 					);
@@ -477,7 +477,7 @@ export class Logger<
 					this.emit(
 						'registerSinkError',
 						new Exception('Failed to register sink', {
-							key: LOGGER_ERROR_KEYS.REGISTER_SINK_ERROR,
+							code: LOGGER_ERROR_CODES.SINK_REGISTRATION_FAILED,
 							cause: { sinkName: event.data.sinkName, error: event.data.error }
 						})
 					);
@@ -527,7 +527,7 @@ export class Logger<
 					this.emit(
 						'onBeforeExitError',
 						new Exception('Failed to flush before exit', {
-							key: LOGGER_ERROR_KEYS.BEFORE_EXIT_FLUSH_ERROR,
+							code: LOGGER_ERROR_CODES.EXIT_FLUSH_FAILED,
 							cause: { error: error as Error }
 						})
 					);
@@ -537,7 +537,7 @@ export class Logger<
 				this.emit(
 					'onBeforeExitError',
 					new Exception('Failed to close before exit', {
-						key: LOGGER_ERROR_KEYS.BEFORE_EXIT_CLOSE_ERROR,
+						code: LOGGER_ERROR_CODES.EXIT_CLOSE_FAILED,
 						cause: { error: error as Error }
 					})
 				);
