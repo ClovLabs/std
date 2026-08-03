@@ -184,7 +184,14 @@
 		"typescript/no-unsafe-function-type": "error",
 		"typescript/no-unsafe-member-access": "error",
 		"typescript/no-unsafe-return": "error",
-		"typescript/only-throw-error": "error",
+		// Elysia's `status()` and `problem()` return an `ElysiaStatus`, which is not an `Error`
+		// subclass, yet throwing it is the framework's own idiom: its handler branches on
+		// `instanceof ElysiaStatus` before anything else. Allowed by name rather than turning
+		// the rule off, so it still catches `throw 'string'` and `throw { code: 1 }`.
+		"typescript/only-throw-error": [
+			"error",
+			{ "allow": [{ "from": "package", "package": "elysia", "name": "ElysiaStatus" }] }
+		],
 		"typescript/prefer-enum-initializers": "error",
 		"typescript/prefer-includes": "off",
 		"typescript/prefer-nullish-coalescing": "warn",
