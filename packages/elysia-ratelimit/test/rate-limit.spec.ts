@@ -7,6 +7,8 @@ import { RATE_LIMIT_ERROR_KEYS, RateLimitException, rateLimitPlugin } from '#/ra
 interface RateLimitBody {
 	type: string;
 	title: string;
+	/** Optional here only because the catch-all handlers below never set it. */
+	status?: number;
 	detail?: string;
 }
 
@@ -19,6 +21,7 @@ const errorPlugin = new Elysia({ name: 'error-plugin' })
 		status(429, {
 			type: 'request.rateLimitExceeded',
 			title: 'Too many requests. Please try again later.',
+			status: 429,
 			detail: `Retry in ${error.cause?.reset ?? 0}s.`
 		})
 	)
@@ -37,7 +40,8 @@ const keyErrorPlugin = new Elysia({ name: 'key-error-plugin' })
 		(error as { key?: string }).key === RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED
 			? status(429, {
 					type: 'request.rateLimitExceeded',
-					title: 'Too many requests. Please try again later.'
+					title: 'Too many requests. Please try again later.',
+					status: 429
 				})
 			: status(500, {
 					type: 'internal',
@@ -96,7 +100,8 @@ describe.concurrent('rateLimitPlugin without an error handler', () => {
 		const body = (await response.json()) as RateLimitBody;
 		expect(body).toEqual({
 			type: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
-			title: 'Too Many Requests'
+			title: 'Too Many Requests',
+			status: 429
 		});
 	});
 
@@ -117,6 +122,28 @@ describe.concurrent('rateLimitPlugin without an error handler', () => {
 		expect(response.headers.get('X-RateLimit-Limit')).toEqual('1');
 		expect(response.headers.get('X-RateLimit-Remaining')).toEqual('0');
 		expect(parseInt(response.headers.get('X-RateLimit-Reset') ?? '0', 10)).toBeGreaterThan(0);
+	});
+
+	test('should answer the 429 as application/problem+json', async () => {
+		const ip = '10.0.0.3';
+		const app = new Elysia()
+			.use(rateLimitPlugin())
+			.get('/content-type', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		const ok = await app.handle(
+			new Request('http://localhost/content-type', { headers: { 'x-forwarded-for': ip } })
+		);
+		expect(ok.status).toEqual(200);
+		// The problem content type is set right before the throw, so it must not leak on success.
+		// Coalesced because a plain 200 carries no content-type at all here.
+		expect(ok.headers.get('content-type') ?? '').not.toInclude('problem');
+
+		const response = await app.handle(
+			new Request('http://localhost/content-type', { headers: { 'x-forwarded-for': ip } })
+		);
+
+		expect(response.status).toEqual(429);
+		expect(response.headers.get('content-type')).toEqual('application/problem+json');
 	});
 
 	test('should track different IPs separately', async () => {
@@ -379,6 +406,19 @@ describe.concurrent('rateLimitPlugin behind an application error plugin', () => 
 		expect(body.title).toEqual('Too many requests. Please try again later.');
 		// `cause` carries the counter state, so the handler can build its own detail.
 		expect(body.detail).toEqual('Retry in 60s.');
+	});
+
+	test('should keep the problem content type when the plugin rewrites the body', async () => {
+		const app = new Elysia()
+			.use(errorPlugin)
+			.use(rateLimitPlugin())
+			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		const response = await exceed(app, '20.0.0.3');
+
+		expect(response.status).toEqual(429);
+		// A localized body is still a problem document, the content type must survive the override.
+		expect(response.headers.get('content-type')).toEqual('application/problem+json');
 	});
 
 	test('should keep the rate limit headers set before the throw', async () => {
