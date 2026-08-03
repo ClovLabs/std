@@ -147,7 +147,10 @@ export const rateLimitPlugin = (
 				set.headers['X-RateLimit-Remaining'] = remaining.toString();
 				set.headers['X-RateLimit-Reset'] = reset.toString();
 
-				if (count > limit) throw new RateLimitException({ limit, window, reset });
+				if (count > limit) {
+					set.headers['content-type'] = 'application/problem+json';
+					throw new RateLimitException({ limit, window, reset });
+				}
 			}
 		})) satisfies RateLimitMacro
 	});
