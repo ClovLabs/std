@@ -56,14 +56,14 @@ export interface LoggerOptions {
 	flushOnBeforeExit?: boolean;
 }
 
-export const LOGGER_ERROR_KEYS = {
-	SINK_ALREADY_ADDED: 'logger.sink-already-added',
-	NO_SINKS_PROVIDED: 'logger.no-sinks-provided',
-	SINK_LOG_ERROR: 'logger.sink-log-error',
-	SINK_CLOSE_ERROR: 'logger.sink-close-error',
-	REGISTER_SINK_ERROR: 'logger.register-sink-error',
-	BEFORE_EXIT_FLUSH_ERROR: 'logger.before-exit-flush-error',
-	BEFORE_EXIT_CLOSE_ERROR: 'logger.before-exit-close-error'
+export const LOGGER_ERROR_CODES = {
+	SINK_DUPLICATE: 'logger.sink.duplicate',
+	SINKS_MISSING: 'logger.sinks.missing',
+	SINK_WRITE_FAILED: 'logger.sink.write-failed',
+	SINK_CLOSE_FAILED: 'logger.sink.close-failed',
+	SINK_REGISTRATION_FAILED: 'logger.sink.registration-failed',
+	EXIT_FLUSH_FAILED: 'logger.exit.flush-failed',
+	EXIT_CLOSE_FAILED: 'logger.exit.close-failed'
 } as const;
 
 /**
@@ -190,9 +190,12 @@ export class Logger<
 		sinkFactory: (...args: TSinkArgs) => TSink,
 		...sinkArgs: TSinkArgs
 	): Logger<TSinks & Record<TSinkName, (...args: TSinkArgs) => TSink>> {
-		if (this.sinks[sinkName as keyof TSinks] !== undefined)
+		// `Object.hasOwn` rather than an `undefined` check: `sinkName` is a name absent from
+		// `TSinks` by definition, so indexing it would need a cast that tells the compiler the
+		// value always exists and makes the guard look dead.
+		if (Object.hasOwn(this.sinks, sinkName))
 			throw new Exception('Sink is already registered', {
-				key: LOGGER_ERROR_KEYS.SINK_ALREADY_ADDED,
+				code: LOGGER_ERROR_CODES.SINK_DUPLICATE,
 				cause: { sinkName }
 			});
 		this.worker.postMessage({
@@ -202,7 +205,7 @@ export class Logger<
 			sinkArgs
 		});
 		this.sinks[sinkName as keyof TSinks] = sinkFactory as unknown as TSinks[keyof TSinks];
-		this.sinkKeys.push(sinkName as keyof TSinks);
+		this.sinkKeys.push(sinkName);
 		return this as unknown as Logger<TSinks & Record<TSinkName, (...args: TSinkArgs) => TSink>>;
 	}
 
@@ -307,7 +310,7 @@ export class Logger<
 	): void {
 		if (this.sinkKeys.length === 0)
 			throw new Exception('No sinks provided', {
-				key: LOGGER_ERROR_KEYS.NO_SINKS_PROVIDED,
+				code: LOGGER_ERROR_CODES.SINKS_MISSING,
 				cause: { level, object }
 			});
 
@@ -350,7 +353,10 @@ export class Logger<
 	 */
 	private async processPendingLogs(): Promise<void> {
 		while (this.pendingLogs.length - this.pendingHead > 0) {
+			// Backpressure: the loop must idle until the worker drains before queueing the next
+			// batch. Sequential by design, so `Promise.all` would defeat the mechanism.
 			if (this.messagesInFlight >= this.maxMessagesInFlight)
+				// oxlint-disable-next-line no-await-in-loop
 				await new Promise<void>((resolve) => {
 					this.backpressureResolver = resolve;
 				});
@@ -453,7 +459,7 @@ export class Logger<
 					this.emit(
 						'sinkError',
 						new Exception('Sink failed to log message', {
-							key: LOGGER_ERROR_KEYS.SINK_LOG_ERROR,
+							code: LOGGER_ERROR_CODES.SINK_WRITE_FAILED,
 							cause: {
 								sinkName: event.data.sinkName,
 								object: event.data.object,
@@ -467,7 +473,7 @@ export class Logger<
 					this.emit(
 						'sinkError',
 						new Exception('Sink failed to close', {
-							key: LOGGER_ERROR_KEYS.SINK_CLOSE_ERROR,
+							code: LOGGER_ERROR_CODES.SINK_CLOSE_FAILED,
 							cause: { sinkName: event.data.sinkName, error: event.data.error }
 						})
 					);
@@ -477,7 +483,7 @@ export class Logger<
 					this.emit(
 						'registerSinkError',
 						new Exception('Failed to register sink', {
-							key: LOGGER_ERROR_KEYS.REGISTER_SINK_ERROR,
+							code: LOGGER_ERROR_CODES.SINK_REGISTRATION_FAILED,
 							cause: { sinkName: event.data.sinkName, error: event.data.error }
 						})
 					);
@@ -527,7 +533,7 @@ export class Logger<
 					this.emit(
 						'onBeforeExitError',
 						new Exception('Failed to flush before exit', {
-							key: LOGGER_ERROR_KEYS.BEFORE_EXIT_FLUSH_ERROR,
+							code: LOGGER_ERROR_CODES.EXIT_FLUSH_FAILED,
 							cause: { error: error as Error }
 						})
 					);
@@ -537,7 +543,7 @@ export class Logger<
 				this.emit(
 					'onBeforeExitError',
 					new Exception('Failed to close before exit', {
-						key: LOGGER_ERROR_KEYS.BEFORE_EXIT_CLOSE_ERROR,
+						code: LOGGER_ERROR_CODES.EXIT_CLOSE_FAILED,
 						cause: { error: error as Error }
 					})
 				);

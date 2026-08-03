@@ -1,7 +1,7 @@
 import { Exception } from '@clov-std/error';
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { Registry, REGISTRY_ERROR_KEYS } from '#/registry';
+import { Registry, REGISTRY_ERROR_CODES } from '#/registry';
 
 class FakeService {
 	public readonly value: string;
@@ -34,8 +34,8 @@ describe.concurrent('Registry', () => {
 				expect.unreachable('Should have thrown');
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(
-					REGISTRY_ERROR_KEYS.CLASS_INSTANCE_ALREADY_REGISTERED
+				expect((error as Exception).code).toBe(
+					REGISTRY_ERROR_CODES.INSTANCE_ALREADY_REGISTERED
 				);
 			}
 		});
@@ -46,8 +46,8 @@ describe.concurrent('Registry', () => {
 				expect.unreachable('Should have thrown');
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(
-					REGISTRY_ERROR_KEYS.CLASS_INSTANCE_NOT_REGISTERED
+				expect((error as Exception).code).toBe(
+					REGISTRY_ERROR_CODES.INSTANCE_NOT_REGISTERED
 				);
 			}
 		});
@@ -78,8 +78,8 @@ describe.concurrent('Registry', () => {
 				expect.unreachable('Should have thrown');
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(
-					REGISTRY_ERROR_KEYS.CLASS_INSTANCE_NOT_REGISTERED
+				expect((error as Exception).code).toBe(
+					REGISTRY_ERROR_CODES.INSTANCE_NOT_REGISTERED
 				);
 			}
 		});

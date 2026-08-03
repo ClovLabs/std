@@ -1,4 +1,4 @@
-import type { HttpStatusCode, HttpStatusKey } from '../constant/http-status-codes';
+import type { HttpStatusCode, HttpStatusKey } from '@clov-std/error';
 import type { CatalogFactory, EntryMap, ExactEntries, LocalesOf } from '../type/translations';
 import { LocalizedException } from './localized-exception';
 import { LocalizedHttpException } from './localized-http-exception';
@@ -41,7 +41,7 @@ export interface DefineExceptionCatalogOptions<TDefs extends EntryMap> {
  * Builds a typed exception catalog from a set of entry definitions.
  *
  * Each key becomes a factory returning a throwable exception pre-filled with its
- * translations and the definition key as error key: a {@link LocalizedHttpException}
+ * translations and the definition key as error code: a {@link LocalizedHttpException}
  * when the entry declares a `status`, a plain {@link LocalizedException} otherwise.
  *
  * @param options - Default locale and exception definitions.

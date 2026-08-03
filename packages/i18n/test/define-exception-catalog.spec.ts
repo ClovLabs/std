@@ -50,7 +50,7 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 			}
 		});
 
-		expect(catalog.simple().key).toBe('simple');
+		expect(catalog.simple().code).toBe('simple');
 	});
 
 	test('should not interpolate params in the exception message', (): void => {
@@ -156,7 +156,7 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 			}
 		});
 
-		expect(authCatalog.denied().key).toBe('denied');
+		expect(authCatalog.denied().code).toBe('denied');
 	});
 
 	test('should produce a plain LocalizedException from a status-less entry', (): void => {
@@ -174,7 +174,7 @@ describe.concurrent('defineExceptionCatalog', (): void => {
 		expect(error).toBeInstanceOf(LocalizedException);
 		expect(error).not.toBeInstanceOf(LocalizedHttpException);
 		expect('httpStatusCode' in error).toBe(false);
-		expect(error.key).toBe('cancelled');
+		expect(error.code).toBe('cancelled');
 		expect(resolveMessage(error, 'fr')).toBe('Tâche annulée');
 	});
 

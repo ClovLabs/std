@@ -1,9 +1,9 @@
 import { Exception } from '@clov-std/error';
 
 /** Error codes thrown by the {@link Registry} class. */
-export const REGISTRY_ERROR_KEYS = {
-	CLASS_INSTANCE_ALREADY_REGISTERED: 'registry.class-instance-already-registered',
-	CLASS_INSTANCE_NOT_REGISTERED: 'registry.class-instance-not-registered'
+export const REGISTRY_ERROR_CODES = {
+	INSTANCE_ALREADY_REGISTERED: 'registry.instance.already-registered',
+	INSTANCE_NOT_REGISTERED: 'registry.instance.not-registered'
 } as const;
 
 /**
@@ -38,7 +38,7 @@ export class Registry {
 	public static register<TClass extends object>(name: string, instance: TClass): void {
 		if (this.registry.has(name))
 			throw new Exception(`Instance already registered: ${name}`, {
-				key: REGISTRY_ERROR_KEYS.CLASS_INSTANCE_ALREADY_REGISTERED,
+				code: REGISTRY_ERROR_CODES.INSTANCE_ALREADY_REGISTERED,
 				cause: name
 			});
 		this.registry.set(name, instance);
@@ -56,7 +56,7 @@ export class Registry {
 	public static unregister(name: string): void {
 		if (!this.registry.delete(name))
 			throw new Exception(`Instance not registered: ${name}`, {
-				key: REGISTRY_ERROR_KEYS.CLASS_INSTANCE_NOT_REGISTERED,
+				code: REGISTRY_ERROR_CODES.INSTANCE_NOT_REGISTERED,
 				cause: name
 			});
 	}
@@ -77,7 +77,7 @@ export class Registry {
 		const instance = this.registry.get(name);
 		if (!instance)
 			throw new Exception(`Instance not registered: ${name}`, {
-				key: REGISTRY_ERROR_KEYS.CLASS_INSTANCE_NOT_REGISTERED,
+				code: REGISTRY_ERROR_CODES.INSTANCE_NOT_REGISTERED,
 				cause: name
 			});
 		return instance as TClass;

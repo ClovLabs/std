@@ -1,8 +1,8 @@
 import { Exception } from '@clov-std/error';
 import { describe, expect, spyOn, test } from 'bun:test';
 
-import { generateHOTP, HOTP_ERROR_KEYS, verifyHOTP } from '#/hotp';
-import { DECODE_BASE32_ERROR_KEYS } from '#/util/decode-base32';
+import { generateHOTP, HOTP_ERROR_CODES, verifyHOTP } from '#/hotp';
+import { DECODE_BASE32_ERROR_CODES } from '#/util/decode-base32';
 
 // RFC 4226 Appendix D — test values for HOTP with SHA-1
 // Secret = "12345678901234567890" (ASCII), counter 0-9
@@ -80,13 +80,13 @@ describe.concurrent('generateHOTP', () => {
 	});
 
 	describe('error handling', () => {
-		test('should throw INVALID_SECRET for empty Uint8Array secret', async () => {
+		test('should throw SECRET_INVALID for empty Uint8Array secret', async () => {
 			try {
 				await generateHOTP({ secret: new Uint8Array(0), counter: 0 });
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(HOTP_ERROR_KEYS.INVALID_SECRET);
+				expect((error as Exception).code).toBe(HOTP_ERROR_CODES.SECRET_INVALID);
 			}
 		});
 
@@ -96,17 +96,17 @@ describe.concurrent('generateHOTP', () => {
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(DECODE_BASE32_ERROR_KEYS.INVALID_CHAR);
+				expect((error as Exception).code).toBe(DECODE_BASE32_ERROR_CODES.INVALID_CHARACTER);
 			}
 		});
 
-		test.each([0, -1, 11, 100])('should throw INVALID_DIGITS for digits=%i', async (digits) => {
+		test.each([0, -1, 11, 100])('should throw DIGITS_INVALID for digits=%i', async (digits) => {
 			try {
 				await generateHOTP({ secret: RFC4226_SECRET, counter: 0, digits });
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(HOTP_ERROR_KEYS.INVALID_DIGITS);
+				expect((error as Exception).code).toBe(HOTP_ERROR_CODES.DIGITS_INVALID);
 				expect((error as Exception).cause).toEqual({ digits });
 			}
 		});
@@ -122,7 +122,7 @@ describe.concurrent('generateHOTP', () => {
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
 				expect((error as Exception).message).toBe('HMAC computation failed');
-				expect((error as Exception).key).toBe(HOTP_ERROR_KEYS.HMAC_FAILED);
+				expect((error as Exception).code).toBe(HOTP_ERROR_CODES.HMAC_FAILED);
 				expect((error as Exception).cause).toBeInstanceOf(Error);
 				expect(((error as Exception).cause as Error).message).toBe('Mocked sign error');
 			} finally {

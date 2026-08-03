@@ -1,7 +1,7 @@
 import { Exception } from '@clov-std/error';
 
-export const PARSE_HUMAN_TIME_ERROR_KEYS = {
-	INVALID_TIME_EXPRESSION: 'common.parse-human-time.invalid-time-expression'
+export const PARSE_HUMAN_TIME_ERROR_CODES = {
+	TIME_EXPRESSION_INVALID: 'common.time-expression.invalid'
 } as const;
 
 export type TimeUnit =
@@ -113,7 +113,7 @@ export const parseHumanTime = (timeExpression: string, unit: TimeUnit = 'seconds
 
 	if (!match || (match[4] && match[1]))
 		throw new Exception(`Invalid time expression: ${timeExpression}`, {
-			key: PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION,
+			code: PARSE_HUMAN_TIME_ERROR_CODES.TIME_EXPRESSION_INVALID,
 			cause: { timeExpression }
 		});
 
@@ -121,7 +121,7 @@ export const parseHumanTime = (timeExpression: string, unit: TimeUnit = 'seconds
 
 	if (!valueStr || !unitStr)
 		throw new Exception(`Invalid time expression: ${timeExpression}`, {
-			key: PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION,
+			code: PARSE_HUMAN_TIME_ERROR_CODES.TIME_EXPRESSION_INVALID,
 			cause: { timeExpression }
 		});
 
@@ -131,7 +131,7 @@ export const parseHumanTime = (timeExpression: string, unit: TimeUnit = 'seconds
 	const multiplier = UNIT_MAPPINGS[rawUnit];
 	if (!multiplier)
 		throw new Exception(`Invalid time expression: ${timeExpression}`, {
-			key: PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION,
+			code: PARSE_HUMAN_TIME_ERROR_CODES.TIME_EXPRESSION_INVALID,
 			cause: { timeExpression, rawUnit }
 		});
 

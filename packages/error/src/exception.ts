@@ -4,15 +4,15 @@
  * @template TCause - Type of the underlying cause, kept as-is for debugging.
  */
 export interface ExceptionOptions<TCause = unknown> {
-	/** Application-specific error key (e.g. `'auth.tokenExpired'`). */
-	readonly key?: string | undefined;
+	/** Application-specific error code (e.g. `'jwt.token.expired'`). */
+	readonly code?: string | undefined;
 
 	/** Original error or contextual value that triggered this exception. */
 	readonly cause?: TCause | undefined;
 }
 
 /**
- * Base exception that extends the native `Error` with a machine-readable `key` and a
+ * Base exception that extends the native `Error` with a machine-readable `code` and a
  * typed `cause`.
  *
  * Carries no request id and no timestamp: those belong to whatever handles the error.
@@ -24,8 +24,8 @@ export class Exception<const TCause = unknown> extends Error {
 	/** Original error or value that triggered this exception. */
 	public override readonly cause: TCause | undefined;
 
-	/** Application-specific error key (e.g. `'auth.tokenExpired'`). */
-	public readonly key: string | undefined;
+	/** Application-specific error code (e.g. `'jwt.token.expired'`). */
+	public readonly code: string | undefined;
 
 	/**
 	 * Creates a new exception.
@@ -36,7 +36,7 @@ export class Exception<const TCause = unknown> extends Error {
 	public constructor(message: string, init?: ExceptionOptions<TCause>) {
 		super(message, { cause: init?.cause });
 		this.cause = init?.cause;
-		this.key = init?.key;
+		this.code = init?.code;
 		this.name = new.target.name;
 		Error.captureStackTrace(this, new.target);
 	}

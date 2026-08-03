@@ -1,4 +1,4 @@
-export { LOGGER_ERROR_KEYS, Logger, type LoggerOptions } from './logger';
+export { LOGGER_ERROR_CODES, Logger, type LoggerOptions } from './logger';
 export { consoleSink } from './sinks/console-logger';
 export { devNullSink } from './sinks/devnull-logger';
 export { fileSink } from './sinks/file-logger';

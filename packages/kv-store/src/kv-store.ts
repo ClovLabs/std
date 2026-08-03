@@ -1,9 +1,9 @@
 import { Exception } from '@clov-std/error';
 
-export const KV_STORE_ERROR_KEYS = {
-	INVALID_KEY: 'kv-store.invalid-key',
-	INVALID_TTL: 'kv-store.invalid-ttl',
-	INVALID_AMOUNT: 'kv-store.invalid-amount'
+export const KV_STORE_ERROR_CODES = {
+	KEY_INVALID: 'kv-store.key.invalid',
+	TTL_INVALID: 'kv-store.ttl.invalid',
+	AMOUNT_INVALID: 'kv-store.amount.invalid'
 } as const;
 
 /**
@@ -26,7 +26,7 @@ export abstract class KvStore {
 	protected static validateKey(key: string): void {
 		if (!key || typeof key !== 'string' || key.length > 1024 || key.includes('\0'))
 			throw new Exception('Invalid key', {
-				key: KV_STORE_ERROR_KEYS.INVALID_KEY,
+				code: KV_STORE_ERROR_CODES.KEY_INVALID,
 				cause: { key }
 			});
 	}
@@ -43,7 +43,7 @@ export abstract class KvStore {
 
 		if (!Number.isFinite(ttlSec) || ttlSec <= 0 || !Number.isInteger(ttlSec))
 			throw new Exception('Invalid TTL', {
-				key: KV_STORE_ERROR_KEYS.INVALID_TTL,
+				code: KV_STORE_ERROR_CODES.TTL_INVALID,
 				cause: { ttlSec }
 			});
 	}
@@ -58,7 +58,7 @@ export abstract class KvStore {
 	protected static validateAmount(amount: number): void {
 		if (!Number.isFinite(amount) || !Number.isInteger(amount))
 			throw new Exception('Invalid amount', {
-				key: KV_STORE_ERROR_KEYS.INVALID_AMOUNT,
+				code: KV_STORE_ERROR_CODES.AMOUNT_INVALID,
 				cause: { amount }
 			});
 	}

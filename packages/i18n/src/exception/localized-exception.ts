@@ -46,13 +46,13 @@ export class LocalizedException<const TCause = unknown> extends Exception<TCause
 	/**
 	 * Creates a new localized exception.
 	 *
-	 * @param key - Application-specific error key (e.g. `'job.cancelled'`).
+	 * @param code - Application-specific error code (e.g. `'queue.job.cancelled'`).
 	 * @param init - Translations, params, default locale, and cause.
 	 */
-	public constructor(key: string, init: LocalizedExceptionOptions<TCause>) {
+	public constructor(code: string, init: LocalizedExceptionOptions<TCause>) {
 		super(init.translations[init.defaultLocale] ?? '', {
 			cause: init.cause,
-			key
+			code
 		});
 		this.translations = init.translations;
 		this.params = init.params;

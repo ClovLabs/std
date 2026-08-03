@@ -1,1 +1,1 @@
-export { Registry, REGISTRY_ERROR_KEYS } from './registry';
+export { Registry, REGISTRY_ERROR_CODES } from './registry';

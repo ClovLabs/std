@@ -74,25 +74,25 @@ const { payload } = await verifyJWT(token, secret, {
 
 ## 🚨 Error handling
 
-All errors are `Exception` instances from `@clov-std/error` with a `key` you can check:
+All errors are `Exception` instances from `@clov-std/error` with a `code` you can check:
 
-| Key                     | When                                                            |
-| ----------------------- | --------------------------------------------------------------- |
-| `jwt.secret_too_weak`   | Secret is shorter than 32 characters                            |
-| `jwt.expiration_passed` | Expiration is in the past or equals now                         |
-| `jwt.sign_error`        | jose failed to sign the token                                   |
-| `jwt.token_expired`     | Token is valid but past its expiry date                         |
-| `jwt.unauthorized`      | Invalid signature, malformed token, or claim validation failure |
+| Code                     | Constant                             | When                                                            |
+| ------------------------ | ------------------------------------ | --------------------------------------------------------------- |
+| `jwt.secret.too-weak`    | `JWT_ERROR_CODES.SECRET_TOO_WEAK`    | Secret is shorter than 32 characters                            |
+| `jwt.expiration.in-past` | `JWT_ERROR_CODES.EXPIRATION_IN_PAST` | Expiration is in the past or equals now                         |
+| `jwt.signing.failed`     | `JWT_ERROR_CODES.SIGNING_FAILED`     | jose failed to sign the token                                   |
+| `jwt.token.expired`      | `JWT_ERROR_CODES.TOKEN_EXPIRED`      | Token is valid but past its expiry date                         |
+| `jwt.token.invalid`      | `JWT_ERROR_CODES.TOKEN_INVALID`      | Invalid signature, malformed token, or claim validation failure |
 
 ```ts
 import { Exception } from '@clov-std/error';
-import { JWT_ERROR_KEYS, verifyJWT } from '@clov-std/jwt';
+import { JWT_ERROR_CODES, verifyJWT } from '@clov-std/jwt';
 
 try {
 	const { payload } = await verifyJWT(token, secret);
 } catch (error) {
 	if (error instanceof Exception) {
-		if (error.key === JWT_ERROR_KEYS.JWT_EXPIRED) {
+		if (error.code === JWT_ERROR_CODES.TOKEN_EXPIRED) {
 			// Token expired — trigger a refresh
 		}
 		// Everything else is unauthorized

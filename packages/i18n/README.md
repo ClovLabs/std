@@ -35,7 +35,7 @@ applications with no HTTP layer.
 - 🚨 **Localized exceptions** : `defineExceptionCatalog` gives you factory functions that create throwable exceptions, with a status code when the entry declares one.
 - 💬 **Localized messages** : `defineMessageCatalog` does the same for plain messages : confirmations, notifications, anything that isn't an error.
 - 🔗 **Template interpolation** : Use `{{param}}` placeholders in translations; `resolveMessage` fills them in.
-- 🔑 **Stable error keys** : Every exception carries its definition key, inherited from `@clov-std/error`, so handlers branch on `error.key`.
+- 🔑 **Stable error codes** : Every exception carries its definition key as `code`, inherited from `@clov-std/error`, so handlers branch on `error.code`.
 
 ## 🔧 Installation
 

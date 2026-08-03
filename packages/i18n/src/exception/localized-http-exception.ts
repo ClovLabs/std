@@ -1,8 +1,5 @@
-import {
-	HTTP_STATUS_CODES,
-	type HttpStatusCode,
-	type HttpStatusKey
-} from '../constant/http-status-codes';
+import { HTTP_STATUS_CODES, type HttpStatusCode, type HttpStatusKey } from '@clov-std/error';
+
 import { LocalizedException, type LocalizedExceptionOptions } from './localized-exception';
 
 /**
@@ -36,11 +33,11 @@ export class LocalizedHttpException<const TCause = unknown> extends LocalizedExc
 	/**
 	 * Creates a new localized HTTP exception.
 	 *
-	 * @param key - Application-specific error key (e.g. `'dns.invalidRecordType'`).
+	 * @param code - Application-specific error code (e.g. `'dns.record-type.invalid'`).
 	 * @param init - Status, translations, params, and cause.
 	 */
-	public constructor(key: string, init: LocalizedHttpExceptionOptions<TCause>) {
-		super(key, init);
+	public constructor(code: string, init: LocalizedHttpExceptionOptions<TCause>) {
+		super(code, init);
 		this.httpStatusCode =
 			typeof init.status === 'number' ? init.status : HTTP_STATUS_CODES[init.status];
 	}

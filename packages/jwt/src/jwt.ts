@@ -1,12 +1,12 @@
 import { Exception } from '@clov-std/error';
 import { SignJWT, errors, jwtVerify, type JWTPayload, type JWTVerifyResult } from 'jose';
 
-export const JWT_ERROR_KEYS = {
-	JWT_SECRET_TOO_WEAK: 'jwt.secret-too-weak',
-	JWT_EXPIRATION_PASSED: 'jwt.expiration-passed',
-	JWT_SIGN_ERROR: 'jwt.sign-error',
-	JWT_EXPIRED: 'jwt.token-expired',
-	JWT_UNAUTHORIZED: 'jwt.unauthorized'
+export const JWT_ERROR_CODES = {
+	SECRET_TOO_WEAK: 'jwt.secret.too-weak',
+	EXPIRATION_IN_PAST: 'jwt.expiration.in-past',
+	SIGNING_FAILED: 'jwt.signing.failed',
+	TOKEN_EXPIRED: 'jwt.token.expired',
+	TOKEN_INVALID: 'jwt.token.invalid'
 } as const;
 
 // Avoid re-instantiation on each call
@@ -35,7 +35,7 @@ export const signJWT = (
 ): Promise<string> => {
 	if (secret.length < 32)
 		throw new Exception('Secret key must be at least 32 characters long', {
-			key: JWT_ERROR_KEYS.JWT_SECRET_TOO_WEAK,
+			code: JWT_ERROR_CODES.SECRET_TOO_WEAK,
 			cause: { providedLength: secret.length }
 		});
 
@@ -44,7 +44,7 @@ export const signJWT = (
 
 	if (exp <= nowSeconds)
 		throw new Exception('Expiration time must be in the future', {
-			key: JWT_ERROR_KEYS.JWT_EXPIRATION_PASSED,
+			code: JWT_ERROR_CODES.EXPIRATION_IN_PAST,
 			cause: { providedExpirationSeconds: expirationSeconds }
 		});
 
@@ -64,7 +64,7 @@ export const signJWT = (
 			.sign(textEncoder.encode(secret));
 	} catch (error) {
 		throw new Exception('Failed to sign JWT', {
-			key: JWT_ERROR_KEYS.JWT_SIGN_ERROR,
+			code: JWT_ERROR_CODES.SIGNING_FAILED,
 			cause: error
 		});
 	}
@@ -95,10 +95,10 @@ export const verifyJWT = async (
 	} catch (error) {
 		if (error instanceof errors.JWTExpired)
 			throw new Exception('JWT token has expired', {
-				key: JWT_ERROR_KEYS.JWT_EXPIRED
+				code: JWT_ERROR_CODES.TOKEN_EXPIRED
 			});
 		throw new Exception('Unauthorized', {
-			key: JWT_ERROR_KEYS.JWT_UNAUTHORIZED
+			code: JWT_ERROR_CODES.TOKEN_INVALID
 		});
 	}
 };

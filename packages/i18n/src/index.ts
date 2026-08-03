@@ -1,8 +1,3 @@
-export {
-	HTTP_STATUS_CODES,
-	type HttpStatusCode,
-	type HttpStatusKey
-} from './constant/http-status-codes';
 export { entry } from './entry';
 export {
 	defineExceptionCatalog,

@@ -1,7 +1,7 @@
 import { Exception } from '@clov-std/error';
 import { describe, expect, test } from 'bun:test';
 
-import { PARSE_HUMAN_TIME_ERROR_KEYS, parseHumanTime } from '#/parse-human-time';
+import { PARSE_HUMAN_TIME_ERROR_CODES, parseHumanTime } from '#/parse-human-time';
 
 describe.concurrent('parseHumanTime', () => {
 	describe('basic time units (default seconds)', () => {
@@ -187,8 +187,8 @@ describe.concurrent('parseHumanTime', () => {
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
 				expect((error as Exception).message).toBe('Invalid time expression: ' + input);
-				expect((error as Exception).key).toBe(
-					PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION
+				expect((error as Exception).code).toBe(
+					PARSE_HUMAN_TIME_ERROR_CODES.TIME_EXPRESSION_INVALID
 				);
 				expect((error as Exception).cause).toEqual({ timeExpression: input });
 			}
@@ -204,8 +204,8 @@ describe.concurrent('parseHumanTime', () => {
 				} catch (error) {
 					expect(error).toBeInstanceOf(Exception);
 					expect((error as Exception).message).toBe('Invalid time expression: ' + input);
-					expect((error as Exception).key).toBe(
-						PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION
+					expect((error as Exception).code).toBe(
+						PARSE_HUMAN_TIME_ERROR_CODES.TIME_EXPRESSION_INVALID
 					);
 					expect((error as Exception).cause).toEqual({ timeExpression: input });
 				}
@@ -225,8 +225,8 @@ describe.concurrent('parseHumanTime', () => {
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
 				expect((error as Exception).message).toBe('Invalid time expression: ' + input);
-				expect((error as Exception).key).toBe(
-					PARSE_HUMAN_TIME_ERROR_KEYS.INVALID_TIME_EXPRESSION
+				expect((error as Exception).code).toBe(
+					PARSE_HUMAN_TIME_ERROR_CODES.TIME_EXPRESSION_INVALID
 				);
 				expect((error as Exception).cause).toEqual({ timeExpression: input });
 			}

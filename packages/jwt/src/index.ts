@@ -1,1 +1,1 @@
-export { JWT_ERROR_KEYS, signJWT, verifyJWT, type VerifyOptions } from './jwt';
+export { JWT_ERROR_CODES, signJWT, verifyJWT, type VerifyOptions } from './jwt';
