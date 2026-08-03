@@ -1,6 +1,6 @@
 {
   "name": "@clov-std/error",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "Structured TypeScript exceptions with a machine-readable error key and a typed cause.",
   "keywords": [
     "bun",
