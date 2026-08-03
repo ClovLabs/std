@@ -2,7 +2,7 @@ import { Exception } from '@clov-std/error';
 import { beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import type { JWTPayload } from 'jose';
 
-import { JWT_ERROR_KEYS, signJWT, verifyJWT } from '#/jwt';
+import { JWT_ERROR_CODES, signJWT, verifyJWT } from '#/jwt';
 
 describe.concurrent('JWT Core Functions', () => {
 	const testSecret = 'my-very-secure-secret-key-that-is-long-enough-for-hs256-algorithm';
@@ -137,7 +137,7 @@ describe.concurrent('JWT Core Functions', () => {
 				getExpiration: (): number => 0
 			}
 		])(
-			'should throw Exception with JWT_EXPIRATION_PASSED when expiration is $name',
+			'should throw Exception with EXPIRATION_IN_PAST when expiration is $name',
 			async ({ getExpiration }) => {
 				const expiration = getExpiration();
 
@@ -149,7 +149,7 @@ describe.concurrent('JWT Core Functions', () => {
 					expect((error as Exception).message).toBe(
 						'Expiration time must be in the future'
 					);
-					expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_EXPIRATION_PASSED);
+					expect((error as Exception).code).toBe(JWT_ERROR_CODES.EXPIRATION_IN_PAST);
 					expect((error as Exception).cause).toEqual({
 						providedExpirationSeconds: expiration
 					});
@@ -202,7 +202,7 @@ describe.concurrent('JWT Core Functions', () => {
 			expect(result.payload.isActive).toBe(true);
 		});
 
-		test('should throw Exception with JWT_SIGN_ERROR when signing fails', async () => {
+		test('should throw Exception with SIGNING_FAILED when signing fails', async () => {
 			// Use spyOn to mock the sign method and make it throw an error
 			const jose = await import('jose');
 			const spy = spyOn(jose.SignJWT.prototype, 'sign').mockImplementation(() => {
@@ -215,7 +215,7 @@ describe.concurrent('JWT Core Functions', () => {
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
 				expect((error as Exception).message).toBe('Failed to sign JWT');
-				expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_SIGN_ERROR);
+				expect((error as Exception).code).toBe(JWT_ERROR_CODES.SIGNING_FAILED);
 				expect((error as Exception).cause).toBeInstanceOf(Error);
 				expect(((error as Exception).cause as Error).message).toBe('Mocked sign error');
 			} finally {
@@ -240,17 +240,17 @@ describe.concurrent('JWT Core Functions', () => {
 			['malformed JWT', 'not.a.jwt'],
 			['token with only dots', '...'],
 			['token with special characters', '!@#$%^&*()']
-		])('should throw Exception with JWT_UNAUTHORIZED for %s', async (_, invalidToken) => {
+		])('should throw Exception with TOKEN_INVALID for %s', async (_, invalidToken) => {
 			try {
 				await verifyJWT(invalidToken, testSecret);
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_UNAUTHORIZED);
+				expect((error as Exception).code).toBe(JWT_ERROR_CODES.TOKEN_INVALID);
 			}
 		});
 
-		test('should throw Exception with JWT_UNAUTHORIZED for wrong secret', async () => {
+		test('should throw Exception with TOKEN_INVALID for wrong secret', async () => {
 			const token = await signJWT(testSecret, {});
 
 			try {
@@ -258,11 +258,11 @@ describe.concurrent('JWT Core Functions', () => {
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_UNAUTHORIZED);
+				expect((error as Exception).code).toBe(JWT_ERROR_CODES.TOKEN_INVALID);
 			}
 		});
 
-		test('should throw Exception with JWT_EXPIRED for expired JWT', async () => {
+		test('should throw Exception with TOKEN_EXPIRED for expired JWT', async () => {
 			// Create a token that expires in 1 second
 			const token = await signJWT(testSecret, {}, 1);
 
@@ -275,7 +275,7 @@ describe.concurrent('JWT Core Functions', () => {
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
 				expect((error as Exception).message).toBe('JWT token has expired');
-				expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_EXPIRED);
+				expect((error as Exception).code).toBe(JWT_ERROR_CODES.TOKEN_EXPIRED);
 			}
 		});
 
@@ -316,7 +316,7 @@ describe.concurrent('JWT Core Functions', () => {
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_UNAUTHORIZED);
+				expect((error as Exception).code).toBe(JWT_ERROR_CODES.TOKEN_INVALID);
 			}
 		});
 
@@ -333,7 +333,7 @@ describe.concurrent('JWT Core Functions', () => {
 				expect.unreachable();
 			} catch (error) {
 				expect(error).toBeInstanceOf(Exception);
-				expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_UNAUTHORIZED);
+				expect((error as Exception).code).toBe(JWT_ERROR_CODES.TOKEN_INVALID);
 			}
 		});
 	});
@@ -401,7 +401,7 @@ describe.concurrent('JWT Core Functions', () => {
 	});
 
 	describe('signJWT secret validation', () => {
-		test('should throw Exception with JWT_SECRET_TOO_WEAK when secret is too short', async () => {
+		test('should throw Exception with SECRET_TOO_WEAK when secret is too short', async () => {
 			const shortSecret = 'too-short-secret';
 
 			try {
@@ -412,12 +412,12 @@ describe.concurrent('JWT Core Functions', () => {
 				expect((error as Exception).message).toBe(
 					'Secret key must be at least 32 characters long'
 				);
-				expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_SECRET_TOO_WEAK);
+				expect((error as Exception).code).toBe(JWT_ERROR_CODES.SECRET_TOO_WEAK);
 				expect((error as Exception).cause).toEqual({ providedLength: shortSecret.length });
 			}
 		});
 
-		test('should throw Exception with JWT_SECRET_TOO_WEAK when secret has 31 characters', async () => {
+		test('should throw Exception with SECRET_TOO_WEAK when secret has 31 characters', async () => {
 			const shortSecret = 'a'.repeat(31);
 
 			try {
@@ -428,7 +428,7 @@ describe.concurrent('JWT Core Functions', () => {
 				expect((error as Exception).message).toBe(
 					'Secret key must be at least 32 characters long'
 				);
-				expect((error as Exception).key).toBe(JWT_ERROR_KEYS.JWT_SECRET_TOO_WEAK);
+				expect((error as Exception).code).toBe(JWT_ERROR_CODES.SECRET_TOO_WEAK);
 				expect((error as Exception).cause).toEqual({ providedLength: shortSecret.length });
 			}
 		});
