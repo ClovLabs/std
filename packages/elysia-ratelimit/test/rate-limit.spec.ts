@@ -29,11 +29,6 @@ const errorPlugin = new Elysia({ name: 'error-plugin' })
 	)
 	.as('global');
 
-/** The footgun: a catch-all that answers unconditionally swallows every thrown status. */
-const clobberingErrorPlugin = new Elysia({ name: 'clobbering-error-plugin' })
-	.error(() => status(500, { type: 'internal', title: 'Internal Server Error' }))
-	.as('global');
-
 describe.concurrent('rateLimitPlugin without an error handler', () => {
 	test('should return correct rate limit headers for valid requests', async () => {
 		const ip = '127.0.0.1';
@@ -390,19 +385,6 @@ describe.concurrent('rateLimitPlugin behind an application catch-all', () => {
 		expect(body.type).toEqual(RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED);
 		expect(body.title).toEqual('Too Many Requests');
 		expect(body.detail).toEqual('Limit of 1 requests per 60s exceeded. Retry in 60s.');
-	});
-
-	test('should be swallowed by a catch-all that answers unconditionally', async () => {
-		const app = new Elysia()
-			.use(clobberingErrorPlugin)
-			.use(rateLimitPlugin())
-			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
-
-		const response = await exceed(app, '24.0.0.1');
-
-		// Documents the footgun rather than endorsing it: an unconditional catch-all clobbers
-		// any thrown status, a plain `throw status(404)` included. Guard on `error.status`.
-		expect(response.status).toEqual(500);
 	});
 
 	test('should keep the problem content type behind a catch-all', async () => {

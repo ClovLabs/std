@@ -130,24 +130,6 @@ the throw so they survive on the `429`.
 
 This is also the response the macro declares for OpenAPI, so a typed client sees it.
 
-### ⚠️ Guard your catch-all
-
-An error hook only overrides the response when it **returns** one. A catch-all that answers
-unconditionally swallows every thrown status, this `429` included — and equally a plain
-`throw status(404)` from one of your own handlers:
-
-```ts
-// ✅ passes through anything that already carries a status
-.error(({ error }) =>
-	(error as { status?: number }).status === undefined
-		? problem({ type: 'internal.server.error', status: 500 })
-		: undefined
-)
-
-// ❌ turns every 429 into a 500
-.error(() => problem({ type: 'internal.server.error', status: 500 }))
-```
-
 ## 📚 API Reference
 
 Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
