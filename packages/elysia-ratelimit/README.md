@@ -34,7 +34,7 @@ Storage is handled by `@clov-std/kv-store`, so you start with in-memory and move
 - 🗃️ **KvStore-agnostic** : Works with `MemoryStore` out of the box; swap in `BunRedisStore` or your own adapter.
 - ⚡ **Early rejection** : Runs in `transform`, the first per-route hook, before auth guards and handlers.
 - 📡 **Standard headers** : Automatically sets `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`.
-- 🧯 **Works with or without an error plugin** : Answers a real `429` on its own, and steps aside when your application handles the error itself.
+- 🧯 **Complete RFC 9457 `429`** : Answers a real problem document on its own, `detail` included, with no exception class to import.
 
 ## 🔧 Installation
 
@@ -140,12 +140,12 @@ unconditionally swallows every thrown status, this `429` included — and equall
 // ✅ passes through anything that already carries a status
 .error(({ error }) =>
 	(error as { status?: number }).status === undefined
-		? problem({ type: 'internal.error', status: 500 })
+		? problem({ type: 'internal.server.error', status: 500 })
 		: undefined
 )
 
 // ❌ turns every 429 into a 500
-.error(() => problem({ type: 'internal.error', status: 500 }))
+.error(() => problem({ type: 'internal.server.error', status: 500 }))
 ```
 
 ## 📚 API Reference
