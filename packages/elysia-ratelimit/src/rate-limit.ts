@@ -21,11 +21,7 @@ export interface RateLimitExceeded {
 }
 
 /**
- * Shape of the `429` body.
- *
- * `type` is a plain string, not a literal: an application error handler is free to answer
- * with its own key (a localized catalog entry, for instance). `detail` is optional for the
- * same reason, the plugin never sets it.
+ * Shape of the `429` body, following RFC 9457.
  */
 const rateLimitResponseSchema = t.Object({
 	type: t.String({
@@ -33,6 +29,9 @@ const rateLimitResponseSchema = t.Object({
 	}),
 	title: t.String({
 		description: 'Short, human-readable summary of the error.'
+	}),
+	status: t.Literal(429, {
+		description: 'HTTP status code, repeated in the body per RFC 9457.'
 	}),
 	detail: t.Optional(
 		t.String({
@@ -43,21 +42,22 @@ const rateLimitResponseSchema = t.Object({
 
 /**
  * Thrown when a caller exceeds its allowance.
- *
- * `status` and `response` are read by Elysia's error fallback, so an application that
- * installs no error handler still answers a real `429` with the documented body. They are
- * only a default: any `.error()` handler registered by the application runs first and wins,
- * which is what lets an API localize this error from its own catalog. Match on
- * {@link Exception.key}, not on the message.
+ * 
+ * @see {@link rateLimitResponseSchema}
  */
 export class RateLimitException extends Exception<RateLimitExceeded> {
 	/** HTTP status used by Elysia's error fallback. */
 	public readonly status = 429;
 
 	/** Default body used by Elysia's error fallback. */
-	public readonly response: { readonly type: string; readonly title: string } = {
+	public readonly response: {
+		readonly type: string;
+		readonly title: string;
+		readonly status: 429;
+	} = {
 		type: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
-		title: 'Too Many Requests'
+		title: 'Too Many Requests',
+		status: 429
 	};
 
 	/**

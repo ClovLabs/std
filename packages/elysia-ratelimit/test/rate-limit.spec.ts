@@ -7,6 +7,8 @@ import { RATE_LIMIT_ERROR_KEYS, RateLimitException, rateLimitPlugin } from '#/ra
 interface RateLimitBody {
 	type: string;
 	title: string;
+	/** Optional here only because the catch-all handlers below never set it. */
+	status?: number;
 	detail?: string;
 }
 
@@ -19,6 +21,7 @@ const errorPlugin = new Elysia({ name: 'error-plugin' })
 		status(429, {
 			type: 'request.rateLimitExceeded',
 			title: 'Too many requests. Please try again later.',
+			status: 429,
 			detail: `Retry in ${error.cause?.reset ?? 0}s.`
 		})
 	)
@@ -37,7 +40,8 @@ const keyErrorPlugin = new Elysia({ name: 'key-error-plugin' })
 		(error as { key?: string }).key === RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED
 			? status(429, {
 					type: 'request.rateLimitExceeded',
-					title: 'Too many requests. Please try again later.'
+					title: 'Too many requests. Please try again later.',
+					status: 429
 				})
 			: status(500, {
 					type: 'internal',
@@ -96,7 +100,8 @@ describe.concurrent('rateLimitPlugin without an error handler', () => {
 		const body = (await response.json()) as RateLimitBody;
 		expect(body).toEqual({
 			type: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
-			title: 'Too Many Requests'
+			title: 'Too Many Requests',
+			status: 429
 		});
 	});
 
