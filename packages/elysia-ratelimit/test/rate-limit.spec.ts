@@ -2,53 +2,36 @@
 import { describe, expect, test } from 'bun:test';
 import { Elysia, status } from 'elysia';
 
-import { RATE_LIMIT_ERROR_KEYS, RateLimitException, rateLimitPlugin } from '#/rate-limit';
+import { RATE_LIMIT_ERROR_CODES, rateLimitPlugin } from '#/rate-limit';
 
 interface RateLimitBody {
 	type: string;
 	title: string;
-	/** Optional here only because the catch-all handlers below never set it. */
+	/** Optional here only because the catch-all handler below never sets it. */
 	status?: number;
 	detail?: string;
 }
 
 /**
- * Mirrors an API error plugin: a handler for the rate limit exception, then a catch-all.
- * The catch-all is registered last on purpose, Elysia runs the first matching handler.
+ * Mirrors an API error plugin's catch-all. Returning `undefined` for anything that already
+ * carries a status is what lets a thrown `problem()` reach the client untouched; an error
+ * hook only overrides the response when it returns one.
  */
 const errorPlugin = new Elysia({ name: 'error-plugin' })
-	.error(RateLimitException, ({ error }) =>
-		status(429, {
-			type: 'request.rateLimitExceeded',
-			title: 'Too many requests. Please try again later.',
-			status: 429,
-			detail: `Retry in ${error.cause?.reset ?? 0}s.`
-		})
-	)
 	.error(({ error }) =>
-		status(500, {
-			type: 'internal',
-			title: 'Internal Server Error',
-			detail: error.message
-		})
-	)
-	.as('global');
-
-/** Same idea, but matching on the error key so the API keeps no dependency on the class. */
-const keyErrorPlugin = new Elysia({ name: 'key-error-plugin' })
-	.error(({ error }) =>
-		(error as { key?: string }).key === RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED
-			? status(429, {
-					type: 'request.rateLimitExceeded',
-					title: 'Too many requests. Please try again later.',
-					status: 429
-				})
-			: status(500, {
+		(error as { status?: number }).status === undefined
+			? status(500, {
 					type: 'internal',
 					title: 'Internal Server Error',
 					detail: error.message
 				})
+			: undefined
 	)
+	.as('global');
+
+/** The footgun: a catch-all that answers unconditionally swallows every thrown status. */
+const clobberingErrorPlugin = new Elysia({ name: 'clobbering-error-plugin' })
+	.error(() => status(500, { type: 'internal', title: 'Internal Server Error' }))
 	.as('global');
 
 describe.concurrent('rateLimitPlugin without an error handler', () => {
@@ -99,9 +82,11 @@ describe.concurrent('rateLimitPlugin without an error handler', () => {
 		expect(response.status).toEqual(429);
 		const body = (await response.json()) as RateLimitBody;
 		expect(body).toEqual({
-			type: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
+			type: RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED,
+			// Derived by Elysia from the 429 reason phrase, the plugin never supplies it.
 			title: 'Too Many Requests',
-			status: 429
+			status: 429,
+			detail: `Limit of ${limit} requests per 60s exceeded. Retry in 60s.`
 		});
 	});
 
@@ -134,7 +119,7 @@ describe.concurrent('rateLimitPlugin without an error handler', () => {
 			new Request('http://localhost/content-type', { headers: { 'x-forwarded-for': ip } })
 		);
 		expect(ok.status).toEqual(200);
-		// The problem content type is set right before the throw, so it must not leak on success.
+		// `problem` sets the content type on the 429 only, it must not leak on success.
 		// Coalesced because a plain 200 carries no content-type at all here.
 		expect(ok.headers.get('content-type') ?? '').not.toInclude('problem');
 
@@ -378,7 +363,7 @@ describe.concurrent('rateLimitPlugin without an error handler', () => {
 	});
 });
 
-describe.concurrent('rateLimitPlugin behind an application error plugin', () => {
+describe.concurrent('rateLimitPlugin behind an application catch-all', () => {
 	const exceed = async (app: { handle: (request: Request) => Promise<Response> }, ip: string) => {
 		await app.handle(
 			new Request('http://localhost/guarded', {
@@ -392,7 +377,7 @@ describe.concurrent('rateLimitPlugin behind an application error plugin', () => 
 		);
 	};
 
-	test('should answer the body built by the error plugin, not the default one', async () => {
+	test('should answer its own problem document, not the catch-all body', async () => {
 		const app = new Elysia()
 			.use(errorPlugin)
 			.use(rateLimitPlugin())
@@ -402,13 +387,25 @@ describe.concurrent('rateLimitPlugin behind an application error plugin', () => 
 
 		expect(response.status).toEqual(429);
 		const body = (await response.json()) as RateLimitBody;
-		expect(body.type).toEqual('request.rateLimitExceeded');
-		expect(body.title).toEqual('Too many requests. Please try again later.');
-		// `cause` carries the counter state, so the handler can build its own detail.
-		expect(body.detail).toEqual('Retry in 60s.');
+		expect(body.type).toEqual(RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED);
+		expect(body.title).toEqual('Too Many Requests');
+		expect(body.detail).toEqual('Limit of 1 requests per 60s exceeded. Retry in 60s.');
 	});
 
-	test('should keep the problem content type when the plugin rewrites the body', async () => {
+	test('should be swallowed by a catch-all that answers unconditionally', async () => {
+		const app = new Elysia()
+			.use(clobberingErrorPlugin)
+			.use(rateLimitPlugin())
+			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		const response = await exceed(app, '24.0.0.1');
+
+		// Documents the footgun rather than endorsing it: an unconditional catch-all clobbers
+		// any thrown status, a plain `throw status(404)` included. Guard on `error.status`.
+		expect(response.status).toEqual(500);
+	});
+
+	test('should keep the problem content type behind a catch-all', async () => {
 		const app = new Elysia()
 			.use(errorPlugin)
 			.use(rateLimitPlugin())
@@ -417,7 +414,6 @@ describe.concurrent('rateLimitPlugin behind an application error plugin', () => 
 		const response = await exceed(app, '20.0.0.3');
 
 		expect(response.status).toEqual(429);
-		// A localized body is still a problem document, the content type must survive the override.
 		expect(response.headers.get('content-type')).toEqual('application/problem+json');
 	});
 
@@ -434,7 +430,7 @@ describe.concurrent('rateLimitPlugin behind an application error plugin', () => 
 		expect(response.headers.get('X-RateLimit-Remaining')).toEqual('0');
 	});
 
-	test('should not be swallowed by the catch-all whichever plugin is mounted first', async () => {
+	test('should answer the same 429 whichever plugin is mounted first', async () => {
 		const errorFirst = new Elysia()
 			.use(errorPlugin)
 			.use(rateLimitPlugin())
@@ -452,21 +448,8 @@ describe.concurrent('rateLimitPlugin behind an application error plugin', () => 
 		for (const response of responses) {
 			expect(response.status).toEqual(429);
 			const body = (await response.json()) as RateLimitBody;
-			expect(body.type).toEqual('request.rateLimitExceeded');
+			expect(body.type).toEqual(RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED);
 		}
-	});
-
-	test('should be reachable by an error plugin matching on the error key', async () => {
-		const app = new Elysia()
-			.use(keyErrorPlugin)
-			.use(rateLimitPlugin())
-			.get('/guarded', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
-
-		const response = await exceed(app, '22.0.0.1');
-
-		expect(response.status).toEqual(429);
-		const body = (await response.json()) as RateLimitBody;
-		expect(body.type).toEqual('request.rateLimitExceeded');
 	});
 
 	test('should leave unrelated errors to the catch-all', async () => {

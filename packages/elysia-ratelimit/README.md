@@ -111,57 +111,42 @@ new Elysia()
 
 ## 🧯 Error handling
 
-When the allowance is exceeded, the plugin throws a `RateLimitException` carrying:
-
-- `key` — always `RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED`, i.e. `'elysia-ratelimit.exceeded'`
-- `cause` — `{ limit, window, reset }`, the counter state at that moment
-- `status` and `response` — the default answer, read by Elysia's error fallback
-
-### Without an error plugin
-
-The default applies and the route answers a real `429`, which is also the response the macro
-declares for OpenAPI:
+When the allowance is exceeded, the plugin throws Elysia's `problem()`, so the `429` is a complete
+RFC 9457 document with no exception class and no error dependency involved:
 
 ```json
-{ "type": "elysia-ratelimit.exceeded", "title": "Too Many Requests" }
+{
+	"type": "rate-limit.quota.exceeded",
+	"title": "Too Many Requests",
+	"status": 429,
+	"detail": "Limit of 100 requests per 60s exceeded. Retry in 42s."
+}
 ```
 
-The `X-RateLimit-*` headers are set before the throw, so they are present on the `429` as well.
+`type` is always `RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED`. `title` is derived by Elysia from the
+status reason phrase. `detail` carries the live counter state, so it changes per occurrence.
+The content type is `application/problem+json`, and the `X-RateLimit-*` headers are set before
+the throw so they survive on the `429`.
 
-### With an error plugin
+This is also the response the macro declares for OpenAPI, so a typed client sees it.
 
-That default is only a fallback. Any `.error()` handler your application registers runs first and
-wins, which is how an API answers with its own localized body.
+### ⚠️ Guard your catch-all
 
-```ts
-import { RateLimitException, rateLimitPlugin } from '@clov-std/elysia-ratelimit';
-import { Elysia, status } from 'elysia';
-
-new Elysia()
-	.error(RateLimitException, ({ error }) =>
-		status(429, {
-			type: 'request.rateLimitExceeded',
-			title: 'Too many requests. Please try again later.',
-			detail: `Retry in ${error.cause?.reset ?? 0}s.`
-		})
-	)
-	.use(rateLimitPlugin())
-	.get('/api/data', { rateLimit: { limit: 100, window: 60 } }, () => getData())
-	.listen(3000);
-```
-
-Matching on the key works too, if you would rather not import the class:
+An error hook only overrides the response when it **returns** one. A catch-all that answers
+unconditionally swallows every thrown status, this `429` included — and equally a plain
+`throw status(404)` from one of your own handlers:
 
 ```ts
+// ✅ passes through anything that already carries a status
 .error(({ error }) =>
-	(error as { key?: string }).key === RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED
-		? status(429, { type: 'request.rateLimitExceeded', title: 'Too many requests.' })
-		: status(500, { type: 'internal', title: 'Internal Server Error' })
+	(error as { status?: number }).status === undefined
+		? problem({ type: 'internal.error', status: 500 })
+		: undefined
 )
-```
 
-> **Note:** Elysia runs the first matching `.error()` handler. If your error plugin registers a
-> catch-all, register it after the specific handlers, otherwise it swallows them.
+// ❌ turns every 429 into a 500
+.error(() => problem({ type: 'internal.error', status: 500 }))
+```
 
 ## 📚 API Reference
 

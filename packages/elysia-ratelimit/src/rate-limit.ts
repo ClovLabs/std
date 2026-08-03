@@ -1,32 +1,22 @@
 // oxlint-disable typescript/ban-types
-import { Exception } from '@clov-std/error';
 import { MemoryStore, type KvStore } from '@clov-std/kv-store';
 import type { Server } from 'bun';
-import { Elysia, t, type HTTPHeaders } from 'elysia';
-import type { TLiteral, TObject, TOptional, TString } from 'typebox/type';
+import { Elysia, problem, t, type HTTPHeaders } from 'elysia';
+import type { TLiteral, TObject, TString } from 'typebox/type';
 
-export const RATE_LIMIT_ERROR_KEYS = {
-	RATE_LIMIT_EXCEEDED: 'elysia-ratelimit.exceeded'
+export const RATE_LIMIT_ERROR_CODES = {
+	QUOTA_EXCEEDED: 'rate-limit.quota.exceeded'
 } as const;
 
-/** Counter state at the moment the limit was exceeded, attached as the exception `cause`. */
-export interface RateLimitExceeded {
-	/** Maximum requests allowed within the window. */
-	readonly limit: number;
-
-	/** Window length in seconds. */
-	readonly window: number;
-
-	/** Seconds until the counter resets. */
-	readonly reset: number;
-}
-
 /**
- * Shape of the `429` body, following RFC 9457.
+ * Shape of the `429` body, an RFC 9457 problem document.
+ *
+ * `title` is filled by Elysia from the status reason phrase, so the plugin only supplies
+ * `type`, `status`, and `detail`.
  */
 const rateLimitResponseSchema = t.Object({
 	type: t.String({
-		description: `Error key. Defaults to \`${RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED}\`.`
+		description: `Error code. Always \`${RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED}\`.`
 	}),
 	title: t.String({
 		description: 'Short, human-readable summary of the error.'
@@ -34,45 +24,10 @@ const rateLimitResponseSchema = t.Object({
 	status: t.Literal(429, {
 		description: 'HTTP status code, repeated in the body per RFC 9457.'
 	}),
-	detail: t.Optional(
-		t.String({
-			description: 'Explanation specific to this occurrence.'
-		})
-	)
+	detail: t.String({
+		description: 'Explanation specific to this occurrence, including when to retry.'
+	})
 });
-
-/**
- * Thrown when a caller exceeds its allowance.
- *
- * @see {@link rateLimitResponseSchema}
- */
-export class RateLimitException extends Exception<RateLimitExceeded> {
-	/** HTTP status used by Elysia's error fallback. */
-	public readonly status = 429;
-
-	/** Default body used by Elysia's error fallback. */
-	public readonly response: {
-		readonly type: string;
-		readonly title: string;
-		readonly status: 429;
-	} = {
-		type: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
-		title: 'Too Many Requests',
-		status: 429
-	};
-
-	/**
-	 * Creates a new rate limit exception.
-	 *
-	 * @param cause - Counter state at the moment the limit was exceeded.
-	 */
-	public constructor(cause: RateLimitExceeded) {
-		super('Too Many Requests', {
-			key: RATE_LIMIT_ERROR_KEYS.RATE_LIMIT_EXCEEDED,
-			cause
-		});
-	}
-}
 
 export interface RateLimitKeyContext {
 	request: Request;
@@ -135,7 +90,7 @@ export const rateLimitPlugin = (
 					type: TString;
 					title: TString;
 					status: TLiteral<429>;
-					detail: TOptional<TString>;
+					detail: TString;
 				}>;
 			};
 			transform: ({ set, request, server }: RateLimitTransformContext) => Promise<void>;
@@ -162,10 +117,12 @@ export const rateLimitPlugin = (
 				set.headers['X-RateLimit-Remaining'] = remaining.toString();
 				set.headers['X-RateLimit-Reset'] = reset.toString();
 
-				if (count > limit) {
-					set.headers['content-type'] = 'application/problem+json';
-					throw new RateLimitException({ limit, window, reset });
-				}
+				if (count > limit)
+					throw problem({
+						type: RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED,
+						status: 429,
+						detail: `Limit of ${limit} requests per ${window}s exceeded. Retry in ${reset}s.`
+					});
 			}
 		})) satisfies RateLimitMacro
 	});
