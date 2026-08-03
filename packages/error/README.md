@@ -6,7 +6,7 @@
 
 If you've ever debugged a production incident with nothing but a generic `Error("something went wrong")`,
 you know the pain.  
-This package gives your errors structure, every exception carries a machine-readable `key`,
+This package gives your errors structure, every exception carries a machine-readable `code`,
 so you can always branch on what happened instead of grepping a message string.
 
 ## Why this package?
@@ -14,18 +14,18 @@ so you can always branch on what happened instead of grepping a message string.
 Vanilla `Error` objects lack context.  
 Catching one leaves you matching on `error.message` strings, which breaks the day someone rewords the message.
 
-`@clov-std/error` solves that with one class:
+`@clov-std/error` solves that with two classes:
 
-- **`Exception`** - a richer base error carrying a stable `key` and a typed `cause`.
+- **`Exception`** - a richer base error carrying a stable `code` and a typed `cause`.
+- **`HttpException`** - the same, plus a resolved HTTP `status`.
 
-The `key` is the point. A low-level library can throw `Exception` with `key: 'jwt.expired'` without knowing anything
-about HTTP status codes or locales, and the layer that _does_ know (your API, your i18n catalog) maps that key to a
-status and a translated message. One direction of dependency, no HTTP concern leaking into a token signer.
+The `code` is the point. A low-level library throws `Exception` with `code: 'jwt.token.expired'` without knowing
+anything about transports or locales, and the layer that _does_ know maps that code to a wire format. One direction
+of dependency, no HTTP concern leaking into a token signer.
 
 No dependencies, no bloat. Just structured errors that make your life easier.
 
-> Looking for HTTP status codes and localized messages? That's [`@clov-std/i18n`](https://www.npmjs.com/package/@clov-std/i18n),
-> whose `LocalizedHttpException` extends `Exception`.
+> Looking for localized messages? That's [`@clov-std/i18n`](https://www.npmjs.com/package/@clov-std/i18n).
 
 ## 📌 Table of Contents
 
@@ -38,7 +38,8 @@ No dependencies, no bloat. Just structured errors that make your life easier.
 
 ## ✨ Features
 
-- 🔑 **Stable Error Keys** : Branch on `error.key`, never on `error.message`.
+- 🔑 **Stable Error Codes** : Branch on `error.code`, never on `error.message`.
+- 🌐 **HTTP When You Need It** : `HttpException` resolves a status from a name (`'NOT_FOUND'`) or a number.
 - 🔗 **Typed Cause** : `cause` keeps its shape through the generic, so wrapping an error doesn't lose its type.
 - 🧹 **Clean Stack Traces** : The constructor frame is stripped, and `name` reflects the actual subclass.
 - 📦 **Zero Dependencies** : Pure TypeScript, no runtime globals, tiny footprint.
@@ -59,17 +60,17 @@ Use `Exception` whenever you need a traceable error with more context than a pla
 import { Exception } from '@clov-std/error';
 
 throw new Exception('Configuration file not found', {
-	key: 'config.notFound'
+	code: 'config.file.not-found'
 });
 ```
 
-The `key` is what callers should switch on:
+The `code` is what callers should switch on:
 
 ```ts
 try {
 	await verifyToken(token);
 } catch (err) {
-	if (err instanceof Exception && err.key === 'jwt.expired') return refresh();
+	if (err instanceof Exception && err.code === 'jwt.token.expired') return refresh();
 	throw err;
 }
 ```
@@ -101,11 +102,31 @@ class TracedException extends Exception {
 }
 ```
 
-### HTTP and localized errors
+### HttpException - Errors Bound to a Status
 
-`Exception` deliberately knows nothing about HTTP. When you need a status code and a translated message,
-use `LocalizedHttpException` from [`@clov-std/i18n`](https://www.npmjs.com/package/@clov-std/i18n), which extends
-this class, so a single `catch (err) { if (err instanceof Exception) ... }` still covers both.
+When a failure has a status, throw `HttpException`. It takes a status name or a number, and resolves it
+to `error.status`:
+
+```ts
+import { HttpException } from '@clov-std/error';
+
+throw new HttpException('Account not found', {
+	code: 'auth.account.not-found',
+	status: 'NOT_FOUND' // or 404
+});
+```
+
+`status` is required on purpose: an HTTP exception without one is a bug, and a silent `500` would hide it.
+
+Nothing about RFC 9457 lives here. Your presentation layer maps `code` to the wire format it needs,
+which keeps this package usable from a CLI or a worker:
+
+```ts
+// One adapter, at the boundary
+problem({ type: error.code, status: error.status, detail: error.message });
+```
+
+For translated messages, `@clov-std/i18n` builds on `Exception` with catalogs of localized templates.
 
 ## 📚 API Reference
 
