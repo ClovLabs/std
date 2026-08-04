@@ -64,7 +64,7 @@ export const extractClientIp = (request: Request, server: Server<unknown> | null
 export const rateLimitPlugin = (
 	store: KvStore = new MemoryStore()
 ): Elysia<
-	'',
+	'rateLimitPlugin',
 	'local',
 	{ decorator: {}; derive: {}; store: {} },
 	{ typebox: {}; error: [] },
@@ -79,7 +79,7 @@ export const rateLimitPlugin = (
 		response: {};
 	}
 > =>
-	new Elysia().macro({
+	new Elysia<'rateLimitPlugin'>({ name: 'rateLimitPlugin' }).macro({
 		rateLimit: (({
 			limit,
 			window,
