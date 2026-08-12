@@ -51,7 +51,7 @@
   },
   "peerDependencies": {
     "@clov-std/kv-store": "workspace:^",
-    "elysia": "^2.0.0-beta.3",
+    "elysia": "^2.0.0-beta.4",
     "typebox": "^1.3.11"
   }
 }
