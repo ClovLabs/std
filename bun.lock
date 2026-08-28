@@ -24,7 +24,7 @@
     },
     "packages/elysia-ratelimit": {
       "name": "@clov-std/elysia-ratelimit",
-      "version": "4.0.5",
+      "version": "4.0.6",
       "dependencies": {
         "@clov-std/kv-store": "workspace:^",
       },
@@ -37,7 +37,7 @@
       },
       "peerDependencies": {
         "@clov-std/kv-store": "workspace:^",
-        "elysia": "^2.0.0-beta.7",
+        "elysia": "^2.0.0-beta.8",
         "typebox": "^1.3.11",
       },
     },
