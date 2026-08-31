@@ -1,6 +1,6 @@
 {
   "name": "@clov-std/elysia-ratelimit",
-  "version": "4.0.8",
+  "version": "4.0.9",
   "description": "Rate limiting plugin for Elysia framework.",
   "keywords": [
     "bun",
