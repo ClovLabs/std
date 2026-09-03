@@ -1,57 +1,57 @@
 {
-	"name": "@clov-std/elysia-ratelimit",
-	"version": "4.0.9",
-	"description": "Rate limiting plugin for Elysia framework.",
-	"keywords": [
-		"bun",
-		"clov",
-		"elysia",
-		"macro",
-		"open-source",
-		"plugin",
-		"ratelimit",
-		"typescript"
-	],
-	"license": "MIT",
-	"author": "Clov",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/ClovLabs/std",
-		"directory": "packages/elysia-ratelimit"
-	},
-	"files": [
-		"dist"
-	],
-	"type": "module",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"default": "./dist/index.js"
-		}
-	},
-	"scripts": {
-		"build": "bun builder.ts",
-		"docs": "bunx typedoc --tsconfig tsconfig.build.json",
-		"fmt:check": "oxfmt --check",
-		"fmt": "oxfmt",
-		"lint:fix": "oxlint --type-aware --type-check --fix ./src",
-		"lint:github": "oxlint --type-aware --type-check --format=github ./src",
-		"lint": "oxlint --type-aware --type-check ./src",
-		"test": "bun test --pass-with-no-tests --coverage"
-	},
-	"dependencies": {
-		"@clov-std/kv-store": "workspace:^"
-	},
-	"devDependencies": {
-		"@types/bun": "catalog:base",
-		"oxfmt": "catalog:base",
-		"oxlint": "catalog:base",
-		"oxlint-tsgolint": "catalog:base",
-		"typescript": "catalog:base"
-	},
-	"peerDependencies": {
-		"@clov-std/kv-store": "workspace:^",
-		"elysia": "next",
-		"typebox": "^1.3.11"
-	}
+  "name": "@clov-std/elysia-ratelimit",
+  "version": "4.0.10",
+  "description": "Rate limiting plugin for Elysia framework.",
+  "keywords": [
+    "bun",
+    "clov",
+    "elysia",
+    "macro",
+    "open-source",
+    "plugin",
+    "ratelimit",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "Clov",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClovLabs/std",
+    "directory": "packages/elysia-ratelimit"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun builder.ts",
+    "docs": "bunx typedoc --tsconfig tsconfig.build.json",
+    "fmt:check": "oxfmt --check",
+    "fmt": "oxfmt",
+    "lint:fix": "oxlint --type-aware --type-check --fix ./src",
+    "lint:github": "oxlint --type-aware --type-check --format=github ./src",
+    "lint": "oxlint --type-aware --type-check ./src",
+    "test": "bun test --pass-with-no-tests --coverage"
+  },
+  "dependencies": {
+    "@clov-std/kv-store": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/bun": "catalog:base",
+    "oxfmt": "catalog:base",
+    "oxlint": "catalog:base",
+    "oxlint-tsgolint": "catalog:base",
+    "typescript": "catalog:base"
+  },
+  "peerDependencies": {
+    "@clov-std/kv-store": "workspace:^",
+    "elysia": "next",
+    "typebox": "^1.3.11"
+  }
 }
