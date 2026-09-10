@@ -8,12 +8,13 @@ Everything lives in this monorepo, is built with [Bun](https://bun.sh/), and pub
 | Package                                                  | What it does                                                                                                            |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | [`@clov-std/common`](packages/common)                     | Common utilities and types library for building robust applications.                                                    |
-| [`@clov-std/elysia-ratelimit`](packages/elysia-ratelimit) | Elysia plugin for flexible, type-safe rate limiting with support for custom key generators and various backends.        |
-| [`@clov-std/error`](packages/error)                       | Structured TypeScript exceptions with a machine-readable error key and a typed cause.                    |
-| [`@clov-std/i18n`](packages/i18n)                         | Type-safe i18n for TypeScript — define localized exception and message catalogs with compile-time validated parameters. |
+| [`@clov-std/elysia-cache`](packages/elysia-cache)         | Cache plugin for Elysia framework.                                                                                      |
+| [`@clov-std/elysia-ratelimit`](packages/elysia-ratelimit) | Rate limiting plugin for Elysia framework.                                                                              |
+| [`@clov-std/error`](packages/error)                       | Structured TypeScript exceptions with a machine-readable error key and a typed cause.                                    |
+| [`@clov-std/i18n`](packages/i18n)                         | Type-safe i18n for TypeScript — define localized exception and message catalogs with compile-time validated parameters.  |
 | [`@clov-std/jwt`](packages/jwt)                           | JWT utilities and helpers for secure token management.                                                                  |
-| [`@clov-std/kv-store`](packages/kv-store)                 | Type-safe key-value store abstraction with support for multiple backends.                                               |
-| [`@clov-std/logger`](packages/logger)                     | Type-safe logging library with support for structured logs and multiple output formats.                                 |
+| [`@clov-std/kv-store`](packages/kv-store)                 | Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter. |
+| [`@clov-std/logger`](packages/logger)                     | Type-safe logging library for Bun, modular sink pattern, transform streams, and immutable API design.                    |
 | [`@clov-std/registry`](packages/registry)                 | Centralized, type-safe registry for managing named instances.                                                           |
 | [`@clov-std/totp`](packages/totp)                         | Time-based One-Time Password (TOTP) implementation in TypeScript.                                                       |
 
@@ -31,6 +32,7 @@ bun install
 | `bun run test`     | Run every test suite                        |
 | `bun run lint`     | Lint all packages                           |
 | `bun run lint:fix` | Lint and auto-fix                           |
+| `bun run lint:github` | Lint with GitHub Actions output          |
 | `bun run docs`     | Generate TypeDoc documentation              |
 | `bun run clean`    | Wipe `node_modules`, `dist`, and lock files |
 
@@ -39,6 +41,7 @@ bun install
 ```
 packages/
 ├── common/              # @clov-std/common
+├── elysia-cache/        # @clov-std/elysia-cache
 ├── elysia-ratelimit/    # @clov-std/elysia-ratelimit
 ├── error/               # @clov-std/error
 ├── i18n/                # @clov-std/i18n
