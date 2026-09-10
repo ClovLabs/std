@@ -93,6 +93,16 @@ await store.expire('rate:ip:127.0.0.1', 60);
 store.close();
 ```
 
+Redis values written by `set` are JSON-encoded, including strings, so values such
+as `"123"`, `"true"`, and `"null"` keep their string type. Numeric values remain
+compatible with Redis counters. Existing raw strings that look like JSON cannot
+be distinguished from previously encoded values; rewrite those keys from their
+source of truth or let their TTL expire when upgrading.
+
+Run the Redis contract test against a disposable instance with
+`TEST_REDIS_URL=redis://127.0.0.1:6379 bun test test/bun-redis-store.spec.ts`
+from this package. It only modifies keys with a unique `kv-store-test:` prefix.
+
 ### Custom Adapter
 
 Extend `KvStore` and implement the abstract methods:
