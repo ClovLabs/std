@@ -51,7 +51,7 @@ export class BunRedisStore extends KvStore {
 		KvStore.validateKey(key);
 		KvStore.validateTtl(ttlSec);
 
-		const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+		const stringValue = JSON.stringify(value);
 		if (ttlSec) await this.redis.set(key, stringValue, 'EX', ttlSec);
 		else await this.redis.set(key, stringValue);
 	}
