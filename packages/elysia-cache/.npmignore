@@ -1,0 +1,44 @@
+# ————————— Configuration and system files ————————— #
+.github/
+.idea/
+.env*
+.nvmrc
+.vscode/
+.zed/
+
+# ————————— Archives and build-related files ————————— #
+*.tgz
+
+# ————————— Bundler configuration files ————————— #
+builder.ts
+
+# ————————— Release-related files ————————— #
+CHANGELOG.md
+
+# ————————— Documentation-related folders ————————— #
+coverage/
+docs/
+
+# ————————— Tool configuration files ————————— #
+.oxfmtrc.json
+.oxlintrc.json
+
+# ————————— Dependency-related folders and files ————————— #
+node_modules/
+bun.lock
+
+# ————————— Project-specific folders ————————— #
+src/
+test/
+sandbox/
+bench/
+
+# ————————— Core project files ————————— #
+tsconfig.json
+tsconfig.build.json
+bunfig.toml
+
+# ————————— Community-related files ————————— #
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
