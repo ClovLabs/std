@@ -10,6 +10,7 @@ on:
                 type: choice
                 options:
                     - common
+                    - elysia-cache
                     - elysia-ratelimit
                     - error
                     - i18n
