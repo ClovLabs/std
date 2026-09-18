@@ -72,41 +72,36 @@ const nowaraDevNullLogger = new Logger({ batchTimeout: 10 }).registerSink('devnu
 
 barplot(() => {
 	summary(() =>
-		group(
-			`🎯 [${ITERATIONS}] - Nowara vs Pino (SANS I/O, sérialisation JSON équitable)`,
-			() => {
-				bench('Nowara Logger (JSON serialize + discard, worker)', async () => {
-					for (let i = 0; i < ITERATIONS; ++i)
-						do_not_optimize(
-							nowaraJsonDiscardLogger.info('Hello world', ['json-discard'])
-						);
-					await nowaraJsonDiscardLogger.flush();
-				}).gc('inner');
+		group(`🎯 [${ITERATIONS}] - Clov vs Pino (SANS I/O, sérialisation JSON équitable)`, () => {
+			bench('Clov Logger (JSON serialize + discard, worker)', async () => {
+				for (let i = 0; i < ITERATIONS; ++i)
+					do_not_optimize(nowaraJsonDiscardLogger.info('Hello world', ['json-discard']));
+				await nowaraJsonDiscardLogger.flush();
+			}).gc('inner');
 
-				bench('Pino (Node Stream -> /dev/null)', async () => {
-					for (let i = 0; i < ITERATIONS; ++i)
-						do_not_optimize(pinoDevNullStreamLogger.info('Hello world'));
-					await flushPino(pinoDevNullStreamLogger);
-				}).gc('inner');
+			bench('Pino (Node Stream -> /dev/null)', async () => {
+				for (let i = 0; i < ITERATIONS; ++i)
+					do_not_optimize(pinoDevNullStreamLogger.info('Hello world'));
+				await flushPino(pinoDevNullStreamLogger);
+			}).gc('inner');
 
-				bench('Pino (Min Length -> /dev/null)', async () => {
-					for (let i = 0; i < ITERATIONS; ++i)
-						do_not_optimize(pinoDevNullMinLengthLogger.info('Hello world'));
-					await flushPino(pinoDevNullMinLengthLogger);
-				}).gc('inner');
+			bench('Pino (Min Length -> /dev/null)', async () => {
+				for (let i = 0; i < ITERATIONS; ++i)
+					do_not_optimize(pinoDevNullMinLengthLogger.info('Hello world'));
+				await flushPino(pinoDevNullMinLengthLogger);
+			}).gc('inner');
 
-				bench('Pino (Destination -> /dev/null)', async () => {
-					for (let i = 0; i < ITERATIONS; ++i)
-						do_not_optimize(pinoDevNullDestLogger.info('Hello world'));
-					await flushPino(pinoDevNullDestLogger);
-				}).gc('inner');
-			}
-		)
+			bench('Pino (Destination -> /dev/null)', async () => {
+				for (let i = 0; i < ITERATIONS; ++i)
+					do_not_optimize(pinoDevNullDestLogger.info('Hello world'));
+				await flushPino(pinoDevNullDestLogger);
+			}).gc('inner');
+		})
 	);
 
 	summary(() =>
-		group(`📝 [${ITERATIONS}] - Nowara vs Pino (AVEC I/O réel vers fichier)`, () => {
-			bench('Nowara Logger (fileSink -> /tmp file, worker)', async () => {
+		group(`📝 [${ITERATIONS}] - Clov vs Pino (AVEC I/O réel vers fichier)`, () => {
+			bench('Clov Logger (fileSink -> /tmp file, worker)', async () => {
 				for (let i = 0; i < ITERATIONS; ++i)
 					do_not_optimize(nowaraFileLogger.info('Hello world', ['file']));
 				await nowaraFileLogger.flush();
@@ -120,12 +115,12 @@ barplot(() => {
 		})
 	);
 
-	// Référence: overhead pur du dispatch Nowara sans aucune sérialisation (DevNull)
+	// Référence: overhead pur du dispatch Clov sans aucune sérialisation (DevNull)
 	summary(() =>
 		group(
-			`⚡ [${ITERATIONS}] - Nowara overhead de dispatch (DevNull, sans sérialisation)`,
+			`⚡ [${ITERATIONS}] - Clov overhead de dispatch (DevNull, sans sérialisation)`,
 			() => {
-				bench('Nowara Logger (devNullSink, worker)', async () => {
+				bench('Clov Logger (devNullSink, worker)', async () => {
 					for (let i = 0; i < ITERATIONS; ++i)
 						do_not_optimize(nowaraDevNullLogger.info('Hello world', ['devnull']));
 					await nowaraDevNullLogger.flush();
