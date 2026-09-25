@@ -1,6 +1,6 @@
 {
   "name": "@clov-std/elysia-cache",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Cache plugin for Elysia framework.",
   "keywords": [
     "bun",
