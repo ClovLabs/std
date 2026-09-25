@@ -25,8 +25,12 @@ Everything lives in this monorepo, is built with <a href="https://bun.sh/">Bun</
 <td>Common utilities and types library for building robust applications.</td>
 </tr>
 <tr>
+<td><a href="media/elysia-cache"><code>@clov-std/elysia-cache</code></a></td>
+<td>Cache plugin for Elysia framework.</td>
+</tr>
+<tr>
 <td><a href="modules/_clov-std_elysia-ratelimit.html"><code>@clov-std/elysia-ratelimit</code></a></td>
-<td>Elysia plugin for flexible, type-safe rate limiting with support for custom key generators and various backends.</td>
+<td>Rate limiting plugin for Elysia framework.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_error.html"><code>@clov-std/error</code></a></td>
@@ -42,11 +46,11 @@ Everything lives in this monorepo, is built with <a href="https://bun.sh/">Bun</
 </tr>
 <tr>
 <td><a href="modules/_clov-std_kv-store.html"><code>@clov-std/kv-store</code></a></td>
-<td>Type-safe key-value store abstraction with support for multiple backends.</td>
+<td>Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_logger.html"><code>@clov-std/logger</code></a></td>
-<td>Type-safe logging library with support for structured logs and multiple output formats.</td>
+<td>Type-safe logging library for Bun, modular sink pattern, transform streams, and immutable API design.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_registry.html"><code>@clov-std/registry</code></a></td>
@@ -88,6 +92,10 @@ Everything lives in this monorepo, is built with <a href="https://bun.sh/">Bun</
 <td>Lint and auto-fix</td>
 </tr>
 <tr>
+<td><code>bun run lint:github</code></td>
+<td>Lint with GitHub Actions output</td>
+</tr>
+<tr>
 <td><code>bun run docs</code></td>
 <td>Generate TypeDoc documentation</td>
 </tr>
@@ -98,7 +106,7 @@ Everything lives in this monorepo, is built with <a href="https://bun.sh/">Bun</
 </tbody>
 </table>
 <h2 id="project-structure" class="tsd-anchor-link">Project Structure<a href="#project-structure" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<pre><code><span class="hl-3">packages</span><span class="hl-1">/</span><br/><span class="hl-1">├── </span><span class="hl-3">common</span><span class="hl-1">/              # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">common</span><br/><span class="hl-1">├── </span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">ratelimit</span><span class="hl-1">/    # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">ratelimit</span><br/><span class="hl-1">├── </span><span class="hl-3">error</span><span class="hl-1">/               # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">error</span><br/><span class="hl-1">├── </span><span class="hl-3">i18n</span><span class="hl-1">/                # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">i18n</span><br/><span class="hl-1">├── </span><span class="hl-3">jwt</span><span class="hl-1">/                 # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">jwt</span><br/><span class="hl-1">├── </span><span class="hl-3">kv</span><span class="hl-1">-</span><span class="hl-3">store</span><span class="hl-1">/            # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">kv</span><span class="hl-1">-</span><span class="hl-3">store</span><br/><span class="hl-1">├── </span><span class="hl-3">logger</span><span class="hl-1">/              # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">logger</span><br/><span class="hl-1">├── </span><span class="hl-3">registry</span><span class="hl-1">/            # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">registry</span><br/><span class="hl-1">└── </span><span class="hl-3">totp</span><span class="hl-1">/                # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">totp</span>
+<pre><code><span class="hl-3">packages</span><span class="hl-1">/</span><br/><span class="hl-1">├── </span><span class="hl-3">common</span><span class="hl-1">/              # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">common</span><br/><span class="hl-1">├── </span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">cache</span><span class="hl-1">/        # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">cache</span><br/><span class="hl-1">├── </span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">ratelimit</span><span class="hl-1">/    # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">ratelimit</span><br/><span class="hl-1">├── </span><span class="hl-3">error</span><span class="hl-1">/               # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">error</span><br/><span class="hl-1">├── </span><span class="hl-3">i18n</span><span class="hl-1">/                # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">i18n</span><br/><span class="hl-1">├── </span><span class="hl-3">jwt</span><span class="hl-1">/                 # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">jwt</span><br/><span class="hl-1">├── </span><span class="hl-3">kv</span><span class="hl-1">-</span><span class="hl-3">store</span><span class="hl-1">/            # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">kv</span><span class="hl-1">-</span><span class="hl-3">store</span><br/><span class="hl-1">├── </span><span class="hl-3">logger</span><span class="hl-1">/              # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">logger</span><br/><span class="hl-1">├── </span><span class="hl-3">registry</span><span class="hl-1">/            # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">registry</span><br/><span class="hl-1">└── </span><span class="hl-3">totp</span><span class="hl-1">/                # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">totp</span>
 </code><button>Copy</button></pre>
 
 <h2 id="documentation" class="tsd-anchor-link">Documentation<a href="#documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
