@@ -1,65 +1,101 @@
 name: deploy
-run-name: '[Deploy] ${{ inputs.package }}@${{ inputs.bump }} (${{ inputs.channel }}) by ${{ github.actor }}'
+
+run-name: >-
+    [Deploy] ${{ inputs.channel }}:${{
+    inputs.common != 'none' && format(' common ({0})', inputs.common) || '' }}${{
+    inputs.elysia-cache != 'none' && format(' elysia-cache ({0})', inputs.elysia-cache) || '' }}${{
+    inputs.elysia-ratelimit != 'none' && format(' elysia-ratelimit ({0})', inputs.elysia-ratelimit) || '' }}${{
+    inputs.error != 'none' && format(' error ({0})', inputs.error) || '' }}${{
+    inputs.i18n != 'none' && format(' i18n ({0})', inputs.i18n) || '' }}${{
+    inputs.jwt != 'none' && format(' jwt ({0})', inputs.jwt) || '' }}${{
+    inputs.kv-store != 'none' && format(' kv-store ({0})', inputs.kv-store) || '' }}${{
+    inputs.logger != 'none' && format(' logger ({0})', inputs.logger) || '' }}${{
+    inputs.registry != 'none' && format(' registry ({0})', inputs.registry) || '' }}${{
+    inputs.totp != 'none' && format(' totp ({0})', inputs.totp) || '' }}
+
+# From main: publish the picked packages on npm, on the channel picked:
+# - beta:   X.Y.Z-rc.N on the beta dist-tag, git tag and GitHub pre-release. No version commit:
+#           main keeps the last stable version, run beta again for the next candidate (rc.2…)
+# - latest: X.Y.Z on latest, version commit, git tag and GitHub release. Once a beta is
+#           validated, run latest with the same bump right away: latest builds main as it is.
+# They are all bumped before the build: a dependent packs the new version of the @clov-std
+# packages it depends on (workspace:^).
 
 on:
     workflow_dispatch:
         inputs:
-            package:
-                description: 'Package to deploy'
-                required: true
-                type: choice
-                options:
-                    - common
-                    - elysia-cache
-                    - elysia-ratelimit
-                    - error
-                    - i18n
-                    - jwt
-                    - kv-store
-                    - logger
-                    - registry
-                    - totp
-            bump:
-                description: 'Version bump type'
-                required: true
-                type: choice
-                options:
-                    - patch
-                    - minor
-                    - major
             channel:
-                description: 'Release channel'
-                required: true
                 type: choice
-                options:
-                    - alpha
-                    - canary
-                    - stable
+                default: beta
+                options: [beta, latest]
+            # One dropdown per package: none (not published) or its bump from its last stable version
+            common: &bump
+                type: choice
+                default: none
+                options: [none, patch, minor, major]
+            elysia-cache: *bump
+            elysia-ratelimit: *bump
+            error: *bump
+            i18n: *bump
+            jwt: *bump
+            kv-store: *bump
+            logger: *bump
+            registry: *bump
+            totp: *bump
 
-# Required secrets:
-# - GPG_KEY: GPG key for signing commits/tags
-# - GIT_EMAIL: Email for Git commits
-# - SSH_PRIVATE_KEY: Private SSH key for pushing to repo
+# Secrets : GIT_EMAIL, GPG_KEY (signing), SSH_PRIVATE_KEY (push)
 
 permissions:
     contents: read
 
 concurrency:
-    group: deploy-${{ inputs.package }}
+    group: deploy
     cancel-in-progress: false
 
 jobs:
-    # ─── Lint & Test the targeted package ───────────────
+    # ─── Packages picked and their bump ─────────────────
+    packages:
+        name: Packages
+        runs-on: ubuntu-latest
+        outputs:
+            list: ${{ steps.pick.outputs.list }}
+            bumps: ${{ steps.pick.outputs.bumps }}
+        steps:
+            # GitHub can't hide a run per branch: refuse here, not after the CI
+            - name: Check branch
+              if: github.ref_name != 'main'
+              run: |
+                  echo "::error::Packages are published from main, not $GITHUB_REF_NAME"
+                  exit 1
+
+            - name: Pick packages
+              id: pick
+              env:
+                  INPUTS: ${{ toJSON(inputs) }}
+              run: |
+                  BUMPS=$(jq -c 'del(.channel) | with_entries(select(.value != "none"))' <<< "$INPUTS")
+                  if [ "$BUMPS" = "{}" ]; then
+                    echo "::error::Pick a bump for at least one package"
+                    exit 1
+                  fi
+                  {
+                    echo "bumps=$BUMPS"
+                    echo "list=$(jq -c keys <<< "$BUMPS")"
+                  } >> "$GITHUB_OUTPUT"
+
+    # ─── Lint & Test each package ───────────────────────
     ci:
-        name: CI — ${{ matrix.check }}
+        name: CI — ${{ matrix.package }} ${{ matrix.check }}
+        needs: packages
         runs-on: ubuntu-latest
         strategy:
             fail-fast: true
             matrix:
+                package: ${{ fromJSON(needs.packages.outputs.list) }}
                 check: [lint:github, test]
         steps:
             - name: Checkout
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
 
             - name: Setup Bun Project
               uses: ./.github/actions/setup-bun-project
@@ -69,22 +105,25 @@ jobs:
               run: bun run build
 
             - name: ${{ matrix.check }}
-              working-directory: packages/${{ inputs.package }}
+              working-directory: packages/${{ matrix.package }}
               run: bun run ${{ matrix.check }}
 
-    # ─── Release ────────────────────────────────────────
+    # ─── Publish, then commit, tag & release each ───────
     release:
         name: Release
-        needs: ci
+        needs: [packages, ci]
         runs-on: ubuntu-latest
         permissions:
-            id-token: write
             contents: write
+            id-token: write # npm trusted publishing + provenance
+        env:
+            BUMPS: ${{ needs.packages.outputs.bumps }}
+            CHANNEL: ${{ inputs.channel }}
         steps:
             - name: Checkout
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
               with:
-                  fetch-depth: 0
+                  fetch-depth: 0 # the changelog comes from the tags
                   ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
             - name: Setup Bun Project
@@ -102,78 +141,81 @@ jobs:
                   gpg-key: ${{ secrets.GPG_KEY }}
                   git-email: ${{ secrets.GIT_EMAIL }}
 
-            - name: Bump version
-              id: version
-              working-directory: packages/${{ inputs.package }}
-              env:
-                  BUMP: ${{ inputs.bump }}
-                  CHANNEL: ${{ inputs.channel }}
-              run: bash "$GITHUB_WORKSPACE/.github/scripts/bump-version.sh"
-
-            - name: Check version not already published
-              working-directory: packages/${{ inputs.package }}
+            # Dependencies first, so a dependent never reaches npm before the new version it needs.
+            # Only the picked ones count: a package's folder is its name without @clov-std/
+            - name: Order by dependencies
               run: |
-                  VERSION="${{ steps.version.outputs.version }}"
-                  PKG_NAME="${{ steps.version.outputs.pkg-name }}"
-                  if npm view "${PKG_NAME}@${VERSION}" version 2>/dev/null; then
-                    echo "::error::Version ${VERSION} of ${PKG_NAME} already exists on npm"
-                    exit 1
-                  fi
+                  ORDER=$(for PKG in $(jq -r 'keys[]' <<< "$BUMPS"); do
+                    jq -r --arg pkg "$PKG" --argjson picked "$(jq -c keys <<< "$BUMPS")" '
+                      "\($pkg) \($pkg)",
+                      ((.dependencies // {}) + (.peerDependencies // {}) | keys[]
+                        | select(startswith("@clov-std/")) | ltrimstr("@clov-std/")
+                        | select(IN($picked[])) | "\(.) \($pkg)")' "packages/$PKG/package.json"
+                  done | tsort | xargs)
+                  echo "ORDER=$ORDER" >> "$GITHUB_ENV"
+                  echo "Order: $ORDER"
 
-            - name: Build package
+            - name: Bump versions
+              run: |
+                  for PKG in $ORDER; do
+                    BUMP=$(jq -r --arg p "$PKG" '.[$p]' <<< "$BUMPS")
+                    (cd "packages/$PKG" && BUMP="$BUMP" bash "$GITHUB_WORKSPACE/.github/scripts/bump-version.sh")
+                  done
+                  # bun pm pack resolves workspace:^ from the install, not package.json: record the new versions
+                  bun install
+
+            # Every version checked before the first publish: a clash stops the run with nothing published
+            - name: Check versions not already published
+              run: |
+                  for PKG in $ORDER; do
+                    REF=$(jq -r '"\(.name)@\(.version)"' "packages/$PKG/package.json")
+                    if npm view "$REF" version 2>/dev/null; then
+                      echo "::error::$REF already exists on npm"
+                      exit 1
+                    fi
+                  done
+
+            - name: Build
               run: bun run build
 
-            - name: Pack package
-              working-directory: packages/${{ inputs.package }}
-              run: bun pm pack
-
-            - name: Publish to NPM
-              working-directory: packages/${{ inputs.package }}
-              run: npm publish ./*.tgz --access public --tag ${{ steps.version.outputs.npm-tag }} --provenance
-
-            - name: Generate changelog
-              id: changelog
-              env:
-                  PKG_NAME: ${{ steps.version.outputs.pkg-name }}
-                  PKG_DIR: packages/${{ inputs.package }}
-                  CHANNEL: ${{ inputs.channel }}
-                  VERSION: ${{ steps.version.outputs.version }}
-                  TAG: ${{ steps.version.outputs.tag }}
-                  REPO: ${{ github.repository }}
-              run: bash .github/scripts/generate-changelog.sh
-
-            - name: Commit version bump
-              if: inputs.channel == 'stable'
+            - name: Publish to npm
               run: |
-                  git add packages/${{ inputs.package }}/package.json
-                  git commit -m "chore(${{ inputs.package }}): release ${{ steps.version.outputs.version }}"
-                  git push origin HEAD
+                  for PKG in $ORDER; do
+                    (cd "packages/$PKG" && bun pm pack && npm publish ./*.tgz --access public --provenance --tag "$CHANNEL")
+                  done
 
-            - name: Create & push tag
-              run: |
-                  git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
-                  git push origin "${{ steps.version.outputs.tag }}"
-
-            - name: Create GitHub Release
+            # One commit, tag and GitHub release per package, as when they were released one by one
+            - name: Commit, tag & release
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  REPO: ${{ github.repository }}
+                  PRERELEASE: ${{ inputs.channel == 'beta' }}
               run: |
-                  PRERELEASE_FLAG=""
-                  if [ "${{ steps.version.outputs.prerelease }}" = "true" ]; then
-                    PRERELEASE_FLAG="--prerelease"
-                  fi
-
-                  gh release create "${{ steps.version.outputs.tag }}" \
-                    --title "${{ steps.version.outputs.tag }}" \
-                    --notes-file /tmp/changelog.md \
-                    $PRERELEASE_FLAG
+                  for PKG in $ORDER; do
+                    PKG_DIR="packages/$PKG"
+                    PKG_NAME=$(jq -r .name "$PKG_DIR/package.json")
+                    VERSION=$(jq -r .version "$PKG_DIR/package.json")
+                    TAG="$PKG_NAME@$VERSION"
+                    export PKG_DIR PKG_NAME VERSION TAG
+                    bash .github/scripts/generate-changelog.sh
+                    # beta: no version commit, the tag marks the main commit it was built from
+                    if [ "$CHANNEL" = latest ]; then
+                      git add "$PKG_DIR/package.json"
+                      git commit -m "chore($PKG): release $VERSION"
+                      git push origin HEAD
+                    fi
+                    git tag -a "$TAG" -m "Release $TAG"
+                    git push origin "$TAG"
+                    gh release create "$TAG" --title "$TAG" --notes-file /tmp/changelog.md --prerelease="$PRERELEASE"
+                  done
 
             - name: Summary
               run: |
-                  NPM_URL="https://www.npmjs.com/package/${{ steps.version.outputs.pkg-name }}/v/${{ steps.version.outputs.version }}"
                   {
-                    echo "### Publish"
-                    echo "| Status | NPM |"
-                    echo "|--------|-----|"
-                    echo "| ✅ Published | [View on npm]($NPM_URL) |"
+                    echo "### Published on \`$CHANNEL\`"
+                    echo "| Package | Version |"
+                    echo "|---------|---------|"
+                    for PKG in $ORDER; do
+                      jq -r '"| \(.name) | [\(.version)](https://www.npmjs.com/package/\(.name)/v/\(.version)) |"' "packages/$PKG/package.json"
+                    done
                   } >> "$GITHUB_STEP_SUMMARY"
