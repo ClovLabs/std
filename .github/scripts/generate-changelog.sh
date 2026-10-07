@@ -1,25 +1,13 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# Required env: PKG_NAME, PKG_DIR, CHANNEL (stable|canary|alpha), VERSION, TAG, REPO
+# Required env: PKG_NAME, PKG_DIR, VERSION, TAG, REPO
 # Runs from the repo root. Writes /tmp/changelog.md.
 
-case "$CHANNEL" in
-  stable)
-    # Strict semver only: PKG_NAME@X.Y.Z — excludes any prerelease suffix
-    LAST_TAG=$(git tag --list "${PKG_NAME}@*" --sort=-version:refname \
-      | grep -E '^.+@[0-9]+\.[0-9]+\.[0-9]+$' \
-      | head -n1 || true)
-    ;;
-  canary)
-    LAST_TAG=$(git tag --list "${PKG_NAME}@*-canary.*" --sort=-version:refname \
-      | head -n1 || true)
-    ;;
-  alpha)
-    LAST_TAG=$(git tag --list "${PKG_NAME}@*-alpha.*" --sort=-version:refname \
-      | head -n1 || true)
-    ;;
-esac
+# Strict semver only: PKG_NAME@X.Y.Z — excludes any prerelease suffix
+LAST_TAG=$(git tag --list "${PKG_NAME}@*" --sort=-version:refname \
+  | grep -E '^.+@[0-9]+\.[0-9]+\.[0-9]+$' \
+  | head -n1 || true)
 
 if [ -n "$LAST_TAG" ]; then
   COMMITS=$(git log "${LAST_TAG}..HEAD" --pretty=format:"%s (%h)" -- "${PKG_DIR}/")
