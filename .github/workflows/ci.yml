@@ -1,5 +1,5 @@
 name: ci
-run-name: '[CI] ${{ github.head_ref || github.ref_name }} by ${{ github.actor }}'
+run-name: "[CI] ${{ github.event.pull_request && format('#{0} {1}', github.event.pull_request.number, github.event.pull_request.title) || github.ref_name }}"
 
 on:
     pull_request:
@@ -13,7 +13,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
 
             - name: Setup Bun Project
               uses: ./.github/actions/setup-bun-project
@@ -32,7 +32,7 @@ jobs:
                 check: [lint:github, test]
         steps:
             - name: Checkout
-              uses: actions/checkout@v6
+              uses: actions/checkout@v7
 
             - name: Setup Bun Project
               uses: ./.github/actions/setup-bun-project
