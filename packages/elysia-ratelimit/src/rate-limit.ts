@@ -2,7 +2,6 @@
 import { MemoryStore, type KvStore } from '@clov-std/kv-store';
 import type { Server } from 'bun';
 import { Elysia, problem, t, type HTTPHeaders } from 'elysia';
-import type { TLiteral, TObject, TString } from 'typebox/type';
 
 export const RATE_LIMIT_ERROR_CODES = {
 	QUOTA_EXCEEDED: 'rate-limit.quota.exceeded'
@@ -80,21 +79,7 @@ export const rateLimitPlugin = (
 	}
 > =>
 	new Elysia<'rateLimitPlugin'>({ name: 'rateLimitPlugin' }).macro({
-		rateLimit: (({
-			limit,
-			window,
-			keyGenerator
-		}): {
-			response: {
-				429: TObject<{
-					type: TString;
-					title: TString;
-					status: TLiteral<429>;
-					detail: TString;
-				}>;
-			};
-			transform: ({ set, request, server }: RateLimitTransformContext) => Promise<void>;
-		} => ({
+		rateLimit: (({ limit, window, keyGenerator }) => ({
 			response: { 429: rateLimitResponseSchema },
 			// Uses transform because it's the first per-route hook in Elysia's lifecycle,
 			// running before derive, resolve, and beforeHandle.

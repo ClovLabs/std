@@ -127,11 +127,7 @@ export const cachePlugin = (
 			ttl,
 			vary = ['authorization'],
 			keyGenerator = (request, body) => generateCacheKey(request, body, vary)
-		}): {
-			derive: (context: CacheDeriveContext) => Promise<CacheDerived>;
-			beforeHandle: (context: CacheContext) => Promise<unknown>;
-			afterHandle: (context: CacheAfterHandleContext) => Promise<void>;
-		} => ({
+		}) => ({
 			derive: async ({ request, body }): Promise<CacheDerived> => {
 				const key = await keyGenerator(request, body);
 				if (key === undefined) return {};

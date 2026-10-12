@@ -18,12 +18,12 @@ interface RateLimitBody {
  * hook only overrides the response when it returns one.
  */
 const errorPlugin = new Elysia({ name: 'error-plugin' })
-	.error(({ error }) =>
+	.onError(({ error }) =>
 		(error as { status?: number }).status === undefined
 			? status(500, {
 					type: 'internal',
 					title: 'Internal Server Error',
-					detail: error.message
+					detail: error instanceof Error ? error.message : String(error)
 				})
 			: undefined
 	)
