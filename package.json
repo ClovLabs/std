@@ -24,6 +24,8 @@
 		"build": "bun --filter './packages/*' build",
 		"clean": "find . -name 'node_modules' -not -path '*/.git/*' -prune -exec rm -rf {} + ; find . -name 'dist' -not -path '*/.git/*' -prune -exec rm -rf {} + ; find . -name 'bun.lock' -not -path '*/.git/*' -delete",
 		"docs": "bunx typedoc --tsconfig tsconfig.build.json",
+		"fmt:check": "bun --filter './packages/*' fmt:check",
+		"fmt": "bun --filter './packages/*' fmt",
 		"lint:fix": "bun --filter './packages/*' lint:fix",
 		"lint:github": "bun --filter './packages/*' lint:github",
 		"lint": "bun --filter './packages/*' lint",
