@@ -1,4 +1,5 @@
 import type { HttpStatusCode, HttpStatusKey } from '@clov-std/error';
+
 import type { CatalogFactory, EntryMap, ExactEntries, LocalesOf } from '../type/translations';
 import { LocalizedException } from './localized-exception';
 import { LocalizedHttpException } from './localized-http-exception';

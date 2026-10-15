@@ -1,4 +1,5 @@
 import type { HttpStatusCode, HttpStatusKey } from '@clov-std/error';
+
 import type { Translations } from '../../type/translations';
 
 /**

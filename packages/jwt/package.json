@@ -1,57 +1,57 @@
 {
-  "name": "@clov-std/jwt",
-  "version": "2.0.2",
-  "description": "JWT utilities and helpers for secure token management.",
-  "keywords": [
-    "bun",
-    "clov",
-    "helpers",
-    "jwt",
-    "open-source",
-    "token",
-    "types",
-    "typescript",
-    "utilities"
-  ],
-  "license": "MIT",
-  "author": "Clov",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ClovLabs/std",
-    "directory": "packages/jwt"
-  },
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "bun builder.ts",
-    "docs": "bunx typedoc --tsconfig tsconfig.build.json",
-    "fmt:check": "oxfmt --check",
-    "fmt": "oxfmt",
-    "lint:fix": "oxlint --type-aware --type-check --fix ./src",
-    "lint:github": "oxlint --type-aware --type-check --format=github ./src",
-    "lint": "oxlint --type-aware --type-check ./src",
-    "test": "bun test --pass-with-no-tests --coverage"
-  },
-  "dependencies": {
-    "@clov-std/error": "workspace:^",
-    "jose": "^6.2.12"
-  },
-  "devDependencies": {
-    "@types/bun": "catalog:base",
-    "oxfmt": "catalog:base",
-    "oxlint": "catalog:base",
-    "oxlint-tsgolint": "catalog:base",
-    "typescript": "catalog:base"
-  },
-  "peerDependencies": {
-    "@clov-std/error": "workspace:^"
-  }
+	"name": "@clov-std/jwt",
+	"version": "2.0.2",
+	"description": "JWT utilities and helpers for secure token management.",
+	"keywords": [
+		"bun",
+		"clov",
+		"helpers",
+		"jwt",
+		"open-source",
+		"token",
+		"types",
+		"typescript",
+		"utilities"
+	],
+	"license": "MIT",
+	"author": "Clov",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ClovLabs/std",
+		"directory": "packages/jwt"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "bun builder.ts",
+		"docs": "bunx typedoc --tsconfig tsconfig.build.json",
+		"fmt:check": "oxfmt --check",
+		"fmt": "oxfmt",
+		"lint:fix": "oxlint --type-aware --type-check --fix ./src",
+		"lint:github": "oxlint --type-aware --type-check --format=github ./src",
+		"lint": "oxlint --type-aware --type-check ./src",
+		"test": "bun test --pass-with-no-tests --coverage"
+	},
+	"dependencies": {
+		"@clov-std/error": "workspace:^",
+		"jose": "^6.2.12"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:base",
+		"oxfmt": "catalog:base",
+		"oxlint": "catalog:base",
+		"oxlint-tsgolint": "catalog:base",
+		"typescript": "catalog:base"
+	},
+	"peerDependencies": {
+		"@clov-std/error": "workspace:^"
+	}
 }

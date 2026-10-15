@@ -1,57 +1,57 @@
 {
-  "name": "@clov-std/logger",
-  "version": "2.0.1",
-  "description": "Type-safe logging library for Bun, modular sink pattern, transform streams, and immutable API design.",
-  "keywords": [
-    "bun",
-    "clov",
-    "open-source",
-    "types",
-    "typescript",
-    "utilities"
-  ],
-  "license": "MIT",
-  "author": "Clov",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ClovLabs/std",
-    "directory": "packages/logger"
-  },
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "bun builder.ts",
-    "docs": "bunx typedoc --tsconfig tsconfig.build.json",
-    "fmt:check": "oxfmt --check",
-    "fmt": "oxfmt",
-    "lint:fix": "oxlint --type-aware --type-check --fix ./src",
-    "lint:github": "oxlint --type-aware --type-check --format=github ./src",
-    "lint": "oxlint --type-aware --type-check ./src",
-    "test": "bun test --pass-with-no-tests --coverage"
-  },
-  "dependencies": {
-    "@clov-std/common": "workspace:^",
-    "@clov-std/error": "workspace:^"
-  },
-  "devDependencies": {
-    "@types/bun": "catalog:base",
-    "mitata": "^1.0.34",
-    "oxfmt": "catalog:base",
-    "oxlint": "catalog:base",
-    "oxlint-tsgolint": "catalog:base",
-    "pino": "^10.3.1",
-    "typescript": "catalog:base"
-  },
-  "peerDependencies": {
-    "@clov-std/common": "workspace:^",
-    "@clov-std/error": "workspace:^"
-  }
+	"name": "@clov-std/logger",
+	"version": "2.0.1",
+	"description": "Type-safe logging library for Bun, modular sink pattern, transform streams, and immutable API design.",
+	"keywords": [
+		"bun",
+		"clov",
+		"open-source",
+		"types",
+		"typescript",
+		"utilities"
+	],
+	"license": "MIT",
+	"author": "Clov",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ClovLabs/std",
+		"directory": "packages/logger"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "bun builder.ts",
+		"docs": "bunx typedoc --tsconfig tsconfig.build.json",
+		"fmt:check": "oxfmt --check",
+		"fmt": "oxfmt",
+		"lint:fix": "oxlint --type-aware --type-check --fix ./src",
+		"lint:github": "oxlint --type-aware --type-check --format=github ./src",
+		"lint": "oxlint --type-aware --type-check ./src",
+		"test": "bun test --pass-with-no-tests --coverage"
+	},
+	"dependencies": {
+		"@clov-std/common": "workspace:^",
+		"@clov-std/error": "workspace:^"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:base",
+		"mitata": "^1.0.34",
+		"oxfmt": "catalog:base",
+		"oxlint": "catalog:base",
+		"oxlint-tsgolint": "catalog:base",
+		"pino": "^10.3.1",
+		"typescript": "catalog:base"
+	},
+	"peerDependencies": {
+		"@clov-std/common": "workspace:^",
+		"@clov-std/error": "workspace:^"
+	}
 }

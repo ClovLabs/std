@@ -69,8 +69,8 @@ new Elysia()
 By default, counters are kept in memory. Pass a `BunRedisStore` (or any `KvStore` adapter) for persistence across restarts and multi-instance deployments.
 
 ```ts
-import { BunRedisStore } from '@clov-std/kv-store';
 import { rateLimitPlugin } from '@clov-std/elysia-ratelimit';
+import { BunRedisStore } from '@clov-std/kv-store';
 import { Elysia } from 'elysia';
 
 const store = new BunRedisStore('redis://localhost:6379');

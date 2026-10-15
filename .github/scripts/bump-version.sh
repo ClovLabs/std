@@ -35,4 +35,4 @@ case "$CHANNEL" in
     ;;
 esac
 
-jq --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+jq --tab --arg v "$VERSION" '.version = $v' package.json > tmp.json && mv tmp.json package.json
