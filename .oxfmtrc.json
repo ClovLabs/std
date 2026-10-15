@@ -1,8 +1,15 @@
 {
-  "ignorePatterns": [],
-  "printWidth": 100,
-  "singleQuote": true,
-  "useTabs": true,
-  "tabWidth": 4,
-  "trailingComma": "none"
+	"ignorePatterns": [],
+	"printWidth": 100,
+	"singleQuote": true,
+	"useTabs": true,
+	"tabWidth": 4,
+	"trailingComma": "none",
+	"sortImports": {
+		"groups": [
+			["builtin", "external"],
+			["internal", "subpath", "parent", "sibling", "index"],
+			"unknown"
+		]
+	}
 }
