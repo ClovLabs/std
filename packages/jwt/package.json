@@ -1,17 +1,11 @@
 {
 	"name": "@clov-std/jwt",
 	"version": "2.0.3",
-	"description": "JWT utilities and helpers for secure token management.",
+	"description": "Sign and verify HS256 JWTs on top of jose, with the standard claims filled in.",
 	"keywords": [
-		"bun",
-		"clov",
-		"helpers",
-		"jwt",
-		"open-source",
-		"token",
-		"types",
-		"typescript",
-		"utilities"
+		"hs256",
+		"jose",
+		"jwt"
 	],
 	"license": "MIT",
 	"author": "Clov",
