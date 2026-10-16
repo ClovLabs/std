@@ -1,16 +1,12 @@
 {
 	"name": "@clov-std/elysia-ratelimit",
 	"version": "4.0.17",
-	"description": "Rate limiting plugin for Elysia framework.",
+	"description": "Rate limiting for Elysia as a route macro, with RFC 9457 429 responses and pluggable storage.",
 	"keywords": [
-		"bun",
-		"clov",
 		"elysia",
-		"macro",
-		"open-source",
-		"plugin",
-		"ratelimit",
-		"typescript"
+		"elysia-plugin",
+		"rate-limit",
+		"ratelimit"
 	],
 	"license": "MIT",
 	"author": "Clov",
