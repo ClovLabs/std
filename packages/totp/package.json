@@ -1,14 +1,12 @@
 {
 	"name": "@clov-std/totp",
 	"version": "2.0.2",
-	"description": "Time-based One-Time Password (TOTP) implementation in TypeScript.",
+	"description": "Generate and verify HOTP and TOTP codes (RFC 4226 / 6238), with otpauth:// provisioning URIs.",
 	"keywords": [
-		"bun",
-		"clov",
-		"open-source",
-		"totp",
-		"types",
-		"typescript"
+		"2fa",
+		"hotp",
+		"otp",
+		"totp"
 	],
 	"license": "MIT",
 	"author": "Clov",
