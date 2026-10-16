@@ -2,51 +2,15 @@
   <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/logger/logo-logger.png" alt="Clov Logger logo" width="200" />
 </p>
 
-# 🎯 Clov Logger
+# Clov Logger
 
-Logging in Bun often means choosing between "fast but dumb" or "smart but blocking".
-`@clov-std/logger` gives you both: a type-safe, sink-based system that never blocks your main thread.
-
-## Why this package?
-
-The goal is simple: **Stop your logs from slowing down your app.**
-
-Most loggers either block on every write or lose type safety when you need structured logging.
-This package runs everything in a worker thread, batches automatically, and still gives you full TypeScript inference on what you log.
-
-## 📌 Table of Contents
-
-- [Features](#-features)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [Custom Sinks](#-custom-sinks)
-- [Type-Safe Logging](#-type-safe-logging)
-- [Error Handling](#-error-handling)
-- [Flushing and Closing](#-flushing-and-closing)
-- [Configuration](#-configuration)
-- [API Reference](#-api-reference)
-- [License](#-license)
-- [Contact](#-contact)
-
-## ✨ Features
-
-- ⚡ **Zero Blocking** : Every log goes through a worker thread – your main loop stays fast.
-- 🔒 **Type-Safe** : TypeScript infers the shape of your logs. No more `any` everywhere.
-- 🎯 **Sink Pattern** : Route logs to console, file, database, or your own custom destination.
-- 🔄 **Smart Batching** : Logs are grouped automatically for better I/O performance.
-- 🔔 **Event-Driven** : Listen to flush, close, and error events when you need them.
-
-## 🔧 Installation
+A logger for Bun that does its writing in a worker thread, so logging doesn't hold up your main loop. Logs are batched, sent to one or more sinks (console, file, or your own), and typed: if a sink expects `{ userId, action }`, TypeScript makes you pass it.
 
 ```bash
 bun add @clov-std/logger
 ```
 
-## ⚙️ Usage
-
-### Basic Setup
-
-Create a logger, attach a sink, and start logging:
+## Basic setup
 
 ```ts
 import { Logger, consoleSink } from '@clov-std/logger';
@@ -65,13 +29,11 @@ logger.log({ event: 'generic_log' });
 await logger.close();
 ```
 
-> ℹ️ Sinks are **factory functions**, not classes. You pass the factory itself (not the
-> result of calling it) to `registerSink`. The worker re-evaluates the factory string
-> and calls it with the `sinkArgs` you forwarded, so the sink is built **inside** the worker.
+Sinks are factory functions, not classes. Pass the factory itself to `registerSink`, not the result of calling it: the worker re-evaluates it and calls it with the args you gave, so the sink is built inside the worker.
 
-### Multiple Sinks
+## Several sinks
 
-Need logs going to different places? Register as many sinks as you want:
+Register as many as you need, and target some of them per call:
 
 ```ts
 import { Logger, consoleSink, fileSink } from '@clov-std/logger';
@@ -91,13 +53,13 @@ logger.warn({ message: 'Only in console' }, ['console']);
 await logger.close();
 ```
 
-### Built-in Sinks
+## Built-in sinks
 
 | Factory       | Args   | Description                                             |
 | ------------- | ------ | ------------------------------------------------------- |
 | `consoleSink` | _none_ | Writes JSON log entries to `console` (routed by level). |
 | `fileSink`    | `path` | Appends JSON log entries to a file via `Bun.FileSink`.  |
-| `devNullSink` | _none_ | Discards everything – useful for benchmarks / dry runs. |
+| `devNullSink` | _none_ | Discards everything. Handy for benchmarks.              |
 
 ```ts
 import { Logger, devNullSink, fileSink } from '@clov-std/logger';
@@ -107,20 +69,16 @@ const logger = new Logger()
 	.registerSink('silent', devNullSink);
 ```
 
-## 🛠️ Custom Sinks
+## Custom sinks
 
-A sink is a plain object implementing the `LoggerSink` interface — register a **factory**
-function that builds and returns it. The factory is stringify-ed and re-evaluated inside the
-worker, so its body must be **self-contained**: it may use its arguments, runtime globals
-(`Bun`, `console`, `JSON`, …) and dynamic `import()`, but **must not** close over
-module-scoped imports or variables from the calling file.
+A sink is a plain object implementing `LoggerSink`, returned by a factory. The factory is stringified and re-evaluated inside the worker, so its body has to be self-contained. It can use its arguments, runtime globals (`Bun`, `console`, `JSON`, ...) and dynamic `import()`, but not imports or variables from the module it's written in.
 
 ```ts
 import { Logger, type SinkFactory } from '@clov-std/logger';
 
 // A self-contained factory: no module-scoped imports captured.
 const databaseSink: SinkFactory<{ query: string }, [dbUrl: string]> = (dbUrl: string) => {
-	// Open the connection inside the factory — the worker owns it.
+	// Open the connection inside the factory, the worker owns it.
 	const connection = /* …open using `dbUrl`… */ {} as unknown;
 	return {
 		async log(level, timestamp, object) {
@@ -151,16 +109,13 @@ interface LoggerSink<TLogObject = unknown> {
 }
 ```
 
-- `log` is the only required method.
-- `flush` is optional — implement it when your sink buffers writes and you want `logger.flush()` to push them through.
-- `close` is optional — implement it to release file handles, connections, etc.
+Only `log` is required. Implement `flush` if your sink buffers writes, so `logger.flush()` pushes them through, and `close` to release file handles or connections.
 
-## 🔒 Type-Safe Logging
+## Typed logs
 
-When you define typed sinks, TypeScript knows exactly what shape your logs need. No more
-guessing, no more runtime surprises.
+Give a sink a type and every call that reaches it has to match.
 
-### Single Typed Sink
+### One typed sink
 
 ```ts
 import { Logger, type LoggerSink, type LogLevels, type SinkFactory } from '@clov-std/logger';
@@ -187,10 +142,9 @@ logger.info({ userId: 123, action: 'login' });
 logger.info({ userId: 123 });
 ```
 
-### Multiple Typed Sinks
+### Several typed sinks
 
-When logging to multiple sinks at once, TypeScript creates an intersection of all the
-targeted sinks' types — you must satisfy every one of them.
+When a call targets several sinks, the expected type is the intersection of theirs, so the object has to satisfy all of them.
 
 ```ts
 interface UserLog {
@@ -239,10 +193,9 @@ logger.warn({ userId: 456, action: 'failed_attempt' }, ['user']);
 logger.error({ userId: 789, action: 'error' }, ['user', 'api']);
 ```
 
-### Mixing Typed and Untyped Sinks
+### Typed and untyped together
 
-When you mix typed sinks with untyped ones (like `consoleSink`, which accepts `unknown`),
-things stay flexible: the intersection with `unknown` lets extra properties through.
+Untyped sinks like `consoleSink` accept `unknown`, so they add no constraint of their own. A call that targets both only has to satisfy the typed one.
 
 ```ts
 import { Logger, consoleSink, type SinkFactory } from '@clov-std/logger';
@@ -263,20 +216,13 @@ const logger = new Logger()
 	.registerSink('database', databaseLogSink)
 	.registerSink('console', consoleSink); // accepts unknown
 
-// ✅ Works — the database type is enforced, console accepts anything
-logger.info(
-	{
-		query: 'SELECT * FROM users',
-		duration: 123,
-		customData: 'anything goes'
-	},
-	['database', 'console']
-);
+// ✅ Only DatabaseLog is required, console accepts anything
+logger.info({ query: 'SELECT * FROM users', duration: 123 }, ['database', 'console']);
 ```
 
-## 🚨 Error Handling
+## Errors
 
-Things break. When they do, you'll want to know:
+When a sink throws, or a factory fails to build inside the worker, the logger emits an event:
 
 ```ts
 import { Logger, consoleSink } from '@clov-std/logger';
@@ -297,9 +243,9 @@ logger.info({ message: 'Safe to log' });
 await logger.close();
 ```
 
-## 🧹 Flushing and Closing
+## Flushing and closing
 
-When you need to make sure everything is written before shutting down:
+To make sure everything is written before shutting down:
 
 ```ts
 import { Logger, consoleSink } from '@clov-std/logger';
@@ -316,12 +262,11 @@ await logger.flush();
 await logger.close();
 ```
 
-`flush()` drains both the in-memory queue **and** each sink's own buffer (via the
-optional `flush()` method on `LoggerSink`).
+`flush()` drains the in-memory queue and then each sink's own buffer, through the optional `flush()` on `LoggerSink`.
 
-## ⚙️ Configuration
+## Configuration
 
-Fine-tune the batching and queue behavior:
+Batching and queue limits:
 
 ```ts
 import { Logger, consoleSink } from '@clov-std/logger';
@@ -336,14 +281,10 @@ const logger = new Logger({
 }).registerSink('console', consoleSink);
 ```
 
-## 📚 API Reference
+## Docs
 
-Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
 
-## ⚖️ License
+## License
 
-MIT - Feel free to use it.
-
-## 📧 Contact
-
-- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)
+MIT, see [LICENSE.md](LICENSE.md).
