@@ -1,46 +1,20 @@
 <p align="center">
-  <img src="https://github.com/ClovLabs/std/blob/main/packages/registry/logo-registry.png" alt="Clov Registry logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/registry/logo-registry.png" alt="Clov Registry logo" width="200" />
 </p>
 
-# 🎯 Clov Registry
+# Clov Registry
 
-If you've ever copy-pasted a `getInstance()` pattern into yet another class, this package is for you.
-It gives you a single, centralized registry to store and retrieve instances — type-safe, predictable, and easy to test.
-
-## Why this package?
-
-The classic singleton pattern works, but it scatters `static instance` fields across your codebase.
-Every class re-implements the same boilerplate. With `Registry`, you register instances once and retrieve them anywhere by name.
-One registry, no duplication.
-
-## 📌 Table of Contents
-
-- [Features](#-features)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [API Reference](#-api-reference)
-- [License](#-license)
-- [Contact](#-contact)
-
-## ✨ Features
-
-- 🔒 **Type-safe** — Full generics support, no `any` casting required.
-- 🎯 **Centralized** — One place to manage all your instances.
-- ⚡ **Lightweight** — Minimal overhead, does exactly what it says.
-
-## 🔧 Installation
+A single place to register shared instances by name and get them back anywhere, instead of a `static instance` and a `getInstance()` on every class that needs one.
 
 ```bash
-bun add @clov-std/registry
+bun add @clov-std/registry @clov-std/error
 ```
 
-> **Peer dependency:** `@clov-std/error` must be installed alongside.
+`@clov-std/error` is a peer dependency.
 
-## ⚙️ Usage
+## Registering
 
-### Registering instances
-
-Register your instances once at startup. They're available everywhere after that.
+Do it once, at startup:
 
 ```ts
 import { Registry } from '@clov-std/registry';
@@ -59,13 +33,12 @@ class DatabaseConnection {
 }
 
 class ApiClient {
-	public constructor(
-		private readonly baseUrl: string,
-		private readonly apiKey: string
-	) {}
+	public readonly baseUrl: string;
+	private readonly apiKey: string;
 
-	public get baseUrl(): string {
-		return this.baseUrl;
+	public constructor(baseUrl: string, apiKey: string) {
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
 	}
 }
 
@@ -73,20 +46,20 @@ Registry.register('DatabaseConnection', new DatabaseConnection());
 Registry.register('ApiClient', new ApiClient('https://api.example.com', 'key'));
 ```
 
-### Retrieving instances
+## Retrieving
 
-Same instance, every time. You specify the type via the generic, and TypeScript takes care of the rest.
+You get the same reference every time. The type comes from the generic.
 
 ```ts
 const db1 = Registry.get<DatabaseConnection>('DatabaseConnection');
 const db2 = Registry.get<DatabaseConnection>('DatabaseConnection');
 
-console.log(db1 === db2); // true — same reference
+console.log(db1 === db2); // true, same reference
 
-db1.query('SELECT * FROM users'); // type-safe
+db1.query('SELECT * FROM users');
 ```
 
-### Checking & swapping
+## Checking and replacing
 
 ```ts
 if (Registry.has('ApiClient')) {
@@ -94,19 +67,15 @@ if (Registry.has('ApiClient')) {
 	console.log(client.baseUrl);
 }
 
-// Need to replace an instance? Unregister first, then register the new one.
+// To replace an instance, unregister it first.
 Registry.unregister('DatabaseConnection');
 Registry.register('DatabaseConnection', new DatabaseConnection());
 ```
 
-## 📚 API Reference
+## Docs
 
-Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
 
-## ⚖️ License
+## License
 
-MIT — Feel free to use it.
-
-## 📧 Contact
-
-- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)
+MIT, see [LICENSE.md](LICENSE.md).
