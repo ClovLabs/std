@@ -1,6 +1,6 @@
 {
 	"name": "@clov-std/totp",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"description": "Generate and verify HOTP and TOTP codes (RFC 4226 / 6238), with otpauth:// provisioning URIs.",
 	"keywords": [
 		"2fa",
