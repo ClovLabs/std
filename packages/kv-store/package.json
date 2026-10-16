@@ -1,6 +1,6 @@
 {
 	"name": "@clov-std/kv-store",
-	"version": "2.0.3",
+	"version": "2.0.4",
 	"description": "Key-value store with TTLs and counters, and in-memory and Bun Redis adapters behind one API.",
 	"keywords": [
 		"bun",
