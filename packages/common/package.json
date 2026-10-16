@@ -1,15 +1,12 @@
 {
 	"name": "@clov-std/common",
 	"version": "2.1.2",
-	"description": "Common utilities and types library for building robust applications.",
+	"description": "Small shared helpers: a human-readable duration parser, a typed EventEmitter and inline Bun workers.",
 	"keywords": [
-		"bun",
-		"clov",
-		"helpers",
-		"open-source",
-		"types",
-		"typescript",
-		"utilities"
+		"duration",
+		"human-time",
+		"typed-event-emitter",
+		"worker"
 	],
 	"license": "MIT",
 	"author": "Clov",

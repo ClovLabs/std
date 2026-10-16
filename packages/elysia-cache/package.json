@@ -1,16 +1,12 @@
 {
 	"name": "@clov-std/elysia-cache",
 	"version": "1.0.8",
-	"description": "Cache plugin for Elysia framework.",
+	"description": "Response caching for Elysia as a route macro, stored in any @clov-std/kv-store adapter.",
 	"keywords": [
-		"bun",
 		"cache",
-		"clov",
 		"elysia",
-		"macro",
-		"open-source",
-		"plugin",
-		"typescript"
+		"elysia-plugin",
+		"response-cache"
 	],
 	"license": "MIT",
 	"author": "Clov",

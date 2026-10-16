@@ -2,53 +2,25 @@
   <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/elysia-ratelimit/logo-elysia-ratelimit.png" alt="Clov Elysia Rate Limit logo" width="200" />
 </p>
 
-# 🚦 Clov Elysia Rate Limit
+# Clov Elysia Rate Limit
 
-Rate limiting for Elysia routes, guards, and groups, as a macro.  
-Drop `rateLimit` on any endpoint and abusive traffic gets cut before it ever hits your logic.
+Rate limiting for Elysia, as a macro. Put `rateLimit: { limit: 10, window: 60 }` on a route, guard or group and you're done.
 
-## Why this package?
+It runs in `transform`, the first per-route hook, so excess requests are rejected before auth guards or handlers do any work. Counters are per client IP by default, which suits login endpoints. When lots of users share one IP (an office, a corporate proxy), a `keyGenerator` lets you count per token, session, API key, or whatever fits.
 
-This plugin uses Elysia's macro system to add rate limiting to any route, guard, or group.  
-You add `rateLimit: { limit: 10, window: 60 }` and you're done.
-
-By default it limits by client IP, which works great for auth endpoints.  
-For cases where many users share the same public IP (offices, corporate proxies), you can pass a `keyGenerator` to rate limit by IP + access token, session ID, API key, or any combination that makes sense.
-
-Storage is handled by `@clov-std/kv-store`, so you start with in-memory and move to Redis when you need to, without changing your routes.
-
-## 📌 Table of Contents
-
-- [Features](#-features)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [Error handling](#-error-handling)
-- [API Reference](#-api-reference)
-- [License](#-license)
-- [Contact](#-contact)
-
-## ✨ Features
-
-- 🎯 **Per-route macros** : Attach `rateLimit` to any route independently, with its own `limit` and `window`.
-- 🔑 **Custom key generation** : Rate limit by IP (default), IP + token, session, or any key you compute.
-- 🗃️ **KvStore-agnostic** : Works with `MemoryStore` out of the box; swap in `BunRedisStore` or your own adapter.
-- ⚡ **Early rejection** : Runs in `transform`, the first per-route hook, before auth guards and handlers.
-- 📡 **Standard headers** : Automatically sets `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset`.
-- 🧯 **Complete RFC 9457 `429`** : Answers a real problem document on its own, `detail` included, with no exception class to import.
-
-## 🔧 Installation
+Storage goes through `@clov-std/kv-store`: memory by default, Redis when you need it, same routes either way.
 
 ```bash
 bun add @clov-std/elysia-ratelimit elysia typebox
 ```
 
-> **Peer dependencies:** `elysia` (v2) and `typebox` must be installed alongside.
+`elysia` (v2) and `typebox` are peer dependencies.
 
-## ⚙️ Usage
+## Usage
 
-### Basic - rate limit by IP
+### Basic
 
-The simplest form: pass `limit` (max requests) and `window` (time in seconds). Each client IP gets its own counter.
+`limit` is the max number of requests, `window` is in seconds.
 
 ```ts
 import { rateLimitPlugin } from '@clov-std/elysia-ratelimit';
@@ -64,9 +36,9 @@ new Elysia()
 	.listen(3000);
 ```
 
-### Custom store - Redis
+### Redis
 
-By default, counters are kept in memory. Pass a `BunRedisStore` (or any `KvStore` adapter) for persistence across restarts and multi-instance deployments.
+Pass a `BunRedisStore` (or any `KvStore` adapter) to keep counters across restarts and share them between instances.
 
 ```ts
 import { rateLimitPlugin } from '@clov-std/elysia-ratelimit';
@@ -81,10 +53,9 @@ new Elysia()
 	.listen(3000);
 ```
 
-### Custom key generation - IP + access token
+### Per user instead of per IP
 
-Useful for authenticated routes where many users share the same public IP (office, corporate proxy).  
-Each user has their own counter, independent of their network.
+For authenticated routes behind a shared IP, give each user their own counter:
 
 ```ts
 import { rateLimitPlugin } from '@clov-std/elysia-ratelimit';
@@ -107,12 +78,13 @@ new Elysia()
 	.listen(3000);
 ```
 
-> **Tip:** `extractClientIp` is exported if you need it inside your own `keyGenerator`.
+`extractClientIp` is exported if you need it in your own `keyGenerator`.
 
-## 🧯 Error handling
+## Headers and the 429
 
-When the allowance is exceeded, the plugin throws Elysia's `problem()`, so the `429` is a complete
-RFC 9457 document with no exception class and no error dependency involved:
+Every response gets `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`.
+
+Once the limit is hit, the plugin throws Elysia's `problem()`, so the `429` is a full RFC 9457 document (`application/problem+json`) without any exception class to import:
 
 ```json
 {
@@ -123,21 +95,16 @@ RFC 9457 document with no exception class and no error dependency involved:
 }
 ```
 
-`type` is always `RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED`. `title` is derived by Elysia from the
-status reason phrase. `detail` carries the live counter state, so it changes per occurrence.
-The content type is `application/problem+json`, and the `X-RateLimit-*` headers are set before
-the throw so they survive on the `429`.
+- `type` is always `RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED`.
+- `title` comes from Elysia, based on the status.
+- `detail` reflects the current counter, so it changes from one 429 to the next.
 
-This is also the response the macro declares for OpenAPI, so a typed client sees it.
+The headers are set before the throw, so they're still on the `429`. The macro also declares this response for OpenAPI, so typed clients know about it.
 
-## 📚 API Reference
+## Docs
 
-Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
 
-## ⚖️ License
+## License
 
-MIT — see [LICENSE.md](LICENSE.md).
-
-## 📧 Contact
-
-Maintained by [Clov](https://github.com/ClovLabs).
+MIT, see [LICENSE.md](LICENSE.md).

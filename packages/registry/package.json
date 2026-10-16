@@ -1,14 +1,11 @@
 {
 	"name": "@clov-std/registry",
 	"version": "2.0.2",
-	"description": "Centralized, type-safe registry for managing named instances.",
+	"description": "Register shared instances by name and get them back anywhere, without a singleton per class.",
 	"keywords": [
-		"bun",
-		"clov",
-		"open-source",
 		"registry",
-		"types",
-		"typescript"
+		"service-locator",
+		"singleton"
 	],
 	"license": "MIT",
 	"author": "Clov",

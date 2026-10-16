@@ -2,52 +2,23 @@
   <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/elysia-cache/logo-elysia-cache.png" alt="Clov Elysia Cache logo" width="200" />
 </p>
 
-# ⚡ Clov Elysia Cache
+# Clov Elysia Cache
 
-Response caching for Elysia routes, guards, and groups, as a macro.  
-Drop `isCached` on any endpoint and repeated requests are served from the store before your logic ever runs.
+Response caching for Elysia, as a macro. Put `isCached: { ttl: 60 }` on a route, guard or group, and repeated requests are answered from the store in `beforeHandle`, before your handler runs.
 
-## Why this package?
-
-This plugin uses Elysia's macro system to add response caching to any route, guard, or group.  
-You add `isCached: { ttl: 60 }` and you're done.
-
-Cache keys are readable strings built from the request method, URL, the `vary` headers (default: `authorization`), and the parsed body - so different inputs never collide. `generateCacheKey` builds them, and keys longer than 1024 characters are hashed with SHA-256 before being stored.
-
-Storage is handled by `@clov-std/kv-store`, so you start with in-memory and move to Redis when you need to, without changing your routes.
-
-## 📌 Table of Contents
-
-- [Features](#-features)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [Cache semantics](#-cache-semantics)
-- [API Reference](#-api-reference)
-- [License](#-license)
-- [Contact](#-contact)
-
-## ✨ Features
-
-- 🎯 **Per-route macros** : Attach `isCached` to any route independently, with its own `ttl` and options.
-- 🔑 **Readable keys** : `method:url`, the `vary` header values, and the parsed body - SHA-256 hashed only when the key exceeds 1024 characters.
-- 🗃️ **KvStore-agnostic** : Works with `MemoryStore` out of the box; swap in `BunRedisStore` or your own adapter.
-- ⚡ **Early serving** : Returns the cached response in `beforeHandle`, before handlers run.
-- 📡 **Cache headers** : Sets `Cache-Control: max-age=N, private` and `X-Cache: HIT` / `MISS`.
-- 🛡️ **Opaque-body safety** : Requests carrying `Blob` / `ArrayBuffer` / typed-array bodies are never keyed, never cached.
-
-## 🔧 Installation
+Storage goes through `@clov-std/kv-store`: memory by default, Redis when you need it, same routes either way.
 
 ```bash
 bun add @clov-std/elysia-cache elysia typebox
 ```
 
-> **Peer dependencies:** `elysia`(v2) and `typebox` must be installed alongside.
+`elysia` (v2) and `typebox` are peer dependencies.
 
-## ⚙️ Usage
+## Usage
 
-### Basic - cache GET responses
+### Basic
 
-The simplest form: pass `ttl` (time to live in seconds). Responses are cached for that window.
+`ttl` is in seconds.
 
 ```ts
 import { cachePlugin } from '@clov-std/elysia-cache';
@@ -63,9 +34,9 @@ new Elysia()
 	.listen(3000);
 ```
 
-### Custom store - Redis
+### Redis
 
-By default, cached responses are kept in memory. Pass a `BunRedisStore` (or any `KvStore` adapter) for persistence across restarts and multi-instance deployments.
+Pass a `BunRedisStore` (or any `KvStore` adapter) to keep the cache across restarts and share it between instances.
 
 ```ts
 import { cachePlugin } from '@clov-std/elysia-cache';
@@ -80,11 +51,11 @@ new Elysia()
 	.listen(3000);
 ```
 
-> **Note:** Elysia keeps one plugin instance per name, so the store must be passed to the first `cachePlugin()` used in the app tree. A later `cachePlugin(otherStore)` on the same app is ignored.
+> Elysia keeps one plugin instance per name, so the store has to go to the first `cachePlugin()` in the app tree. A later `cachePlugin(otherStore)` on the same app is ignored.
 
-### Narrowing the key - `vary`
+### `vary`
 
-The default key only includes the `authorization` header. If a route varies on more headers, list them in `vary`:
+By default the key only includes the `authorization` header. If the response depends on other headers, list them:
 
 ```ts
 new Elysia()
@@ -97,9 +68,9 @@ new Elysia()
 	.listen(3000);
 ```
 
-### Custom key generation
+### Custom key
 
-For full control, pass a `keyGenerator`. It receives the `Request` and the parsed body, and can return a string, `undefined` (opts the request out of caching), or a promise of either. When provided, `vary` is not used.
+`keyGenerator` receives the `Request` and the parsed body. Return a string, or `undefined` to skip caching for that request (a promise of either works too). When it's set, `vary` is ignored.
 
 ```ts
 import { cachePlugin, generateCacheKey } from '@clov-std/elysia-cache';
@@ -121,15 +92,24 @@ new Elysia()
 	.listen(3000);
 ```
 
-> **Tip:** `generateCacheKey` is exported so you can reuse the default key format with your own header subset.
+`generateCacheKey` is exported so you can keep the default format with your own headers.
 
-## 🧯 Cache semantics
+## How it behaves
 
-A cache hit short-circuits the handler: the stored response is returned from `beforeHandle` with `X-Cache: HIT` and `Cache-Control: max-age=<remaining>, private`, computed from the entry's creation time.
+Keys are readable strings: `method:url`, the `vary` header values, then the parsed body. Keys over 1024 characters are hashed with SHA-256.
 
-A miss runs the handler, stores the response with the `ttl`, and stamps `X-Cache: MISS` with `Cache-Control: max-age=<ttl>, private`. `Response` instances are cloned before being stored or replayed, so a cached body can be reused across requests. `undefined` return values are never cached, and requests whose parsed body is (or contains) binary data (`Blob`, `ArrayBuffer`, typed arrays) are skipped entirely.
+On a hit, the stored response is returned from `beforeHandle` with `X-Cache: HIT` and `Cache-Control: max-age=<remaining>, private`, where the remaining time is computed from when the entry was created.
 
-## 📚 API Reference
+On a miss, the handler runs, the response is stored for `ttl` seconds, and it goes out with `X-Cache: MISS` and `Cache-Control: max-age=<ttl>, private`.
+
+A few things are never cached:
+
+- `undefined` return values.
+- Requests whose parsed body is or contains binary data (`Blob`, `ArrayBuffer`, typed arrays).
+
+`Response` instances are cloned before being stored or replayed, so the same cached body can be served many times.
+
+## API
 
 ### `cachePlugin(store?)`
 
@@ -137,7 +117,7 @@ Creates the plugin. `store` defaults to a new `MemoryStore`.
 
 ### `generateCacheKey(request, body?, vary?)`
 
-Builds the key for a request: `method:url`, the `vary` header values, then the parsed body. Without `vary`, every request header is included. Returns `undefined` when the body is opaque and the request must not be cached.
+Builds the key for a request. Without `vary`, every request header is included. Returns `undefined` when the body is binary and the request must not be cached.
 
 ### `CacheOptions`
 
@@ -147,12 +127,10 @@ Builds the key for a request: `method:url`, the `vary` header values, then the p
 | `vary`         | `string[]`                                                                                 | `['authorization']`                     | Header names included in the key.                                          |
 | `keyGenerator` | `(request: Request, body: unknown) => string \| undefined \| Promise<string \| undefined>` | `generateCacheKey(request, body, vary)` | Custom key builder. Returning `undefined` opts the request out of caching. |
 
-Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+## Docs
 
-## ⚖️ License
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
 
-MIT - see [LICENSE.md](LICENSE.md).
+## License
 
-## 📧 Contact
-
-Maintained by [Clov](https://github.com/ClovLabs).
+MIT, see [LICENSE.md](LICENSE.md).

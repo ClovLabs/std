@@ -1,16 +1,12 @@
 {
 	"name": "@clov-std/i18n",
 	"version": "4.0.2",
-	"description": "Type-safe i18n for TypeScript, define localized exception and message catalogs with compile-time validated parameters.",
+	"description": "Translation catalogs checked at compile time, for localized messages and throwable exceptions.",
 	"keywords": [
-		"bun",
-		"clov",
+		"accept-language",
 		"i18n",
-		"internationalization",
 		"localization",
-		"open-source",
-		"translation",
-		"typescript"
+		"translation"
 	],
 	"license": "MIT",
 	"author": "Clov",

@@ -5,18 +5,18 @@ Everything lives in this monorepo, is built with [Bun](https://bun.sh/), and pub
 
 ## Packages
 
-| Package                                                  | What it does                                                                                                            |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [`@clov-std/common`](packages/common)                     | Common utilities and types library for building robust applications.                                                    |
-| [`@clov-std/elysia-cache`](packages/elysia-cache)         | Cache plugin for Elysia framework.                                                                                      |
-| [`@clov-std/elysia-ratelimit`](packages/elysia-ratelimit) | Rate limiting plugin for Elysia framework.                                                                              |
-| [`@clov-std/error`](packages/error)                       | Structured TypeScript exceptions with a machine-readable error key and a typed cause.                                    |
-| [`@clov-std/i18n`](packages/i18n)                         | Type-safe i18n for TypeScript — define localized exception and message catalogs with compile-time validated parameters.  |
-| [`@clov-std/jwt`](packages/jwt)                           | JWT utilities and helpers for secure token management.                                                                  |
-| [`@clov-std/kv-store`](packages/kv-store)                 | Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter. |
-| [`@clov-std/logger`](packages/logger)                     | Type-safe logging library for Bun, modular sink pattern, transform streams, and immutable API design.                    |
-| [`@clov-std/registry`](packages/registry)                 | Centralized, type-safe registry for managing named instances.                                                           |
-| [`@clov-std/totp`](packages/totp)                         | Time-based One-Time Password (TOTP) implementation in TypeScript.                                                       |
+| Package                                                   | What it does                                                                                         |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [`@clov-std/common`](packages/common)                     | Small shared helpers: a human-readable duration parser, a typed EventEmitter and inline Bun workers. |
+| [`@clov-std/elysia-cache`](packages/elysia-cache)         | Response caching for Elysia as a route macro, stored in any @clov-std/kv-store adapter.              |
+| [`@clov-std/elysia-ratelimit`](packages/elysia-ratelimit) | Rate limiting for Elysia as a route macro, with RFC 9457 429 responses and pluggable storage.        |
+| [`@clov-std/error`](packages/error)                       | Exceptions with a stable error code and a typed cause, plus an HttpException with a resolved status. |
+| [`@clov-std/i18n`](packages/i18n)                         | Translation catalogs checked at compile time, for localized messages and throwable exceptions.       |
+| [`@clov-std/jwt`](packages/jwt)                           | Sign and verify HS256 JWTs on top of jose, with the standard claims filled in.                       |
+| [`@clov-std/kv-store`](packages/kv-store)                 | Key-value store with TTLs and counters, and in-memory and Bun Redis adapters behind one API.         |
+| [`@clov-std/logger`](packages/logger)                     | Typed, sink-based logger for Bun that does its writing in a worker thread.                           |
+| [`@clov-std/registry`](packages/registry)                 | Register shared instances by name and get them back anywhere, without a singleton per class.         |
+| [`@clov-std/totp`](packages/totp)                         | Generate and verify HOTP and TOTP codes (RFC 4226 / 6238), with otpauth:// provisioning URIs.        |
 
 ## Getting Started
 
@@ -26,15 +26,15 @@ bun install
 
 ## Scripts
 
-| Command            | What it does                                |
-| ------------------ | ------------------------------------------- |
-| `bun run build`    | Build all packages                          |
-| `bun run test`     | Run every test suite                        |
-| `bun run lint`     | Lint all packages                           |
-| `bun run lint:fix` | Lint and auto-fix                           |
-| `bun run lint:github` | Lint with GitHub Actions output          |
-| `bun run docs`     | Generate TypeDoc documentation              |
-| `bun run clean`    | Wipe `node_modules`, `dist`, and lock files |
+| Command               | What it does                                |
+| --------------------- | ------------------------------------------- |
+| `bun run build`       | Build all packages                          |
+| `bun run test`        | Run every test suite                        |
+| `bun run lint`        | Lint all packages                           |
+| `bun run lint:fix`    | Lint and auto-fix                           |
+| `bun run lint:github` | Lint with GitHub Actions output             |
+| `bun run docs`        | Generate TypeDoc documentation              |
+| `bun run clean`       | Wipe `node_modules`, `dist`, and lock files |
 
 ## Project Structure
 

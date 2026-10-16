@@ -2,50 +2,20 @@
   <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/kv-store/logo-kv-store.png" alt="Clov KV Store logo" width="200" />
 </p>
 
-# 🗃️ Clov KV Store
+# Clov KV Store
 
-A lightweight, abstract key-value store with TTL support, increment/decrement operations, and built-in input validation.  
-Swap between in-memory and Redis without changing a single line of business logic.
+A small key-value store interface with TTLs and counters, and two adapters behind it:
 
-## Why this package?
+- `MemoryStore`: a `Map` with TTLs, periodic cleanup of expired entries, and an optional max size.
+- `BunRedisStore`: a thin wrapper around Bun's `RedisClient`.
 
-Every project eventually needs a key-value store — for caching, rate-limiting, sessions, counters, etc.  
-You either couple yourself to a specific backend or build your own abstraction every time.
-
-`@clov-std/kv-store` gives you a clean `KvStore` base class with two ready-to-use adapters:
-
-- **`MemoryStore`** — in-memory Map with TTL, automatic expired-entry cleanup, and configurable max size.
-- **`BunRedisStore`** — thin wrapper around Bun's native `RedisClient`, same API, no surprises.
-
-Both share the same interface, so switching from memory to Redis (or writing your own adapter) is trivial.
-
-## 📌 Table of Contents
-
-- [Features](#-features)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [API Reference](#-api-reference)
-- [License](#-license)
-- [Contact](#-contact)
-
-## ✨ Features
-
-- 🔑 **Unified API** : `get`, `set`, `del`, `increment`, `decrement`, `expire`, `ttl`, `clean` — same interface for every adapter.
-- ⏱️ **TTL Support** : Set expiration in seconds on any key.
-- 🛡️ **Built-in Validation** : Keys, TTL values, and amounts are validated before reaching the storage layer.
-- 🧠 **MemoryStore** : Zero-dependency in-memory store with background cleanup and optional max size.
-- 🔴 **BunRedisStore** : Native Bun Redis adapter, async by default.
-- 📦 **Zero External Dependencies** : Only depends on `@clov-std/error`.
-
-## 🔧 Installation
+Both expose `get`, `set`, `del`, `increment`, `decrement`, `expire`, `ttl` and `clean`, so code written against memory in dev runs unchanged on Redis in prod. Keys, TTLs and amounts are validated before they reach the backend. The only dependency is `@clov-std/error`.
 
 ```bash
 bun add @clov-std/kv-store
 ```
 
-## ⚙️ Usage
-
-### MemoryStore — In-Memory
+## `MemoryStore`
 
 ```ts
 import { MemoryStore } from '@clov-std/kv-store';
@@ -67,7 +37,7 @@ store.clean(); // removes all keys, returns count
 store.destroy(); // stops cleanup timer and clears data
 ```
 
-You can configure the cleanup interval and max size:
+The cleanup interval and max size are configurable:
 
 ```ts
 const store = new MemoryStore(
@@ -76,7 +46,9 @@ const store = new MemoryStore(
 );
 ```
 
-### BunRedisStore — Redis
+## `BunRedisStore`
+
+Same API, but async.
 
 ```ts
 import { BunRedisStore } from '@clov-std/kv-store';
@@ -93,61 +65,62 @@ await store.expire('rate:ip:127.0.0.1', 60);
 store.close();
 ```
 
-Redis values written by `set` are JSON-encoded, including strings, so values such
-as `"123"`, `"true"`, and `"null"` keep their string type. Numeric values remain
-compatible with Redis counters. Existing raw strings that look like JSON cannot
-be distinguished from previously encoded values; rewrite those keys from their
-source of truth or let their TTL expire when upgrading.
+`set` JSON-encodes every value, strings included, so `"123"`, `"true"` or `"null"` come back as strings. Numbers stay compatible with Redis counters.
 
-Run the Redis contract test against a disposable instance with
-`TEST_REDIS_URL=redis://127.0.0.1:6379 bun test test/bun-redis-store.spec.ts`
-from this package. It only modifies keys with a unique `kv-store-test:` prefix.
+When upgrading, note that raw strings already in Redis that happen to look like JSON can't be told apart from encoded values. Rewrite those keys from their source, or let them expire.
 
-### Custom Adapter
+To run the Redis contract test against a throwaway instance, from this package:
 
-Extend `KvStore` and implement the abstract methods:
+```bash
+TEST_REDIS_URL=redis://127.0.0.1:6379 bun test test/bun-redis-store.spec.ts
+```
+
+It only touches keys prefixed with a unique `kv-store-test:`.
+
+## Writing your own adapter
+
+Extend `KvStore` and implement its methods. Each one can be sync or return a promise, whichever your backend needs. The protected static `validateKey()`, `validateTtl()` and `validateAmount()` give you the same checks as the built-in adapters.
 
 ```ts
 import { KvStore } from '@clov-std/kv-store';
 
 class MyStore extends KvStore {
-	get<T>(key: string): T | null {
-		/* ... */
+	public async get<T>(key: string): Promise<T | null> {
+		KvStore.validateKey(key);
+		throw new Error('Not implemented');
 	}
-	set<T>(key: string, value: T, ttlSec?: number): void {
-		/* ... */
+	public async set<T>(key: string, value: T, ttlSec?: number): Promise<void> {
+		KvStore.validateKey(key);
+		KvStore.validateTtl(ttlSec);
+		throw new Error('Not implemented');
 	}
-	increment(key: string, amount?: number): number {
-		/* ... */
+	public async increment(key: string, amount: number = 1): Promise<number> {
+		KvStore.validateAmount(amount);
+		throw new Error('Not implemented');
 	}
-	decrement(key: string, amount?: number): number {
-		/* ... */
+	public async decrement(key: string, amount: number = 1): Promise<number> {
+		KvStore.validateAmount(amount);
+		throw new Error('Not implemented');
 	}
-	del(key: string): boolean {
-		/* ... */
+	public async del(key: string): Promise<boolean> {
+		throw new Error('Not implemented');
 	}
-	expire(key: string, ttlSec: number): boolean {
-		/* ... */
+	public async expire(key: string, ttlSec: number): Promise<boolean> {
+		throw new Error('Not implemented');
 	}
-	ttl(key: string): number {
-		/* ... */
+	public async ttl(key: string): Promise<number> {
+		throw new Error('Not implemented');
 	}
-	clean(): number {
-		/* ... */
+	public async clean(): Promise<number> {
+		throw new Error('Not implemented');
 	}
 }
 ```
 
-Use `KvStore._validateKey()`, `KvStore._validateTtl()`, and `KvStore._validateAmount()` for built-in validation.
+## Docs
 
-## 📚 API Reference
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
 
-Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+## License
 
-## ⚖️ License
-
-MIT — Feel free to use it.
-
-## 📧 Contact
-
-- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)
+MIT, see [LICENSE.md](LICENSE.md).

@@ -2,30 +2,17 @@
   <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/common/logo-common.png" alt="Clov Common logo" width="200" />
 </p>
 
-# 🧰 Clov Common
+# Clov Common
 
-Small utilities you'll want everywhere, but don't belong to any specific domain.  
-Instead of copy-pasting the same helpers across every project, `@clov-std/common` collects them in one place so you can just import and move on.
-
-## 📌 Table of Contents
-
-- [Installation](#-installation)
-- [Utilities](#-utilities)
-    - [parseHumanTime](#parsehumantime)
-- [License](#-license)
-
-## 🔧 Installation
+Small helpers shared by the other `@clov-std` packages: a human-readable duration parser, a typed event emitter, and a way to run a function in a worker without a separate file.
 
 ```bash
 bun add @clov-std/common
 ```
 
-## 🛠️ Utilities
+## `parseHumanTime`
 
-### `parseHumanTime`
-
-Converts a human-readable time expression into a numeric value in the unit of your choice.  
-Useful anywhere you need to define durations without sprinkling magic numbers — JWT expiry, TTLs, rate-limit windows, you name it.
+Turns `'2 hours'` into a number, so a TTL in your config reads like a duration instead of `7200`.
 
 ```ts
 import { parseHumanTime } from '@clov-std/common';
@@ -37,7 +24,7 @@ parseHumanTime('2 weeks'); // 1209600
 parseHumanTime('1 year'); // 31557600
 ```
 
-Choose a different output unit with the second argument:
+The second argument picks the output unit:
 
 ```ts
 parseHumanTime('1 hour', 'minutes'); // 60
@@ -45,7 +32,7 @@ parseHumanTime('1 day', 'hours'); // 24
 parseHumanTime('1 second', 'ms'); // 1000
 ```
 
-Past and future offsets are also supported:
+Offsets in the past or future work too:
 
 ```ts
 parseHumanTime('30 mins ago'); // -1800
@@ -54,9 +41,9 @@ parseHumanTime('-2 hours'); // -7200
 parseHumanTime('1 hour from now'); // 3600
 ```
 
-**Supported units:**
+Accepted units:
 
-| Unit   | Accepted aliases                        |
+| Unit   | Aliases                                 |
 | ------ | --------------------------------------- |
 | Second | `s`, `sec`, `secs`, `second`, `seconds` |
 | Minute | `m`, `min`, `mins`, `minute`, `minutes` |
@@ -65,16 +52,78 @@ parseHumanTime('1 hour from now'); // 3600
 | Week   | `w`, `week`, `weeks`                    |
 | Year   | `y`, `yr`, `yrs`, `year`, `years`       |
 
-Throws an `Exception` if the expression is invalid or the unit is unrecognised.
+Anything it can't parse throws an `Exception` with one of the `PARSE_HUMAN_TIME_ERROR_CODES`.
 
-## 📚 API Reference
+## `TypedEventEmitter`
 
-Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+Node's `EventEmitter`, with event names and listener arguments checked against a map you declare. Each key is an event, each value the tuple of arguments its listeners receive. Declare the map with `type`, not `interface`: an interface would have to extend `EventMap`, and its index signature would let any event name through.
 
-## ⚖️ License
+```ts
+import { TypedEventEmitter } from '@clov-std/common';
 
-MIT - Feel free to use it.
+type JobEvents = {
+	progress: [percent: number];
+	done: [result: string];
+	cancelled: [];
+};
 
-## 📧 Contact
+class Job extends TypedEventEmitter<JobEvents> {}
 
-- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)
+const job = new Job();
+
+job.on('progress', (percent) => console.log(`${percent}%`)); // percent: number
+job.once('done', (result) => console.log(result)); // result: string
+
+job.emit('progress', 50);
+job.emit('cancelled');
+```
+
+A typo in the event name or a wrong payload is a compile error:
+
+```ts
+job.emit('progres', 50); // ❌ not a key of JobEvents
+job.emit('progress', '50'); // ❌ string is not assignable to number
+```
+
+`on`, `once`, `off`, `addListener`, `removeListener`, `prependListener`, `prependOnceListener`, `listeners`, `rawListeners` and `listenerCount` are all typed the same way.
+
+## `createWorker`
+
+Runs a function in a Bun `Worker` without a separate file. The arguments after the function are passed to it inside the worker.
+
+```ts
+import { createWorker } from '@clov-std/common';
+
+const worker = createWorker(
+	(a: number, b: number) => {
+		postMessage(a + b);
+	},
+	2,
+	40
+);
+
+worker.addEventListener('message', (event: MessageEvent) => {
+	console.log(event.data); // 42
+	worker.terminate();
+});
+```
+
+The function is turned into a string and evaluated in the worker, which has two consequences:
+
+- It can't use anything from the scope it was written in: no module imports, no outer variables. Use dynamic `import()` inside the function instead.
+- Arguments go through `JSON.stringify`, so only JSON-serializable values make it across (no functions, `Date` becomes a string, and so on).
+
+```ts
+const worker = createWorker(async (input: string) => {
+	const { escapeHTML } = await import('bun');
+	postMessage(escapeHTML(input));
+}, '<b>hi</b>');
+```
+
+## Docs
+
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
+
+## License
+
+MIT, see [LICENSE.md](LICENSE.md).

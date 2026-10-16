@@ -1,18 +1,12 @@
 {
 	"name": "@clov-std/kv-store",
 	"version": "2.0.3",
-	"description": "Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter.",
+	"description": "Key-value store with TTLs and counters, and in-memory and Bun Redis adapters behind one API.",
 	"keywords": [
 		"bun",
-		"cache",
-		"clov",
 		"key-value",
-		"kv-store",
-		"memory",
-		"open-source",
 		"redis",
-		"ttl",
-		"typescript"
+		"ttl"
 	],
 	"license": "MIT",
 	"author": "Clov",

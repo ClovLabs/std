@@ -2,36 +2,17 @@
   <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/totp/logo-totp.png" alt="Clov TOTP logo" width="200" />
 </p>
 
-# 🔐 Clov TOTP
+# Clov TOTP
 
-Generate and verify HOTP and TOTP codes with sensible defaults.
+Generate and verify HOTP and TOTP codes (RFC 4226 / RFC 6238). Secrets can be base32 strings or raw bytes, and you also get secret generation and `otpauth://` URIs for QR codes.
 
-`@clov-std/totp` supports base32 secrets, raw byte secrets, custom digits, custom algorithms, verification windows, secret generation, `otpauth://` provisioning URIs, and structured errors via `@clov-std/error`.
-
-## 📌 Table of Contents
-
-- [Installation](#-installation)
-- [Usage](#-usage)
-    - [generateHOTP](#generatehotp)
-    - [verifyHOTP](#verifyhotp)
-    - [generateTOTP](#generatetotp)
-    - [verifyTOTP](#verifytotp)
-    - [generateOTPSecret](#generateotpsecret)
-    - [buildOtpauthUrl](#buildotpauthurl)
-- [Error handling](#-error-handling)
-- [API Reference](#-api-reference)
-- [License](#-license)
-- [Contact](#-contact)
-
-## 🔧 Installation
+Defaults are what authenticator apps expect: 6 digits, SHA-1, 30-second period.
 
 ```bash
 bun add @clov-std/totp
 ```
 
-## ⚙️ Usage
-
-### `generateHOTP`
+## `generateHOTP`
 
 Generates an HOTP code from a secret and a counter.
 
@@ -66,7 +47,7 @@ const otp = await generateHOTP({
 });
 ```
 
-### `verifyHOTP`
+## `verifyHOTP`
 
 Verifies an HOTP code for a given counter. Use `window` to accept future counters.
 
@@ -80,7 +61,7 @@ const isValid = await verifyHOTP({
 });
 ```
 
-Example with a look-ahead window:
+With a look-ahead window:
 
 ```ts
 const isValid = await verifyHOTP({
@@ -93,7 +74,7 @@ const isValid = await verifyHOTP({
 
 That checks counters `42`, `43`, `44`, and `45`.
 
-### `generateTOTP`
+## `generateTOTP`
 
 Generates a TOTP code from a secret and the current time.
 
@@ -105,13 +86,7 @@ const otp = await generateTOTP({
 });
 ```
 
-By default:
-
-- the period is `30` seconds
-- the code length is `6`
-- the algorithm is `'SHA-1'`
-
-You can override all of that:
+All of it can be overridden:
 
 ```ts
 const otp = await generateTOTP({
@@ -122,7 +97,7 @@ const otp = await generateTOTP({
 });
 ```
 
-You can pass a fixed `time` for tests or reproducible output:
+A fixed `time` is handy in tests:
 
 ```ts
 const otp = await generateTOTP({
@@ -131,7 +106,7 @@ const otp = await generateTOTP({
 });
 ```
 
-### `verifyTOTP`
+## `verifyTOTP`
 
 Verifies a TOTP code for the current time or a provided timestamp.
 
@@ -144,15 +119,7 @@ const isValid = await verifyTOTP({
 });
 ```
 
-By default, verification uses a `window` of `1`, so it accepts:
-
-- the previous time step
-- the current time step
-- the next time step
-
-This helps tolerate small clock drift.
-
-You can tighten or widen the range:
+The default `window` is `1`: the previous, current and next time steps are accepted, which absorbs a bit of clock drift. Set it to `0` to accept only the current step:
 
 ```ts
 const isValid = await verifyTOTP({
@@ -163,10 +130,9 @@ const isValid = await verifyTOTP({
 });
 ```
 
-### `generateOTPSecret`
+## `generateOTPSecret`
 
-Generates a random base32-encoded secret, suitable for both HOTP and TOTP.  
-The argument is the number of chars (each carries 5 bits of entropy).
+Generates a random base32 secret, usable for both HOTP and TOTP. The argument is the length in characters, each one carrying 5 bits of entropy.
 
 ```ts
 import { generateOTPSecret } from '@clov-std/totp';
@@ -176,10 +142,9 @@ const secret = generateOTPSecret(32);
 const otp = await generateTOTP({ secret });
 ```
 
-### `buildOtpauthUrl`
+## `buildOtpauthUrl`
 
-Builds an `otpauth://` provisioning URI (Key Uri Format) you can encode into a QR code for authenticator apps.  
-The `type` field selects between time-based and counter-based credentials.
+Builds the `otpauth://` URI (Key Uri Format) that authenticator apps scan as a QR code. `type` picks time-based or counter-based.
 
 ```ts
 import { buildOtpauthUrl, generateOTPSecret } from '@clov-std/totp';
@@ -208,11 +173,11 @@ const url = buildOtpauthUrl({
 // otpauth://hotp/Clov%3Aalice%40example.com?secret=...&issuer=Clov&algorithm=SHA1&digits=6&counter=0
 ```
 
-`digits` defaults to `6` and `algorithm` to `'SHA-1'`. The algorithm is normalised to the dash-less spelling the URI format expects (`SHA-256` -> `SHA256`).
+`digits` defaults to `6` and `algorithm` to `'SHA-1'`. The algorithm is written without the dash, as the URI format expects (`SHA-256` becomes `SHA256`).
 
-## 🚨 Error handling
+## Errors
 
-All runtime errors are thrown as `Exception` instances from `@clov-std/error`.
+Everything thrown is an `Exception` from `@clov-std/error`:
 
 | Code                            | Constant                                      | When                                              |
 | ------------------------------- | --------------------------------------------- | ------------------------------------------------- |
@@ -239,14 +204,10 @@ try {
 }
 ```
 
-## 📚 API Reference
+## Docs
 
-Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
 
-## ⚖️ License
+## License
 
-MIT - Feel free to use it.
-
-## 📧 Contact
-
-- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)
+MIT, see [LICENSE.md](LICENSE.md).

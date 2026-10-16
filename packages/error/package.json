@@ -1,14 +1,11 @@
 {
 	"name": "@clov-std/error",
 	"version": "5.0.2",
-	"description": "Structured TypeScript exceptions with a machine-readable error key and a typed cause.",
+	"description": "Exceptions with a stable error code and a typed cause, plus an HttpException with a resolved status.",
 	"keywords": [
-		"bun",
-		"clov",
 		"error",
-		"exceptions",
-		"open-source",
-		"typescript"
+		"error-code",
+		"exception"
 	],
 	"license": "MIT",
 	"author": "Clov",

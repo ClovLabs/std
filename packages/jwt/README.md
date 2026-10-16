@@ -2,32 +2,17 @@
   <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/jwt/logo-jwt.png" alt="Clov JWT logo" width="200" />
 </p>
 
-# 🔐 Clov JWT
+# Clov JWT
 
-Signing and verifying JWTs shouldn't require boilerplate.  
-`@clov-std/jwt` wraps [jose](https://github.com/panva/jose) with sane defaults — HS256, standard claims pre-filled — so you can focus on what matters instead of re-reading the JWT spec.
-
-## 📌 Table of Contents
-
-- [Installation](#-installation)
-- [Usage](#-usage)
-    - [signJWT](#signjwt)
-    - [verifyJWT](#verifyjwt)
-- [Error handling](#-error-handling)
-- [License](#-license)
-
-## 🔧 Installation
+Two functions on top of [jose](https://github.com/panva/jose): sign and verify HS256 tokens with the standard claims filled in for you.
 
 ```bash
 bun add @clov-std/jwt
 ```
 
-## ⚙️ Usage
+## `signJWT`
 
-### `signJWT`
-
-Signs a payload and returns a JWT string.  
-All standard claims (`iss`, `sub`, `aud`, `jti`, `nbf`, `iat`, `exp`) are included automatically - just pass your custom data and let the function handle the rest.
+Signs a payload and returns the token. `iss`, `sub`, `aud`, `nbf`, `iat` and `exp` are set for you, so you only pass your own data. The defaults are `iss: 'Clov-Issuer'`, `sub: ''` and `aud: ['Clov-Audience']`, which you'll probably want to override (see below).
 
 ```ts
 import { signJWT } from '@clov-std/jwt';
@@ -35,13 +20,13 @@ import { signJWT } from '@clov-std/jwt';
 // Default expiration: 15 minutes
 const token = await signJWT(secret, { userId: 42, role: 'admin' });
 
-// Numeric offset in seconds
-const token = await signJWT(secret, { userId: 42 }, 3600);
+// Expires in one hour (offset in seconds)
+const longerToken = await signJWT(secret, { userId: 42 }, 3600);
 ```
 
-The secret must be at least 32 characters long (HS256 requirement). Any shorter and it throws immediately — better to catch it at startup than in production.
+The secret must be at least 32 characters. A shorter one throws right away, so you find out at startup rather than in production.
 
-Default claims can be overridden by providing them in the payload:
+Any default claim can be overridden from the payload:
 
 ```ts
 const token = await signJWT(secret, {
@@ -52,9 +37,9 @@ const token = await signJWT(secret, {
 });
 ```
 
-### `verifyJWT`
+## `verifyJWT`
 
-Verifies a token and returns the decoded payload. Throws if anything is wrong.
+Returns the decoded payload, or throws.
 
 ```ts
 import { verifyJWT } from '@clov-std/jwt';
@@ -63,7 +48,7 @@ const { payload } = await verifyJWT(token, secret);
 console.log(payload.userId);
 ```
 
-Optionally validate `iss` and `aud` claims:
+`iss` and `aud` can be checked too:
 
 ```ts
 const { payload } = await verifyJWT(token, secret, {
@@ -72,9 +57,9 @@ const { payload } = await verifyJWT(token, secret, {
 });
 ```
 
-## 🚨 Error handling
+## Errors
 
-All errors are `Exception` instances from `@clov-std/error` with a `code` you can check:
+Everything thrown is an `Exception` from `@clov-std/error`:
 
 | Code                     | Constant                             | When                                                            |
 | ------------------------ | ------------------------------------ | --------------------------------------------------------------- |
@@ -93,13 +78,17 @@ try {
 } catch (error) {
 	if (error instanceof Exception) {
 		if (error.code === JWT_ERROR_CODES.TOKEN_EXPIRED) {
-			// Token expired — trigger a refresh
+			// Token expired, trigger a refresh
 		}
 		// Everything else is unauthorized
 	}
 }
 ```
 
-## ⚖️ License
+## Docs
 
-MIT - Feel free to use it.
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
+
+## License
+
+MIT, see [LICENSE.md](LICENSE.md).
