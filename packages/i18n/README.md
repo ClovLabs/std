@@ -2,54 +2,24 @@
   <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/i18n/logo-i18n.png" alt="Clov I18n logo" width="200" />
 </p>
 
-# 🌐 Clov I18n
+# Clov I18n
 
-Type-safe internationalization for TypeScript.
-Define your translation catalogs once, and get localized messages and throwable exceptions, all validated at compile time.
+Translation catalogs checked by the compiler. You declare each message once with all its translations, and `tsc` tells you when a locale is missing or a `{{param}}` isn't passed.
 
-## Why this package?
+Catalogs come in two kinds:
 
-Internationalization is often treated as an afterthought, strings scattered across files, parameters interpolated by hand, no type safety.  
-This package takes a different approach: you declare structured catalogs with `entry()`, and the compiler does the rest.  
-Parameters, locales, HTTP statuses, if something's wrong, you'll know before your code even runs.
-
-It also plays nicely with `@clov-std/error`. Exception catalogs produce throwable exceptions that carry their own
-translations and error key, so your error handling stays consistent: declare a `status` on an entry and you get a
-`LocalizedHttpException` ready for an API response, omit it and you get a plain `LocalizedException` for
-applications with no HTTP layer.
-
-## 📌 Table of Contents
-
-- [Features](#-features)
-- [Installation](#-installation)
-- [Usage](#-usage)
-- [API Reference](#-api-reference)
-- [License](#-license)
-- [Contact](#-contact)
-
-## ✨ Features
-
-- 🔒 **Type-safe catalogs** : Parameters, locales, and HTTP status are all validated at compile time thanks to `entry()`.
-- 🌍 **Multi-locale** : Each entry holds all its translations; pick the right one at call-time.
-- 🤝 **Locale negotiation** : `defineLocaleNegotiator` turns a raw `Accept-Language` header into one of your catalog locales, quality values included.
-- 🚨 **Localized exceptions** : `defineExceptionCatalog` gives you factory functions that create throwable exceptions, with a status code when the entry declares one.
-- 💬 **Localized messages** : `defineMessageCatalog` does the same for plain messages : confirmations, notifications, anything that isn't an error.
-- 🔗 **Template interpolation** : Use `{{param}}` placeholders in translations; `resolveMessage` fills them in.
-- 🔑 **Stable error codes** : Every exception carries its definition key as `code`, inherited from `@clov-std/error`, so handlers branch on `error.code`.
-
-## 🔧 Installation
+- Exception catalogs give you factories that build throwable exceptions. Built on `@clov-std/error`, so each one carries its catalog key as `code`.
+- Message catalogs do the same for everything that isn't an error: confirmations, notifications, labels.
 
 ```bash
-bun add @clov-std/i18n
+bun add @clov-std/i18n @clov-std/error
 ```
 
-> **Peer dependency:** `@clov-std/error` must be installed alongside.
+`@clov-std/error` is a peer dependency.
 
-## ⚙️ Usage
+## Entries
 
-### Defining entries
-
-`entry()` is the building block. Give it a `status` and it becomes an exception entry; leave `status` out and it's a plain message entry.
+`entry()` is the building block. With a `status` it's meant for an exception catalog, without one it's a plain message.
 
 ```ts
 import { entry } from '@clov-std/i18n';
@@ -73,9 +43,9 @@ const welcome = entry({
 });
 ```
 
-### Exception catalogs
+## Exception catalogs
 
-Group related exception entries into a catalog. Each key becomes a factory function you can call to throw a localized exception, and is used as the exception's error `key`.
+Each key becomes a factory, and is also the exception's `code`.
 
 ```ts
 import { defineExceptionCatalog, entry } from '@clov-std/i18n';
@@ -100,16 +70,14 @@ const AUTH_ERRORS = defineExceptionCatalog({
 	}
 });
 
-// Throws a LocalizedHttpException with status 401
-throw AUTH_ERRORS.invalidCredentials();
+// A LocalizedHttpException with status 401
+const invalid = AUTH_ERRORS.invalidCredentials();
 
 // Params are inferred from the `{{email}}` placeholder, type-checked so you can't forget one
 throw AUTH_ERRORS.emailTaken({ email: 'user@example.com' });
 ```
 
-Omit `status` and the entry produces a plain `LocalizedException` instead, for a worker, a CLI, or any
-application that has no HTTP status to return. Both kinds can live in the same catalog, and the return
-type of each factory tells you which one you get.
+Leave out `status` and the factory returns a plain `LocalizedException`, for a worker, a CLI, or anything with no HTTP status to return. Both kinds can sit in the same catalog, and each factory's return type tells you which one you get.
 
 ```ts
 const JOB_ERRORS = defineExceptionCatalog({
@@ -128,9 +96,7 @@ const JOB_ERRORS = defineExceptionCatalog({
 throw JOB_ERRORS.cancelled({ id: '42' });
 ```
 
-### Message catalogs
-
-Same idea, but for things that aren't errors, success confirmations, notifications, labels, etc.
+## Message catalogs
 
 ```ts
 import { defineMessageCatalog, entry } from '@clov-std/i18n';
@@ -150,13 +116,11 @@ const DNS_MESSAGES = defineMessageCatalog({
 const msg = DNS_MESSAGES.recordCreated();
 ```
 
-> **Locale consistency is enforced at compile time.** Every entry in a catalog must
-> cover the same set of locales - if one entry declares `de`, they all must, or `tsc`
-> errors on the entry that's missing it. No more silently untranslated locales.
+Every entry in a catalog must cover the same locales. If one declares `de`, they all have to, otherwise `tsc` flags the entry that's missing it.
 
-### Resolving to a specific locale
+## Resolving a message
 
-`resolveMessage` takes a `LocalizedException` (HTTP or not) or a `LocalizedMessage` and returns the interpolated string for the locale you want.
+`resolveMessage` takes a `LocalizedException` (HTTP or not) or a `LocalizedMessage`, and returns the interpolated string for a locale.
 
 ```ts
 import { resolveMessage } from '@clov-std/i18n';
@@ -167,11 +131,9 @@ resolveMessage(error); // default locale → "Email "a@b.com" is already taken"
 resolveMessage(error, 'fr'); // → "L'email "a@b.com" est déjà utilisé"
 ```
 
-### Negotiating the locale from a request
+## Picking the locale from a request
 
-`resolveMessage` expects a single locale, and a raw `Accept-Language` header is not one:
-`fr-CA,fr;q=0.9,en;q=0.8` matches no catalog key, so every message silently falls back to the
-default locale. `defineLocaleNegotiator` closes that gap.
+`resolveMessage` wants one locale, and a raw `Accept-Language` like `fr-CA,fr;q=0.9,en;q=0.8` doesn't match any catalog key, so everything would quietly fall back to the default. `defineLocaleNegotiator` handles that, quality values included:
 
 ```ts
 import { defineLocaleNegotiator } from '@clov-std/i18n';
@@ -188,7 +150,7 @@ negotiateLocale('ja'); // → 'en', nothing acceptable
 negotiateLocale(); // → 'en'
 ```
 
-Define it once, then feed it to `resolveMessage` wherever a request is handled.
+Define it once and use it wherever you handle a request:
 
 ```ts
 const lang = negotiateLocale(request.headers.get('accept-language') ?? undefined);
@@ -196,23 +158,17 @@ const lang = negotiateLocale(request.headers.get('accept-language') ?? undefined
 resolveMessage(error, lang);
 ```
 
-The return type is narrowed to `'en' | 'fr' | 'it'`, so a locale none of your catalogs cover
-can't reach `resolveMessage` in the first place.
+The return type is narrowed to `'en' | 'fr' | 'it'`, so a locale your catalogs don't cover can't reach `resolveMessage`.
 
-> **Keep `supported` lowercase.** Ranges are matched case-insensitively against it, each one
-> as a whole tag (`pt-br`) before its language subtag (`pt`).
+A couple of things to know:
 
-> **Responses that vary by locale need `Vary: Accept-Language`.** Without it a shared cache
-> keys on the URL alone and will serve one visitor's language to the next.
+- Keep `supported` lowercase. Ranges are matched case-insensitively, the full tag first (`pt-br`), then the language (`pt`).
+- If a response depends on the locale, send `Vary: Accept-Language`. Otherwise a shared cache keys on the URL alone and serves one visitor's language to the next.
 
-## 📚 API Reference
+## Docs
 
-Full docs: [https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
 
-## ⚖️ License
+## License
 
-MIT - Feel free to use it.
-
-## 📧 Contact
-
-- GitHub: [ClovLabs](https://github.com/ClovLabs/packages)
+MIT, see [LICENSE.md](LICENSE.md).
