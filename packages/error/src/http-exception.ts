@@ -29,6 +29,8 @@ export interface HttpExceptionOptions<TCause = unknown> extends ExceptionOptions
  * @template TCause - Type of the underlying cause.
  */
 export class HttpException<const TCause = unknown> extends Exception<TCause> {
+	public override readonly name: string = 'HttpException';
+
 	/** Resolved numeric HTTP status code (e.g. `404`). */
 	public readonly status: number;
 

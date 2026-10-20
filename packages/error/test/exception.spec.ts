@@ -49,8 +49,10 @@ describe.concurrent('Exception', (): void => {
 		expect(error.cause).toBe(cause);
 	});
 
-	test('should set name to the actual class name via new.target', (): void => {
-		class CustomError extends Exception {}
+	test('should keep the name a subclass declares', (): void => {
+		class CustomError extends Exception {
+			public override readonly name: string = 'CustomError';
+		}
 
 		expect(new Exception('a').name).toBe('Exception');
 		expect(new CustomError('b').name).toBe('CustomError');

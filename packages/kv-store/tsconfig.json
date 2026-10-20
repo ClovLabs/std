@@ -5,14 +5,10 @@
 		"strict": true,
 		"allowUnreachableCode": false,
 		"allowUnusedLabels": false,
-		"alwaysStrict": true, // because of `strict`
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
-		"noImplicitAny": true, // because of `strict`
 		"noImplicitOverride": true,
 		"noImplicitReturns": true,
-		"noImplicitThis": true, // because of `strict`
-		"noPropertyAccessFromIndexSignature": false,
 		"noUncheckedIndexedAccess": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
@@ -22,7 +18,6 @@
 		"module": "Preserve",
 		"moduleResolution": "bundler",
 		"moduleDetection": "force",
-		"noUncheckedSideEffectImports": true,
 		"paths": {
 			"#/*": ["./src/*"],
 			"#/root/*": ["./*"]
@@ -31,14 +26,11 @@
 		// —————————————— Emit —————————————— //
 		"outDir": "./dist",
 		"noEmit": true,
-		"removeComments": false,
 		// ——————— Javascript Support ——————— //
 		"allowJs": true,
 		"checkJs": true,
 		// ——————— Interop Constraints ——————— //
-		"allowSyntheticDefaultImports": true, // true if moduleResolution is bundler
 		"erasableSyntaxOnly": true,
-		"forceConsistentCasingInFileNames": true,
 		"verbatimModuleSyntax": true,
 		"lib": ["ESNext"],
 		"target": "ESNext",

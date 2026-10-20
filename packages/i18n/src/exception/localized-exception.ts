@@ -34,6 +34,8 @@ export interface LocalizedExceptionOptions<TCause = unknown> extends Omit<
  * @template TCause - Type of the underlying cause.
  */
 export class LocalizedException<const TCause = unknown> extends Exception<TCause> {
+	public override readonly name: string = 'LocalizedException';
+
 	/** All available translations keyed by locale. */
 	public readonly translations: Translations;
 
