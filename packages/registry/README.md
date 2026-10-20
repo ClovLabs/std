@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/registry/logo-registry.png" alt="Clov Registry logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/registry/logo-registry.svg" alt="Clov Registry logo" width="200" />
 </p>
 
 # Clov Registry

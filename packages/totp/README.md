@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/totp/logo-totp.png" alt="Clov TOTP logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/totp/logo-totp.svg" alt="Clov TOTP logo" width="200" />
 </p>
 
 # Clov TOTP

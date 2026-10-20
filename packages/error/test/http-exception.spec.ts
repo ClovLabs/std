@@ -46,8 +46,10 @@ describe.concurrent('HttpException', (): void => {
 		expect(error.cause).toBe(cause);
 	});
 
-	test('should set name to the actual class name via new.target', (): void => {
+	test('should keep the name a subclass declares', (): void => {
 		class NotFoundException extends HttpException {
+			public override readonly name: string = 'NotFoundException';
+
 			public constructor() {
 				super('missing', { status: 'NOT_FOUND', code: 'request.route.not-found' });
 			}

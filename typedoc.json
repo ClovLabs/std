@@ -1,0 +1,28 @@
+{
+	"entryPointStrategy": "packages",
+	"entryPoints": [
+		"packages/common",
+		"packages/elysia-openapi",
+		"packages/elysia-ratelimit",
+		"packages/error",
+		"packages/i18n",
+		"packages/jwt",
+		"packages/kv-store",
+		"packages/logger",
+		"packages/registry",
+		"packages/totp"
+	],
+	"out": "docs",
+	"name": "Clov Packages",
+	"hideGenerator": true,
+	"customFooterHtml": "<p>Generated with ❤️</p>",
+	"externalSymbolLinkMappings": {
+		"@clov-std/error": {
+			"Exception": "https://clovlabs.github.io/std/classes/_clov-std_error.Exception.html"
+		}
+	},
+	"packageOptions": {
+		"includeVersion": true,
+		"tsconfig": "./tsconfig.build.json"
+	}
+}

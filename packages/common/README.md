@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/common/logo-common.png" alt="Clov Common logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/common/logo-common.svg" alt="Clov Common logo" width="200" />
 </p>
 
 # Clov Common

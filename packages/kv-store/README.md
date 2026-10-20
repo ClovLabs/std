@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/kv-store/logo-kv-store.png" alt="Clov KV Store logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/kv-store/logo-kv-store.svg" alt="Clov KV Store logo" width="200" />
 </p>
 
 # Clov KV Store

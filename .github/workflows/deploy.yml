@@ -4,6 +4,7 @@ run-name: >-
     [Deploy] ${{ inputs.channel }}:${{
     inputs.common != 'none' && format(' common ({0})', inputs.common) || '' }}${{
     inputs.elysia-cache != 'none' && format(' elysia-cache ({0})', inputs.elysia-cache) || '' }}${{
+    inputs.elysia-openapi != 'none' && format(' elysia-openapi ({0})', inputs.elysia-openapi) || '' }}${{
     inputs.elysia-ratelimit != 'none' && format(' elysia-ratelimit ({0})', inputs.elysia-ratelimit) || '' }}${{
     inputs.error != 'none' && format(' error ({0})', inputs.error) || '' }}${{
     inputs.i18n != 'none' && format(' i18n ({0})', inputs.i18n) || '' }}${{
@@ -34,6 +35,7 @@ on:
                 default: none
                 options: [none, patch, minor, major]
             elysia-cache: *bump
+            elysia-openapi: *bump
             elysia-ratelimit: *bump
             error: *bump
             i18n: *bump

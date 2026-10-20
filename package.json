@@ -12,10 +12,13 @@
 		"catalogs": {
 			"base": {
 				"@types/bun": "^1.4.2",
-				"oxfmt": "0.72.0",
+				"oxfmt": "0.74.0",
 				"oxlint-tsgolint": "7.0.2004",
-				"oxlint": "1.87.0",
+				"oxlint": "1.89.0",
 				"typescript": "^7.0.2"
+			},
+			"elysia": {
+				"elysia": "rc"
 			}
 		}
 	},
@@ -23,7 +26,7 @@
 	"scripts": {
 		"build": "bun --filter './packages/*' build",
 		"clean": "find . -name 'node_modules' -not -path '*/.git/*' -prune -exec rm -rf {} + ; find . -name 'dist' -not -path '*/.git/*' -prune -exec rm -rf {} + ; find . -name 'bun.lock' -not -path '*/.git/*' -delete",
-		"docs": "bunx typedoc --tsconfig tsconfig.build.json",
+		"docs": "bunx typedoc",
 		"fmt:check": "bun --filter './packages/*' fmt:check",
 		"fmt": "bun --filter './packages/*' fmt",
 		"lint:fix": "bun --filter './packages/*' lint:fix",
