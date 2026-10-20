@@ -1,6 +1,6 @@
 {
 	"name": "@clov-std/i18n",
-	"version": "4.0.3",
+	"version": "4.0.4",
 	"description": "Translation catalogs checked at compile time, for localized messages and throwable exceptions.",
 	"keywords": [
 		"accept-language",
