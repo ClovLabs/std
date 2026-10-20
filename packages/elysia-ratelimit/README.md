@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/elysia-ratelimit/logo-elysia-ratelimit.png" alt="Clov Elysia Rate Limit logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/elysia-ratelimit/logo-elysia-ratelimit.svg" alt="Clov Elysia Rate Limit logo" width="200" />
 </p>
 
 # Clov Elysia Rate Limit

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/jwt/logo-jwt.png" alt="Clov JWT logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/jwt/logo-jwt.svg" alt="Clov JWT logo" width="200" />
 </p>
 
 # Clov JWT

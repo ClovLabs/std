@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/elysia-cache/logo-elysia-cache.png" alt="Clov Elysia Cache logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/elysia-cache/logo-elysia-cache.svg" alt="Clov Elysia Cache logo" width="200" />
 </p>
 
 # Clov Elysia Cache

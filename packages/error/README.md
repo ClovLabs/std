@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/error/logo-error.png" alt="Clov Error logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/error/logo-error.svg" alt="Clov Error logo" width="200" />
 </p>
 
 # Clov Error

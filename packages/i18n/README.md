@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/i18n/logo-i18n.png" alt="Clov I18n logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/i18n/logo-i18n.svg" alt="Clov I18n logo" width="200" />
 </p>
 
 # Clov I18n
