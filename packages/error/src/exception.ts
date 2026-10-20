@@ -21,6 +21,8 @@ export interface ExceptionOptions<TCause = unknown> {
  * @template TCause - Type of the underlying cause.
  */
 export class Exception<const TCause = unknown> extends Error {
+	public override readonly name: string = 'Exception';
+
 	/** Original error or value that triggered this exception. */
 	public override readonly cause: TCause | undefined;
 
@@ -37,7 +39,6 @@ export class Exception<const TCause = unknown> extends Error {
 		super(message, { cause: init?.cause });
 		this.cause = init?.cause;
 		this.code = init?.code;
-		this.name = new.target.name;
 		Error.captureStackTrace(this, new.target);
 	}
 }

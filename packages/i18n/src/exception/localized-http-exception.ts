@@ -27,6 +27,8 @@ export interface LocalizedHttpExceptionOptions<
  * @template TCause - Type of the underlying cause.
  */
 export class LocalizedHttpException<const TCause = unknown> extends LocalizedException<TCause> {
+	public override readonly name: string = 'LocalizedHttpException';
+
 	/** Resolved numeric HTTP status code (e.g. `404`). */
 	public readonly httpStatusCode: number;
 
