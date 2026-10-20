@@ -2,6 +2,7 @@
 	"entryPointStrategy": "packages",
 	"entryPoints": [
 		"packages/common",
+		"packages/elysia-openapi",
 		"packages/elysia-ratelimit",
 		"packages/error",
 		"packages/i18n",

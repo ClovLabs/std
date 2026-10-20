@@ -9,6 +9,7 @@ Everything lives in this monorepo, is built with [Bun](https://bun.sh/), and pub
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | [`@clov-std/common`](packages/common)                     | Small shared helpers: a human-readable duration parser, a typed EventEmitter and inline Bun workers. |
 | [`@clov-std/elysia-cache`](packages/elysia-cache)         | Response caching for Elysia as a route macro, stored in any @clov-std/kv-store adapter.              |
+| [`@clov-std/elysia-openapi`](packages/elysia-openapi)     | OpenAPI 3.2 document and Scalar reference for Elysia, generated from your route schemas.             |
 | [`@clov-std/elysia-ratelimit`](packages/elysia-ratelimit) | Rate limiting for Elysia as a route macro, with RFC 9457 429 responses and pluggable storage.        |
 | [`@clov-std/error`](packages/error)                       | Exceptions with a stable error code and a typed cause, plus an HttpException with a resolved status. |
 | [`@clov-std/i18n`](packages/i18n)                         | Translation catalogs checked at compile time, for localized messages and throwable exceptions.       |
@@ -42,6 +43,7 @@ bun install
 packages/
 ├── common/              # @clov-std/common
 ├── elysia-cache/        # @clov-std/elysia-cache
+├── elysia-openapi/      # @clov-std/elysia-openapi
 ├── elysia-ratelimit/    # @clov-std/elysia-ratelimit
 ├── error/               # @clov-std/error
 ├── i18n/                # @clov-std/i18n
