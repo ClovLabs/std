@@ -426,7 +426,7 @@ describe.concurrent('buildDocument', () => {
 	});
 
 	test('should put custom methods in additionalOperations', () => {
-		const app = new Elysia().method('PROPFIND', '/dav', () => 1);
+		const app = new Elysia().route('PROPFIND', '/dav', () => 1);
 
 		expect(buildDocument(app).paths?.['/dav']?.additionalOperations?.PROPFIND).toEqual({
 			operationId: 'propfindDav'
@@ -689,7 +689,7 @@ describe.concurrent('buildDocument edge cases', () => {
 			.post('/first', { parse: ['json', 'text'], body: t.Object({ a: t.String() }) }, () => 1)
 			.post('/custom', { parse: ({ request }) => request.text(), body: t.String() }, () => 1)
 			.post('/form', { parse: 'formdata', body: t.Object({ a: t.String() }) }, () => 1)
-			.method('TRACE', '/trace', { body: t.Object({ a: t.String() }) }, () => 1);
+			.route('TRACE', '/trace', { body: t.Object({ a: t.String() }) }, () => 1);
 
 		expect(
 			(operationOf(app, '/optional', 'post')?.requestBody as RequestBodyObject | undefined)
