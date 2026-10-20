@@ -1,0 +1,40 @@
+{
+	"compilerOptions": {
+		"types": ["@types/bun"],
+		// ———————————— Type Checking ———————————— //
+		"strict": true,
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+		"exactOptionalPropertyTypes": true,
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noUncheckedIndexedAccess": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		// —————————————— Modules —————————————— //
+		"allowArbitraryExtensions": true,
+		"allowImportingTsExtensions": true, // This flag is only allowed when --noEmit or --emitDeclarationOnly is enabled
+		"module": "Preserve",
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
+		"paths": {
+			"#/*": ["./src/*"],
+			"#/root/*": ["./*"]
+		},
+		"resolveJsonModule": true,
+		// —————————————— Emit —————————————— //
+		"outDir": "./dist",
+		"noEmit": true,
+		// ——————— Javascript Support ——————— //
+		"allowJs": true,
+		"checkJs": true,
+		// ——————— Interop Constraints ——————— //
+		"erasableSyntaxOnly": true,
+		"verbatimModuleSyntax": true,
+		"lib": ["ESNext"],
+		"target": "ESNext",
+		// ——————————— Completeness ——————————— //
+		"skipLibCheck": true
+	}
+}
