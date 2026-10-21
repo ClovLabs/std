@@ -14,9 +14,7 @@ export const RATE_LIMIT_ERROR_CODES = {
  * `type`, `status`, and `detail`.
  */
 const rateLimitResponseSchema = t.Object({
-	type: t.String({
-		description: `Error code. Always \`${RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED}\`.`
-	}),
+	type: t.Literal(RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED, { description: 'Error code.' }),
 	title: t.String({
 		description: 'Short, human-readable summary of the error.'
 	}),
