@@ -47,7 +47,7 @@ interface RateLimitTransformContext {
 }
 
 type RateLimitMacro = (options: RateLimitMacroOptions) => {
-	response: { 429: typeof rateLimitResponseSchema };
+	response: { 429: typeof RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED };
 	transform: (context: RateLimitTransformContext) => Promise<void>;
 };
 
@@ -66,7 +66,10 @@ export const rateLimitPlugin = (
 	'rateLimitPlugin',
 	'local',
 	{ decorator: {}; derive: {}; store: {} },
-	{ typebox: {}; error: [] },
+	{
+		typebox: { [RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED]: typeof rateLimitResponseSchema };
+		error: [];
+	},
 	{
 		schema: {};
 		schemas: {};
@@ -78,36 +81,38 @@ export const rateLimitPlugin = (
 		response: {};
 	}
 > =>
-	new Elysia<'rateLimitPlugin'>({ name: 'rateLimitPlugin' }).macro({
-		rateLimit: (({ limit, window, keyGenerator }) => ({
-			response: { 429: rateLimitResponseSchema },
-			// Uses transform because it's the first per-route hook in Elysia's lifecycle,
-			// running before derive, resolve, and beforeHandle.
-			// onRequest would be ideal but it's global, it can't be scoped to macro-enabled routes.
-			// A pending PR (https://github.com/elysiajs/elysia/pull/1557) would expose routes
-			// in introspect, allowing onRequest with route filtering.
-			transform: async ({ set, request, server }): Promise<void> => {
-				const route = `${request.method}:${new URL(request.url).pathname}`;
-				const ip = extractClientIp(request, server);
-				const discriminator = keyGenerator ? keyGenerator({ request, server, ip }) : ip;
-				const key = `ratelimit:${route}:${discriminator}`;
+	new Elysia<'rateLimitPlugin'>({ name: 'rateLimitPlugin' })
+		.model({ [RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED]: rateLimitResponseSchema })
+		.macro({
+			rateLimit: (({ limit, window, keyGenerator }) => ({
+				response: { 429: RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED },
+				// Uses transform because it's the first per-route hook in Elysia's lifecycle,
+				// running before derive, resolve, and beforeHandle.
+				// onRequest would be ideal but it's global, it can't be scoped to macro-enabled routes.
+				// A pending PR (https://github.com/elysiajs/elysia/pull/1557) would expose routes
+				// in introspect, allowing onRequest with route filtering.
+				transform: async ({ set, request, server }): Promise<void> => {
+					const route = `${request.method}:${new URL(request.url).pathname}`;
+					const ip = extractClientIp(request, server);
+					const discriminator = keyGenerator ? keyGenerator({ request, server, ip }) : ip;
+					const key = `ratelimit:${route}:${discriminator}`;
 
-				const count = await store.increment(key);
-				if (count === 1) await store.expire(key, window);
+					const count = await store.increment(key);
+					if (count === 1) await store.expire(key, window);
 
-				const remaining = Math.max(0, limit - count);
-				const reset = await store.ttl(key);
+					const remaining = Math.max(0, limit - count);
+					const reset = await store.ttl(key);
 
-				set.headers['X-RateLimit-Limit'] = limit.toString();
-				set.headers['X-RateLimit-Remaining'] = remaining.toString();
-				set.headers['X-RateLimit-Reset'] = reset.toString();
+					set.headers['X-RateLimit-Limit'] = limit.toString();
+					set.headers['X-RateLimit-Remaining'] = remaining.toString();
+					set.headers['X-RateLimit-Reset'] = reset.toString();
 
-				if (count > limit)
-					throw problem({
-						type: RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED,
-						status: 429,
-						detail: `Limit of ${limit} requests per ${window}s exceeded. Retry in ${reset}s.`
-					});
-			}
-		})) satisfies RateLimitMacro
-	});
+					if (count > limit)
+						throw problem({
+							type: RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED,
+							status: 429,
+							detail: `Limit of ${limit} requests per ${window}s exceeded. Retry in ${reset}s.`
+						});
+				}
+			})) satisfies RateLimitMacro
+		});
