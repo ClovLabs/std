@@ -215,6 +215,27 @@ describe.concurrent('rateLimitPlugin without an error handler', () => {
 		expect(response2.status).toEqual(429);
 	});
 
+	test('should skip a forwarded header that is not an IP', async () => {
+		const limit = 1;
+		const app = new Elysia()
+			.use(rateLimitPlugin())
+			.get('/forged', { rateLimit: { limit, window: 60 } }, () => 'OK');
+
+		const response1 = await app.handle(
+			new Request('http://localhost/forged', {
+				headers: { 'x-forwarded-for': 'not-an-ip', 'x-real-ip': '6.6.6.6' }
+			})
+		);
+		expect(response1.status).toEqual(200);
+
+		const response2 = await app.handle(
+			new Request('http://localhost/forged', {
+				headers: { 'x-forwarded-for': 'fe80::1%eth0', 'x-real-ip': '6.6.6.6' }
+			})
+		);
+		expect(response2.status).toEqual(429);
+	});
+
 	test('should use custom keyGenerator for rate limiting', async () => {
 		const limit = 1;
 		const app = new Elysia().use(rateLimitPlugin()).get(

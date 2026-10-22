@@ -2,6 +2,7 @@
 import { MemoryStore, type KvStore } from '@clov-std/kv-store';
 import type { Server } from 'bun';
 import { Elysia, problem, t, type HTTPHeaders } from 'elysia';
+import { isIP } from 'node:net';
 
 export const RATE_LIMIT_ERROR_CODES = {
 	QUOTA_EXCEEDED: 'rate-limit.quota.exceeded'
@@ -49,13 +50,16 @@ type RateLimitMacro = (options: RateLimitMacroOptions) => {
 	transform: (context: RateLimitTransformContext) => Promise<void>;
 };
 
+// A header is only a client IP once parsed: zone ids are rejected, they fit neither VARCHAR(45) nor INET
+const isClientIp = (value: string | null | undefined): value is string =>
+	typeof value === 'string' && isIP(value) !== 0 && !value.includes('%');
+
 export const extractClientIp = (request: Request, server: Server<unknown> | null): string => {
-	const forwarded = request.headers.get('x-forwarded-for');
-	if (forwarded) {
-		const [first] = forwarded.split(',');
-		if (first) return first.trim();
-	}
-	return request.headers.get('x-real-ip') ?? server?.requestIP(request)?.address ?? '127.0.0.1';
+	const forwardedIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+	if (isClientIp(forwardedIp)) return forwardedIp;
+
+	const realIp = request.headers.get('x-real-ip');
+	return isClientIp(realIp) ? realIp : (server?.requestIP(request)?.address ?? '127.0.0.1');
 };
 
 export const rateLimitPlugin = (
