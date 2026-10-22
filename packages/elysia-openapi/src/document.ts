@@ -225,7 +225,11 @@ const toRequestBody = (
 };
 
 /** Elysia sends binaries as is, strings, numbers and booleans as text, everything else as JSON. */
-const toResponseContent = (schemas: readonly HookSchema[], models: Models): Content | undefined => {
+const toResponseContent = (
+	schemas: readonly HookSchema[],
+	models: Models,
+	status: string
+): Content | undefined => {
 	const [first] = schemas;
 	const resolved = resolveModel(first, models);
 	const type = jsonTypeOf(resolved);
@@ -250,8 +254,16 @@ const toResponseContent = (schemas: readonly HookSchema[], models: Models): Cont
 			);
 	}
 
+	// `problem()` serves an RFC 9457 document, recognised by its `type` and `status` members
+	const isProblem =
+		Number(status) >= 400 &&
+		schemas.every((schema) => {
+			const required = objectShapeOf(schema, models)?.required;
+			return required?.has('type') === true && required.has('status');
+		});
+	const mediaType = isProblem ? 'application/problem+json' : 'application/json';
 	return {
-		[isText(first, models) ? 'text/plain' : 'application/json']: {
+		[isText(first, models) ? 'text/plain' : mediaType]: {
 			// a client gets one of them: values thrown to `onError` skip response validation
 			schema: toCombinedSchema(schemas, 'anyOf')
 		}
@@ -292,7 +304,7 @@ const toResponses = (route: DocumentedRoute, models: Models): ResponsesObject =>
 				descriptionOf(resolveModel(schemas[0], models)) ??
 				(StatusMapBack as Record<string, string | undefined>)[status];
 			const headers = toResponseHeaders(schemas[0], models);
-			const content = toResponseContent(schemas, models);
+			const content = toResponseContent(schemas, models, status);
 			return [
 				status,
 				{
