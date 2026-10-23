@@ -22,43 +22,47 @@ Everything lives in this monorepo, is built with <a href="https://bun.sh/">Bun</
 <tbody>
 <tr>
 <td><a href="modules/_clov-std_common.html"><code>@clov-std/common</code></a></td>
-<td>Common utilities and types library for building robust applications.</td>
+<td>Small shared helpers: a human-readable duration parser, a typed EventEmitter and inline Bun workers.</td>
 </tr>
 <tr>
 <td><a href="media/elysia-cache"><code>@clov-std/elysia-cache</code></a></td>
-<td>Cache plugin for Elysia framework.</td>
+<td>Response caching for Elysia as a route macro, stored in any @clov-std/kv-store adapter.</td>
+</tr>
+<tr>
+<td><a href="modules/_clov-std_elysia-openapi.html"><code>@clov-std/elysia-openapi</code></a></td>
+<td>OpenAPI 3.2 document and Scalar reference for Elysia, generated from your route schemas.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_elysia-ratelimit.html"><code>@clov-std/elysia-ratelimit</code></a></td>
-<td>Rate limiting plugin for Elysia framework.</td>
+<td>Rate limiting for Elysia as a route macro, with RFC 9457 429 responses and pluggable storage.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_error.html"><code>@clov-std/error</code></a></td>
-<td>Structured TypeScript exceptions with a machine-readable error key and a typed cause.</td>
+<td>Exceptions with a stable error code and a typed cause, plus an HttpException with a resolved status.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_i18n.html"><code>@clov-std/i18n</code></a></td>
-<td>Type-safe i18n for TypeScript — define localized exception and message catalogs with compile-time validated parameters.</td>
+<td>Translation catalogs checked at compile time, for localized messages and throwable exceptions.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_jwt.html"><code>@clov-std/jwt</code></a></td>
-<td>JWT utilities and helpers for secure token management.</td>
+<td>Sign and verify HS256 JWTs on top of jose, with the standard claims filled in.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_kv-store.html"><code>@clov-std/kv-store</code></a></td>
-<td>Abstract key-value store with TTL, increment/decrement, and built-in validation. Ships with an in-memory adapter and a Bun Redis adapter.</td>
+<td>Key-value store with TTLs and counters, and in-memory and Bun Redis adapters behind one API.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_logger.html"><code>@clov-std/logger</code></a></td>
-<td>Type-safe logging library for Bun, modular sink pattern, transform streams, and immutable API design.</td>
+<td>Typed, sink-based logger for Bun that does its writing in a worker thread.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_registry.html"><code>@clov-std/registry</code></a></td>
-<td>Centralized, type-safe registry for managing named instances.</td>
+<td>Register shared instances by name and get them back anywhere, without a singleton per class.</td>
 </tr>
 <tr>
 <td><a href="modules/_clov-std_totp.html"><code>@clov-std/totp</code></a></td>
-<td>Time-based One-Time Password (TOTP) implementation in TypeScript.</td>
+<td>Generate and verify HOTP and TOTP codes (RFC 4226 / 6238), with otpauth:// provisioning URIs.</td>
 </tr>
 </tbody>
 </table>
@@ -106,7 +110,7 @@ Everything lives in this monorepo, is built with <a href="https://bun.sh/">Bun</
 </tbody>
 </table>
 <h2 id="project-structure" class="tsd-anchor-link">Project Structure<a href="#project-structure" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<pre><code><span class="hl-3">packages</span><span class="hl-1">/</span><br/><span class="hl-1">├── </span><span class="hl-3">common</span><span class="hl-1">/              # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">common</span><br/><span class="hl-1">├── </span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">cache</span><span class="hl-1">/        # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">cache</span><br/><span class="hl-1">├── </span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">ratelimit</span><span class="hl-1">/    # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">ratelimit</span><br/><span class="hl-1">├── </span><span class="hl-3">error</span><span class="hl-1">/               # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">error</span><br/><span class="hl-1">├── </span><span class="hl-3">i18n</span><span class="hl-1">/                # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">i18n</span><br/><span class="hl-1">├── </span><span class="hl-3">jwt</span><span class="hl-1">/                 # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">jwt</span><br/><span class="hl-1">├── </span><span class="hl-3">kv</span><span class="hl-1">-</span><span class="hl-3">store</span><span class="hl-1">/            # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">kv</span><span class="hl-1">-</span><span class="hl-3">store</span><br/><span class="hl-1">├── </span><span class="hl-3">logger</span><span class="hl-1">/              # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">logger</span><br/><span class="hl-1">├── </span><span class="hl-3">registry</span><span class="hl-1">/            # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">registry</span><br/><span class="hl-1">└── </span><span class="hl-3">totp</span><span class="hl-1">/                # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">totp</span>
+<pre><code><span class="hl-3">packages</span><span class="hl-1">/</span><br/><span class="hl-1">├── </span><span class="hl-3">common</span><span class="hl-1">/              # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">common</span><br/><span class="hl-1">├── </span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">cache</span><span class="hl-1">/        # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">cache</span><br/><span class="hl-1">├── </span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">openapi</span><span class="hl-1">/      # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">openapi</span><br/><span class="hl-1">├── </span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">ratelimit</span><span class="hl-1">/    # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">elysia</span><span class="hl-1">-</span><span class="hl-3">ratelimit</span><br/><span class="hl-1">├── </span><span class="hl-3">error</span><span class="hl-1">/               # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">error</span><br/><span class="hl-1">├── </span><span class="hl-3">i18n</span><span class="hl-1">/                # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">i18n</span><br/><span class="hl-1">├── </span><span class="hl-3">jwt</span><span class="hl-1">/                 # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">jwt</span><br/><span class="hl-1">├── </span><span class="hl-3">kv</span><span class="hl-1">-</span><span class="hl-3">store</span><span class="hl-1">/            # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">kv</span><span class="hl-1">-</span><span class="hl-3">store</span><br/><span class="hl-1">├── </span><span class="hl-3">logger</span><span class="hl-1">/              # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">logger</span><br/><span class="hl-1">├── </span><span class="hl-3">registry</span><span class="hl-1">/            # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">registry</span><br/><span class="hl-1">└── </span><span class="hl-3">totp</span><span class="hl-1">/                # @</span><span class="hl-3">clov</span><span class="hl-1">-</span><span class="hl-3">std</span><span class="hl-1">/</span><span class="hl-3">totp</span>
 </code><button>Copy</button></pre>
 
 <h2 id="documentation" class="tsd-anchor-link">Documentation<a href="#documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>

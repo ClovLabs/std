@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>@clov-std/error - v5.0.0 | Clov Packages</title><meta name="description" content="Documentation for Clov Packages"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>@clov-std/error - v5.0.4 | Clov Packages</title><meta name="description" content="Documentation for Clov Packages"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
 <div class="tsd-toolbar-contents container"><a href="../index.html" class="title">Clov Packages</a>
 <div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
 <ul role="listbox" id="tsd-search-results"></ul>
@@ -9,94 +9,55 @@
 <div class="tsd-page-title">
 <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
 <li><a href="" aria-current="page">@clov-std/error</a></li></ul>
-<h1>Module @clov-std/error - v5.0.0</h1></div>
+<h1>Module @clov-std/error - v5.0.4</h1></div>
 <section class="tsd-panel tsd-typography"><p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/error/logo-error.png" alt="Clov Error logo" width="200" />
+  <img src="https://cdn.jsdelivr.net/gh/ClovLabs/std@main/packages/error/logo-error.svg" alt="Clov Error logo" width="200" />
 </p>
-<h1 id="🐞-clov-error" class="tsd-anchor-link">🐞 Clov Error<a href="#🐞-clov-error" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h1>
-<p>If you've ever debugged a production incident with nothing but a generic <code>Error(&quot;something went wrong&quot;)</code>,
-you know the pain.<br>
-This package gives your errors structure, every exception carries a machine-readable <code>code</code>,
-so you can always branch on what happened instead of grepping a message string.</p>
-<h2 id="why-this-package" class="tsd-anchor-link">Why this package?<a href="#why-this-package" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>Vanilla <code>Error</code> objects lack context.<br>
-Catching one leaves you matching on <code>error.message</code> strings, which breaks the day someone rewords the message.</p>
-<p><code>@clov-std/error</code> solves that with two classes:</p>
+<h1 id="clov-error" class="tsd-anchor-link">Clov Error<a href="#clov-error" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p>Errors with a stable <code>code</code>, so callers branch on what happened instead of matching <code>error.message</code>, which breaks the day someone rewords it.</p>
+<p>Two classes:</p>
 <ul>
-<li><strong><code>Exception</code></strong> - a richer base error carrying a stable <code>code</code> and a typed <code>cause</code>.</li>
-<li><strong><code>HttpException</code></strong> - the same, plus a resolved HTTP <code>status</code>.</li>
+<li><code>Exception</code>: a <code>code</code> and a typed <code>cause</code>.</li>
+<li><code>HttpException</code>: the same, plus a resolved HTTP <code>status</code>.</li>
 </ul>
-<p>The <code>code</code> is the point. A low-level library throws <code>Exception</code> with <code>code: 'jwt.token.expired'</code> without knowing
-anything about transports or locales, and the layer that <em>does</em> know maps that code to a wire format. One direction
-of dependency, no HTTP concern leaking into a token signer.</p>
-<p>No dependencies, no bloat. Just structured errors that make your life easier.</p>
-<blockquote>
-<p>Looking for localized messages? That's <a href="https://www.npmjs.com/package/@clov-std/i18n"><code>@clov-std/i18n</code></a>.</p>
-</blockquote>
-<h2 id="📌-table-of-contents" class="tsd-anchor-link">📌 Table of Contents<a href="#📌-table-of-contents" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<ul>
-<li><a href="#-features">Features</a></li>
-<li><a href="#-installation">Installation</a></li>
-<li><a href="#-usage">Usage</a></li>
-<li><a href="#-api-reference">API Reference</a></li>
-<li><a href="#-license">License</a></li>
-<li><a href="#-contact">Contact</a></li>
-</ul>
-<h2 id="✨-features" class="tsd-anchor-link">✨ Features<a href="#✨-features" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<ul>
-<li>🔑 <strong>Stable Error Codes</strong> : Branch on <code>error.code</code>, never on <code>error.message</code>.</li>
-<li>🌐 <strong>HTTP When You Need It</strong> : <code>HttpException</code> resolves a status from a name (<code>'NOT_FOUND'</code>) or a number.</li>
-<li>🔗 <strong>Typed Cause</strong> : <code>cause</code> keeps its shape through the generic, so wrapping an error doesn't lose its type.</li>
-<li>🧹 <strong>Clean Stack Traces</strong> : The constructor frame is stripped, and <code>name</code> reflects the actual subclass.</li>
-<li>📦 <strong>Zero Dependencies</strong> : Pure TypeScript, no runtime globals, tiny footprint.</li>
-</ul>
-<h2 id="🔧-installation" class="tsd-anchor-link">🔧 Installation<a href="#🔧-installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>A low-level library throws <code>Exception</code> with <code>code: 'jwt.token.expired'</code> and knows nothing about HTTP or locales. The layer that does know maps the code to whatever the wire needs. No dependencies.</p>
+<p>For translated messages, see <a href="https://www.npmjs.com/package/@clov-std/i18n"><code>@clov-std/i18n</code></a>.</p>
 <pre><code class="bash"><span class="hl-0">bun</span><span class="hl-1"> </span><span class="hl-2">add</span><span class="hl-1"> </span><span class="hl-2">@clov-std/error</span>
 </code><button type="button">Copy</button></pre>
 
-<h2 id="⚙️-usage" class="tsd-anchor-link">⚙️ Usage<a href="#⚙️-usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<h3 id="exception-general-purpose-errors" class="tsd-anchor-link">Exception - General-Purpose Errors<a href="#exception-general-purpose-errors" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<p>Use <code>Exception</code> whenever you need a traceable error with more context than a plain <code>Error</code>.</p>
+<h2 id="_" class="tsd-anchor-link"><code>Exception</code><a href="#_" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <pre><code class="ts"><span class="hl-4">import</span><span class="hl-1"> { </span><span class="hl-3">Exception</span><span class="hl-1"> } </span><span class="hl-4">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@clov-std/error&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-4">throw</span><span class="hl-1"> </span><span class="hl-6">new</span><span class="hl-1"> </span><span class="hl-0">Exception</span><span class="hl-1">(</span><span class="hl-2">&#39;Configuration file not found&#39;</span><span class="hl-1">, {</span><br/><span class="hl-1">	</span><span class="hl-3">code:</span><span class="hl-1"> </span><span class="hl-2">&#39;config.file.not-found&#39;</span><br/><span class="hl-1">});</span>
 </code><button type="button">Copy</button></pre>
 
-<p>The <code>code</code> is what callers should switch on:</p>
-<pre><code class="ts"><span class="hl-4">try</span><span class="hl-1"> {</span><br/><span class="hl-1">	</span><span class="hl-4">await</span><span class="hl-1"> </span><span class="hl-0">verifyToken</span><span class="hl-1">(</span><span class="hl-3">token</span><span class="hl-1">);</span><br/><span class="hl-1">} </span><span class="hl-4">catch</span><span class="hl-1"> (</span><span class="hl-3">err</span><span class="hl-1">) {</span><br/><span class="hl-1">	</span><span class="hl-4">if</span><span class="hl-1"> (</span><span class="hl-3">err</span><span class="hl-1"> </span><span class="hl-6">instanceof</span><span class="hl-1"> </span><span class="hl-7">Exception</span><span class="hl-1"> &amp;&amp; </span><span class="hl-3">err</span><span class="hl-1">.</span><span class="hl-3">code</span><span class="hl-1"> === </span><span class="hl-2">&#39;jwt.token.expired&#39;</span><span class="hl-1">) </span><span class="hl-4">return</span><span class="hl-1"> </span><span class="hl-0">refresh</span><span class="hl-1">();</span><br/><span class="hl-1">	</span><span class="hl-4">throw</span><span class="hl-1"> </span><span class="hl-3">err</span><span class="hl-1">;</span><br/><span class="hl-1">}</span>
+<p>Callers switch on the <code>code</code>:</p>
+<pre><code class="ts"><span class="hl-4">import</span><span class="hl-1"> { </span><span class="hl-3">Exception</span><span class="hl-1"> } </span><span class="hl-4">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@clov-std/error&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-4">try</span><span class="hl-1"> {</span><br/><span class="hl-1">	</span><span class="hl-4">await</span><span class="hl-1"> </span><span class="hl-0">verifyToken</span><span class="hl-1">(</span><span class="hl-3">token</span><span class="hl-1">);</span><br/><span class="hl-1">} </span><span class="hl-4">catch</span><span class="hl-1"> (</span><span class="hl-3">err</span><span class="hl-1">) {</span><br/><span class="hl-1">	</span><span class="hl-4">if</span><span class="hl-1"> (</span><span class="hl-3">err</span><span class="hl-1"> </span><span class="hl-6">instanceof</span><span class="hl-1"> </span><span class="hl-7">Exception</span><span class="hl-1"> &amp;&amp; </span><span class="hl-3">err</span><span class="hl-1">.</span><span class="hl-3">code</span><span class="hl-1"> === </span><span class="hl-2">&#39;jwt.token.expired&#39;</span><span class="hl-1">) </span><span class="hl-4">await</span><span class="hl-1"> </span><span class="hl-0">refreshSession</span><span class="hl-1">();</span><br/><span class="hl-1">	</span><span class="hl-4">else</span><span class="hl-1"> </span><span class="hl-4">throw</span><span class="hl-1"> </span><span class="hl-3">err</span><span class="hl-1">;</span><br/><span class="hl-1">}</span>
 </code><button type="button">Copy</button></pre>
 
-<p>You can also wrap a root cause to preserve the original error:</p>
+<p>Wrap the original error in <code>cause</code> to keep it around. Its type survives through the generic.</p>
 <pre><code class="ts"><span class="hl-4">import</span><span class="hl-1"> { </span><span class="hl-3">Exception</span><span class="hl-1"> } </span><span class="hl-4">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@clov-std/error&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-4">try</span><span class="hl-1"> {</span><br/><span class="hl-1">	</span><span class="hl-4">await</span><span class="hl-1"> </span><span class="hl-3">db</span><span class="hl-1">.</span><span class="hl-0">save</span><span class="hl-1">(</span><span class="hl-3">user</span><span class="hl-1">);</span><br/><span class="hl-1">} </span><span class="hl-4">catch</span><span class="hl-1"> (</span><span class="hl-3">err</span><span class="hl-1">) {</span><br/><span class="hl-1">	</span><span class="hl-4">throw</span><span class="hl-1"> </span><span class="hl-6">new</span><span class="hl-1"> </span><span class="hl-0">Exception</span><span class="hl-1">(</span><span class="hl-2">&#39;Failed to persist user&#39;</span><span class="hl-1">, { </span><span class="hl-3">cause:</span><span class="hl-1"> </span><span class="hl-3">err</span><span class="hl-1"> });</span><br/><span class="hl-1">}</span>
 </code><button type="button">Copy</button></pre>
 
-<h3 id="whats-deliberately-not-here" class="tsd-anchor-link">What's deliberately not here<a href="#whats-deliberately-not-here" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<p>No request id, no timestamp. Both belong to the layer that <em>handles</em> the error: a request handler
-already has an <code>x-request-id</code> (or mints one), and a log sink already stamps every line with a time.
-Putting them on the error means every throw pays for identity nobody reads.</p>
-<p>If an application genuinely needs them on the instance, that's a subclass:</p>
+<p>The constructor frame is stripped from the stack, and <code>name</code> is the actual subclass name.</p>
+<h3 id="no-request-id-no-timestamp" class="tsd-anchor-link">No request id, no timestamp<a href="#no-request-id-no-timestamp" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>On purpose. Both belong to whoever handles the error: the request handler already has an <code>x-request-id</code>, and the log sink already stamps every line. Putting them on every exception means every throw pays for data nobody reads.</p>
+<p>If your app really needs them on the instance, subclass:</p>
 <pre><code class="ts"><span class="hl-6">class</span><span class="hl-1"> </span><span class="hl-7">TracedException</span><span class="hl-1"> </span><span class="hl-6">extends</span><span class="hl-1"> </span><span class="hl-7">Exception</span><span class="hl-1"> {</span><br/><span class="hl-1">	</span><span class="hl-6">public</span><span class="hl-1"> </span><span class="hl-6">readonly</span><span class="hl-1"> </span><span class="hl-3">uuid</span><span class="hl-1">: </span><span class="hl-7">string</span><span class="hl-1"> = </span><span class="hl-3">crypto</span><span class="hl-1">.</span><span class="hl-0">randomUUID</span><span class="hl-1">();</span><br/><span class="hl-1">	</span><span class="hl-6">public</span><span class="hl-1"> </span><span class="hl-6">readonly</span><span class="hl-1"> </span><span class="hl-3">date</span><span class="hl-1">: </span><span class="hl-7">Date</span><span class="hl-1"> = </span><span class="hl-6">new</span><span class="hl-1"> </span><span class="hl-0">Date</span><span class="hl-1">();</span><br/><span class="hl-1">}</span>
 </code><button type="button">Copy</button></pre>
 
-<h3 id="httpexception-errors-bound-to-a-status" class="tsd-anchor-link">HttpException - Errors Bound to a Status<a href="#httpexception-errors-bound-to-a-status" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<p>When a failure has a status, throw <code>HttpException</code>. It takes a status name or a number, and resolves it
-to <code>error.status</code>:</p>
+<h2 id="_-1" class="tsd-anchor-link"><code>HttpException</code><a href="#_-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Takes a status name or number and resolves it to <code>error.status</code>:</p>
 <pre><code class="ts"><span class="hl-4">import</span><span class="hl-1"> { </span><span class="hl-3">HttpException</span><span class="hl-1"> } </span><span class="hl-4">from</span><span class="hl-1"> </span><span class="hl-2">&#39;@clov-std/error&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-4">throw</span><span class="hl-1"> </span><span class="hl-6">new</span><span class="hl-1"> </span><span class="hl-0">HttpException</span><span class="hl-1">(</span><span class="hl-2">&#39;Account not found&#39;</span><span class="hl-1">, {</span><br/><span class="hl-1">	</span><span class="hl-3">code:</span><span class="hl-1"> </span><span class="hl-2">&#39;auth.account.not-found&#39;</span><span class="hl-1">,</span><br/><span class="hl-1">	</span><span class="hl-3">status:</span><span class="hl-1"> </span><span class="hl-2">&#39;NOT_FOUND&#39;</span><span class="hl-1"> </span><span class="hl-5">// or 404</span><br/><span class="hl-1">});</span>
 </code><button type="button">Copy</button></pre>
 
-<p><code>status</code> is required on purpose: an HTTP exception without one is a bug, and a silent <code>500</code> would hide it.</p>
-<p>Nothing about RFC 9457 lives here. Your presentation layer maps <code>code</code> to the wire format it needs,
-which keeps this package usable from a CLI or a worker:</p>
-<pre><code class="ts"><span class="hl-5">// One adapter, at the boundary</span><br/><span class="hl-0">problem</span><span class="hl-1">({ </span><span class="hl-3">type:</span><span class="hl-1"> </span><span class="hl-3">error</span><span class="hl-1">.</span><span class="hl-3">code</span><span class="hl-1">, </span><span class="hl-3">status:</span><span class="hl-1"> </span><span class="hl-3">error</span><span class="hl-1">.</span><span class="hl-3">status</span><span class="hl-1">, </span><span class="hl-3">detail:</span><span class="hl-1"> </span><span class="hl-3">error</span><span class="hl-1">.</span><span class="hl-3">message</span><span class="hl-1"> });</span>
+<p><code>status</code> is required. An HTTP exception without one is a bug, and defaulting to <code>500</code> would hide it.</p>
+<p>There's nothing RFC 9457 in here, so the package still works from a CLI or a worker. Map <code>code</code> to a problem document at the boundary:</p>
+<pre><code class="ts"><span class="hl-0">problem</span><span class="hl-1">({ </span><span class="hl-3">type:</span><span class="hl-1"> </span><span class="hl-3">error</span><span class="hl-1">.</span><span class="hl-3">code</span><span class="hl-1">, </span><span class="hl-3">status:</span><span class="hl-1"> </span><span class="hl-3">error</span><span class="hl-1">.</span><span class="hl-3">status</span><span class="hl-1">, </span><span class="hl-3">detail:</span><span class="hl-1"> </span><span class="hl-3">error</span><span class="hl-1">.</span><span class="hl-3">message</span><span class="hl-1"> });</span>
 </code><button type="button">Copy</button></pre>
 
-<p>For translated messages, <code>@clov-std/i18n</code> builds on <code>Exception</code> with catalogs of localized templates.</p>
-<h2 id="📚-api-reference" class="tsd-anchor-link">📚 API Reference<a href="#📚-api-reference" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>Full docs: <a href="https://clovlabs.github.io/std/">https://clovlabs.github.io/std/</a></p>
-<h2 id="⚖️-license" class="tsd-anchor-link">⚖️ License<a href="#⚖️-license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<p>MIT - Feel free to use it.</p>
-<h2 id="📧-contact" class="tsd-anchor-link">📧 Contact<a href="#📧-contact" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<ul>
-<li>GitHub: <a href="https://github.com/ClovLabs/packages">ClovLabs</a></li>
-</ul>
+<h2 id="docs" class="tsd-anchor-link">Docs<a href="#docs" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>API reference: <a href="https://clovlabs.github.io/std/">clovlabs.github.io/std</a></p>
+<h2 id="license" class="tsd-anchor-link">License<a href="#license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>MIT, see <a href="../media/LICENSE-3.md">LICENSE.md</a>.</p>
 </section>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Classes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="classes">Classes<a href="#classes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary><dl class="tsd-member-summaries"><dt class="tsd-member-summary" id="exception"><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Class"><use href="../assets/icons.svg#icon-128"></use></svg><a href="../classes/_clov-std_error.Exception.html">Exception</a><a href="#exception" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd><dt class="tsd-member-summary" id="httpexception"><span class="tsd-member-summary-name"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Class"><use href="../assets/icons.svg#icon-128"></use></svg><a href="../classes/_clov-std_error.HttpException.html">HttpException</a><a href="#httpexception" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></span></dt><dd class="tsd-member-summary"></dd></dl></details>
@@ -120,21 +81,15 @@ which keeps this package usable from a CLI or a worker:</p>
 <div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
 <details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h3>On This Page</h3></summary>
-<div class="tsd-accordion-details"><a href="#🐞-clov-error"><span>🐞 <wbr/>Clov <wbr/>Error</span></a>
+<div class="tsd-accordion-details"><a href="#clov-error"><span>Clov <wbr/>Error</span></a>
 <ul>
-<li><a href="#why-this-package"><span>Why this package?</span></a></li>
-<li><a href="#📌-table-of-contents"><span>📌 <wbr/>Table of <wbr/>Contents</span></a></li>
-<li><a href="#✨-features"><span>✨ <wbr/>Features</span></a></li>
-<li><a href="#🔧-installation"><span>🔧 <wbr/>Installation</span></a></li>
-<li><a href="#⚙️-usage"><span>⚙️ <wbr/>Usage</span></a></li>
+<li><a href="#_"><span></span></a></li>
 <li>
 <ul>
-<li><a href="#exception-general-purpose-errors"><span>Exception -<wbr/> <wbr/>General-<wbr/>Purpose <wbr/>Errors</span></a></li>
-<li><a href="#whats-deliberately-not-here"><span>What&#39;s deliberately not here</span></a></li>
-<li><a href="#httpexception-errors-bound-to-a-status"><span>Http<wbr/>Exception -<wbr/> <wbr/>Errors <wbr/>Bound to a <wbr/>Status</span></a></li></ul></li>
-<li><a href="#📚-api-reference"><span>📚 <wbr/>API <wbr/>Reference</span></a></li>
-<li><a href="#⚖️-license"><span>⚖️ <wbr/>License</span></a></li>
-<li><a href="#📧-contact"><span>📧 <wbr/>Contact</span></a></li></ul>
+<li><a href="#no-request-id-no-timestamp"><span>No request id, no timestamp</span></a></li></ul></li>
+<li><a href="#_-1"><span></span></a></li>
+<li><a href="#docs"><span>Docs</span></a></li>
+<li><a href="#license"><span>License</span></a></li></ul>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Classes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Classes</summary>
 <div><a href="#exception"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Class"><use href="../assets/icons.svg#icon-128"></use></svg><span>Exception</span></a><a href="#httpexception"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Class"><use href="../assets/icons.svg#icon-128"></use></svg><span>Http<wbr/>Exception</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Interfaces"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Interfaces</summary>
