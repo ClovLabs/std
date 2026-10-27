@@ -1,6 +1,6 @@
 {
 	"name": "@clov-std/common",
-	"version": "2.1.4",
+	"version": "2.2.0",
 	"description": "Small shared helpers: a human-readable duration parser, a typed EventEmitter and inline Bun workers.",
 	"keywords": [
 		"duration",
