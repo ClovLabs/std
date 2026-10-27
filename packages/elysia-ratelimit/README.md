@@ -6,7 +6,7 @@
 
 Rate limiting for Elysia, as a macro. Put `rateLimit: { limit: 10, window: 60 }` on a route, guard or group and you're done.
 
-It runs in `transform`, the first per-route hook, so excess requests are rejected before auth guards or handlers do any work. Counters are per client IP by default, which suits login endpoints. When lots of users share one IP (an office, a corporate proxy), a `keyGenerator` lets you count per token, session, API key, or whatever fits.
+It runs in `transform`, the first per-route hook, so excess requests are rejected before auth guards or handlers do any work. Counters are per route pattern and client IP by default, which suits login endpoints: `/users/1` and `/users/2` share the quota of `/users/:id`. When lots of users share one IP (an office, a corporate proxy), count per authenticated user instead, with the `derive` hook.
 
 Storage goes through `@clov-std/kv-store`: memory by default, Redis when you need it, same routes either way.
 
@@ -55,34 +55,42 @@ new Elysia()
 
 ### Per user instead of per IP
 
-For authenticated routes behind a shared IP, give each user their own counter:
+A `transform` hook only knows the request. To count per user, run the quota in `derive` (or `beforeHandle`), after the hook that authenticates, and key it on what that hook added. Give the quota its own `policy`, so its counters and headers stay apart from the per-IP one:
 
 ```ts
-import { rateLimitPlugin } from '@clov-std/elysia-ratelimit';
-import { Elysia } from 'elysia';
-
 new Elysia()
 	.use(rateLimitPlugin())
-	.get(
-		'/api/data',
-		{
+	.macro({
+		requireAuth: {
+			derive: async ({ headers }) => ({ idUser: await authenticate(headers) }),
+			// declared after the derive: derives run in declaration order
 			rateLimit: {
-				limit: 100,
+				policy: 'user',
+				hook: 'derive',
+				limit: 300,
 				window: 60,
-				keyGenerator: ({ ip, request }) =>
-					`${ip}:${request.headers.get('authorization') ?? ip}`
+				keyGenerator: ({ idUser }) => idUser
 			}
-		},
-		() => getData()
-	)
+		}
+	})
+	.get('/api/data', { requireAuth: true }, () => getData())
 	.listen(3000);
 ```
+
+Elysia can't type what earlier hooks added, so `keyGenerator` returns `unknown`: anything but a non-empty string throws, so a key read before the hook adding it fails loudly instead of putting every client in one quota. A quota declared at several levels (a guard and its route) counts a request once.
 
 `extractClientIp` is exported if you need it in your own `keyGenerator`.
 
 ## Headers and the 429
 
-Every response gets `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`.
+Every limited response lists its quotas in the `RateLimit-Policy` and `RateLimit` fields of [draft-ietf-httpapi-ratelimit-headers](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/), one item per policy:
+
+```http
+RateLimit-Policy: "default";q=10;w=60, "user";q=300;w=60
+RateLimit: "default";r=9;t=60, "user";r=299;t=60
+```
+
+The `429` adds the standard `Retry-After` (RFC 9110), in seconds.
 
 Once the limit is hit, the plugin throws Elysia's `problem()`, so the `429` is a full RFC 9457 document (`application/problem+json`) without any exception class to import:
 
@@ -99,7 +107,7 @@ Once the limit is hit, the plugin throws Elysia's `problem()`, so the `429` is a
 - `title` comes from Elysia, based on the status.
 - `detail` reflects the current counter, so it changes from one 429 to the next.
 
-The headers are set before the throw, so they're still on the `429`. The macro also declares this response for OpenAPI, so typed clients know about it.
+The fields are set before the throw, so they're still on the `429`. The macro also declares this response for OpenAPI, so typed clients know about it.
 
 ## Docs
 
