@@ -72,9 +72,43 @@ describe.concurrent('buildDocument', () => {
 					409: {
 						description: 'Conflict',
 						content: { 'text/plain': { schema: { type: 'string', const: 'taken' } } }
+					},
+					422: {
+						description: 'Unprocessable Content',
+						content: {
+							'application/problem+json': {
+								schema: { $ref: '#/components/schemas/validation' }
+							}
+						}
 					}
 				}
 			}
+		});
+	});
+
+	test('should document the validation 422 only where the request is validated', () => {
+		const app = new Elysia()
+			.get('/free', () => 'ok')
+			.post('/checked', { body: t.Object({ a: t.String() }) }, () => 'ok')
+			.post(
+				'/own',
+				{ body: t.Object({ a: t.String() }), response: { 422: t.Literal('custom') } },
+				() => 'ok'
+			);
+		const document = buildDocument(app);
+
+		expect(document.paths?.['/free']?.get?.responses?.['422']).toBeUndefined();
+		expect(document.paths?.['/checked']?.post?.responses?.['422']).toEqual({
+			description: 'Unprocessable Content',
+			content: {
+				'application/problem+json': { schema: { $ref: '#/components/schemas/validation' } }
+			}
+		});
+		expect(document.paths?.['/own']?.post?.responses?.['422']).not.toHaveProperty(
+			'content.application/problem+json'
+		);
+		expect(document.components?.schemas?.['validation']).toMatchObject({
+			required: ['type', 'title', 'status', 'detail']
 		});
 	});
 
@@ -557,7 +591,7 @@ describe.concurrent('buildDocument edge cases', () => {
 			description: 'Found',
 			content: { 'text/plain': { schema: { type: 'string' } } }
 		});
-		expect(Object.keys(get?.responses ?? {})).toEqual(['200', '404', '500']);
+		expect(Object.keys(get?.responses ?? {})).toEqual(['200', '404', '422', '500']);
 		expect((post?.requestBody as RequestBodyObject | undefined)?.description).toBe('Payload');
 		expect(Object.keys(contentOf(post?.requestBody))).toEqual([
 			'application/json',
