@@ -641,6 +641,36 @@ describe.concurrent('buildDocument edge cases', () => {
 		});
 	});
 
+	test('should document problem documents as application/problem+json', () => {
+		const problem = t.Object({
+			type: t.Literal('gone'),
+			title: t.String(),
+			status: t.Literal(404)
+		});
+		const app = new Elysia().model({ gone: problem }).get(
+			'/p',
+			{
+				response: {
+					200: t.Object({ type: t.String(), status: t.String() }),
+					400: t.Object({ message: t.String() }),
+					404: 'gone',
+					409: t.Union([
+						t.Ref('gone'),
+						t.Object({ type: t.String(), status: t.Number() })
+					])
+				}
+			},
+			() => ({ type: 'a', status: 'b' })
+		);
+		const mediaTypes = (status: '200' | '400' | '404' | '409'): string[] =>
+			Object.keys(contentOf(operationOf(app, '/p')?.responses?.[status]));
+
+		expect(mediaTypes('200')).toEqual(['application/json']);
+		expect(mediaTypes('400')).toEqual(['application/json']);
+		expect(mediaTypes('404')).toEqual(['application/problem+json']);
+		expect(mediaTypes('409')).toEqual(['application/problem+json']);
+	});
+
 	test('should only emit valid JSON Schema', () => {
 		const app = new Elysia()
 			.model({ Thing: t.Object({ a: t.Ref('Addr') }, { $id: 'https://example.com/thing' }) })
