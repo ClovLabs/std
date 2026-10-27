@@ -1,6 +1,6 @@
 {
 	"name": "@clov-std/elysia-openapi",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"description": "OpenAPI 3.2 document and Scalar reference for Elysia, generated from your route schemas.",
 	"keywords": [
 		"elysia",
