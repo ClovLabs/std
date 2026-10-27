@@ -1,6 +1,6 @@
 {
 	"name": "@clov-std/elysia-ratelimit",
-	"version": "4.0.19",
+	"version": "5.0.0",
 	"description": "Rate limiting for Elysia as a route macro, with RFC 9457 429 responses and pluggable storage.",
 	"keywords": [
 		"elysia",
