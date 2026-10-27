@@ -40,6 +40,10 @@ The reference is at `http://localhost:3000/openapi`, the JSON at `http://localho
 
 Each operation gets an `operationId` derived from the method and path (`get` + `/users/:id` gives `getUsersById`), unique across the document.
 
+### Validation errors
+
+Every operation that validates params, query, headers, cookies or a body documents Elysia's `422`, a `validation` problem document (`application/problem+json`) added to `components.schemas`. A route that declares its own `422` keeps it.
+
 ### Response headers
 
 ```ts

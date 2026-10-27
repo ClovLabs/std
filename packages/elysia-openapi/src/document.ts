@@ -370,6 +370,51 @@ const mergeRequestBody = (
 	return { ...generated, ...override, content };
 };
 
+const VALIDATION_PROBLEM = 'validation';
+
+/** Elysia answers 422 with this problem document when params, query, headers, cookies or the body fail validation. */
+const validationProblemSchema: SchemaObject = {
+	type: 'object',
+	description: 'The request failed validation.',
+	required: ['type', 'title', 'status', 'detail'],
+	properties: {
+		type: { type: 'string', const: VALIDATION_PROBLEM },
+		code: { type: 'string', const: VALIDATION_PROBLEM },
+		title: { type: 'string', example: 'Validation Error' },
+		status: { type: 'integer', const: 422 },
+		detail: { type: 'string', description: 'The first validation error, in words.' },
+		on: {
+			type: 'string',
+			enum: ['params', 'query', 'headers', 'cookie', 'body'],
+			description: 'The part of the request that failed.'
+		},
+		property: { type: 'string', description: 'Path of the first invalid property.' },
+		found: { description: 'The value received.' },
+		expected: { description: 'A value of the expected shape.' },
+		errors: {
+			type: 'array',
+			description: 'Every validation error.',
+			items: { type: 'object' }
+		}
+	}
+};
+
+const validationResponse: ResponseObject = {
+	description: 'Unprocessable Content',
+	content: {
+		'application/problem+json': {
+			schema: { $ref: `#/components/schemas/${VALIDATION_PROBLEM}` }
+		}
+	}
+};
+
+const validationComponent = (
+	operations: readonly OperationObject[]
+): Record<string, SchemaObject> =>
+	operations.some((operation) => operation.responses?.['422'] === validationResponse)
+		? { [VALIDATION_PROBLEM]: validationProblemSchema }
+		: {};
+
 const toOperation = (route: DocumentedRoute, models: Models, method: string): OperationObject => {
 	const { hooks } = route;
 
@@ -395,6 +440,8 @@ const toOperation = (route: DocumentedRoute, models: Models, method: string): Op
 	const allParameters = mergeParameters([...parameters.values()], parameterOverrides);
 	const requestBody = mergeRequestBody(toRequestBody(hooks, models, method), requestBodyOverride);
 	const responses = mergeResponses(toResponses(route, models), responseOverrides);
+	if ((parameters.size > 0 || requestBody) && !responses['422'])
+		responses['422'] = validationResponse;
 	return {
 		...(allParameters.length > 0 && { parameters: allParameters }),
 		...(requestBody && { requestBody }),
@@ -641,6 +688,7 @@ export const buildDocument = (app: AnyElysia, base: Partial<OpenAPIObject> = {})
 			...base.components,
 			schemas: {
 				...base.components?.schemas,
+				...validationComponent([...generated.keys()]),
 				...Object.fromEntries(
 					Object.entries(models).map(([name, model]) => [
 						name,
