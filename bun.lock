@@ -7,7 +7,7 @@
     },
     "packages/common": {
       "name": "@clov-std/common",
-      "version": "2.1.4",
+      "version": "2.2.0",
       "dependencies": {
         "@clov-std/error": "workspace:^",
       },
@@ -43,7 +43,7 @@
     },
     "packages/elysia-openapi": {
       "name": "@clov-std/elysia-openapi",
-      "version": "1.0.1",
+      "version": "1.2.0",
       "devDependencies": {
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
@@ -58,7 +58,7 @@
     },
     "packages/elysia-ratelimit": {
       "name": "@clov-std/elysia-ratelimit",
-      "version": "4.0.19",
+      "version": "5.0.0",
       "dependencies": {
         "@clov-std/kv-store": "workspace:^",
       },
