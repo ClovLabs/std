@@ -30,7 +30,7 @@ const TIME_UNITS = {
  * Regular expression to parse human-readable time expressions
  * Matches patterns like: "2 hours", "+30 minutes", "1 day ago", "5 seconds from now"
  */
-const TIME_EXPRESSION_REGEX =
+export const TIME_EXPRESSION_REGEX =
 	/^(\+|-)? ?(\d+|\d+\.\d+) ?(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)(?: (ago|from now))?$/i;
 
 /**
