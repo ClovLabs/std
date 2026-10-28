@@ -98,10 +98,11 @@ const consumeRateLimit = async (
 	if (counted.has(storeKey)) return;
 	countedRequests.set(request, counted.add(storeKey));
 
-	const count = await store.increment(storeKey);
-	if (count === 1) await store.expire(storeKey, window);
-
-	const reset = await store.ttl(storeKey);
+	// Sent together, Redis pipelines them: ttl reads the counter increment just wrote
+	const [count, ttl] = await Promise.all([store.increment(storeKey), store.ttl(storeKey)]);
+	// Also heals a counter left without expiry by a failure between increment and expire
+	if (ttl < 0) await store.expire(storeKey, window);
+	const reset = ttl < 0 ? window : ttl;
 
 	// shortcut: RateLimit-Policy and RateLimit follow draft-ietf-httpapi-ratelimit-headers-11,
 	// not an RFC yet: realign them when it is published
