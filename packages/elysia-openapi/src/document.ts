@@ -1,4 +1,5 @@
 import { StatusMapBack, type AnyElysia, type InputSchema } from 'elysia';
+import { isProduction } from 'elysia/error';
 import type { ContentType, UnwrapArray } from 'elysia/types';
 import { isRecordNumber } from 'elysia/utils';
 import { IsOptional, IsUnion } from 'typebox';
@@ -373,34 +374,39 @@ const mergeRequestBody = (
 const VALIDATION_PROBLEM = 'validation';
 
 /** Elysia answers 422 with this problem document when params, query, headers, cookies or the body fail validation. */
-const validationProblemSchema: SchemaObject = {
+// Elysia sends detail, found, expected and errors only outside production
+const validationProblemSchema = (): SchemaObject => ({
 	type: 'object',
 	description: 'The request failed validation.',
-	required: ['type', 'title', 'status'],
+	required: isProduction() ? ['type', 'title', 'status'] : ['type', 'title', 'status', 'detail'],
 	properties: {
 		type: { type: 'string', const: VALIDATION_PROBLEM },
 		code: { type: 'string', const: VALIDATION_PROBLEM },
 		title: { type: 'string', example: 'Validation Error' },
 		status: { type: 'integer', const: 422 },
-		detail: {
-			type: 'string',
-			description: 'The first validation error, in words. Not sent in production.'
-		},
 		on: {
 			type: 'string',
 			enum: ['params', 'query', 'headers', 'cookie', 'body'],
 			description: 'The part of the request that failed.'
 		},
 		property: { type: 'string', description: 'Path of the first invalid property.' },
-		found: { description: 'The value received. Not sent in production.' },
-		expected: { description: 'A value of the expected shape. Not sent in production.' },
-		errors: {
-			type: 'array',
-			description: 'Every validation error. Not sent in production.',
-			items: { type: 'object' }
-		}
+		...(isProduction()
+			? {}
+			: {
+					detail: {
+						type: 'string',
+						description: 'The first validation error, in words.'
+					},
+					found: { description: 'The value received.' },
+					expected: { description: 'A value of the expected shape.' },
+					errors: {
+						type: 'array',
+						description: 'Every validation error.',
+						items: { type: 'object' }
+					}
+				})
 	}
-};
+});
 
 const validationResponse: ResponseObject = {
 	description: 'Unprocessable Content',
@@ -415,7 +421,7 @@ const validationComponent = (
 	operations: readonly OperationObject[]
 ): Record<string, SchemaObject> =>
 	operations.some((operation) => operation.responses?.['422'] === validationResponse)
-		? { [VALIDATION_PROBLEM]: validationProblemSchema }
+		? { [VALIDATION_PROBLEM]: validationProblemSchema() }
 		: {};
 
 const toOperation = (route: DocumentedRoute, models: Models, method: string): OperationObject => {
