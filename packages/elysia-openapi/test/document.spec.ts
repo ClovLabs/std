@@ -500,7 +500,8 @@ describe.concurrent('buildDocument', () => {
 						schema: {
 							type: 'object',
 							properties: { name: { anyOf: [{ type: 'string' }, { type: 'null' }] } },
-							required: ['name']
+							// Elysia rc.1 lets t.MaybeEmpty also take undefined: the property is optional
+							required: []
 						}
 					}
 				}
