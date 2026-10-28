@@ -108,7 +108,7 @@ describe.concurrent('buildDocument', () => {
 			'content.application/problem+json'
 		);
 		expect(document.components?.schemas?.['validation']).toMatchObject({
-			required: ['type', 'title', 'status', 'detail']
+			required: ['type', 'title', 'status']
 		});
 	});
 

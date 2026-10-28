@@ -376,24 +376,27 @@ const VALIDATION_PROBLEM = 'validation';
 const validationProblemSchema: SchemaObject = {
 	type: 'object',
 	description: 'The request failed validation.',
-	required: ['type', 'title', 'status', 'detail'],
+	required: ['type', 'title', 'status'],
 	properties: {
 		type: { type: 'string', const: VALIDATION_PROBLEM },
 		code: { type: 'string', const: VALIDATION_PROBLEM },
 		title: { type: 'string', example: 'Validation Error' },
 		status: { type: 'integer', const: 422 },
-		detail: { type: 'string', description: 'The first validation error, in words.' },
+		detail: {
+			type: 'string',
+			description: 'The first validation error, in words. Not sent in production.'
+		},
 		on: {
 			type: 'string',
 			enum: ['params', 'query', 'headers', 'cookie', 'body'],
 			description: 'The part of the request that failed.'
 		},
 		property: { type: 'string', description: 'Path of the first invalid property.' },
-		found: { description: 'The value received.' },
-		expected: { description: 'A value of the expected shape.' },
+		found: { description: 'The value received. Not sent in production.' },
+		expected: { description: 'A value of the expected shape. Not sent in production.' },
 		errors: {
 			type: 'array',
-			description: 'Every validation error.',
+			description: 'Every validation error. Not sent in production.',
 			items: { type: 'object' }
 		}
 	}
