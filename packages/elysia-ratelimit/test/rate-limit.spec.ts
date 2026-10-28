@@ -1,3 +1,4 @@
+import { MemoryStore } from '@clov-std/kv-store';
 // oxlint-disable promise/no-await-in-loop
 import { describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
@@ -68,6 +69,20 @@ describe.concurrent('rateLimitPlugin without an error handler', () => {
 		expect(response.status).toEqual(429);
 		expect(parseInt(response.headers.get('Retry-After') ?? '0', 10)).toBeGreaterThan(0);
 		expect(response.headers.get('RateLimit')).toEqual('"default";r=0;t=60');
+	});
+
+	test('should give an expiry to a counter left without one', async () => {
+		const store = new MemoryStore();
+		store.set('ratelimit:default:GET:/stuck:10.0.0.3', 5);
+		const app = new Elysia()
+			.use(rateLimitPlugin(store))
+			.get('/stuck', { rateLimit: { limit: 1, window: 60 } }, () => 'OK');
+
+		const response = await exceed(app, '/stuck', '10.0.0.3', 1);
+
+		expect(response.status).toEqual(429);
+		expect(response.headers.get('Retry-After')).toEqual('60');
+		expect(store.ttl('ratelimit:default:GET:/stuck:10.0.0.3')).toBeGreaterThan(0);
 	});
 
 	test('should track different IPs separately', async () => {

@@ -99,9 +99,12 @@ const consumeRateLimit = async (
 	countedRequests.set(request, counted.add(storeKey));
 
 	const count = await store.increment(storeKey);
-	if (count === 1) await store.expire(storeKey, window);
-
-	const reset = await store.ttl(storeKey);
+	let reset = await store.ttl(storeKey);
+	// Also heals a counter left without expiry by a failure between increment and expire
+	if (reset < 0) {
+		await store.expire(storeKey, window);
+		reset = window;
+	}
 
 	// shortcut: RateLimit-Policy and RateLimit follow draft-ietf-httpapi-ratelimit-headers-11,
 	// not an RFC yet: realign them when it is published
