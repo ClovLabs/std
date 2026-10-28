@@ -112,6 +112,22 @@ describe.concurrent('buildDocument', () => {
 		});
 	});
 
+	test('should document the 422 without detail in production, as Elysia sends it', () => {
+		const nodeEnv = process.env.NODE_ENV;
+		process.env.NODE_ENV = 'production';
+		const document = buildDocument(
+			new Elysia().post('/checked', { body: t.Object({ a: t.String() }) }, () => 1)
+		);
+		process.env.NODE_ENV = nodeEnv ?? 'test';
+
+		expect(document.components?.schemas?.['validation']).toMatchObject({
+			required: ['type', 'title', 'status']
+		});
+		expect(document.components?.schemas?.['validation']).not.toHaveProperty(
+			'properties.detail'
+		);
+	});
+
 	test('should skip hidden, websocket and OPTIONS routes', () => {
 		const app = new Elysia()
 			.get('/hidden', { detail: { hide: true } }, () => 1)
@@ -500,7 +516,8 @@ describe.concurrent('buildDocument', () => {
 						schema: {
 							type: 'object',
 							properties: { name: { anyOf: [{ type: 'string' }, { type: 'null' }] } },
-							required: ['name']
+							// Elysia rc.1 lets t.MaybeEmpty also take undefined: the property is optional
+							required: []
 						}
 					}
 				}
