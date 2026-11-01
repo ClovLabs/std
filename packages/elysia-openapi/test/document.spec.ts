@@ -112,22 +112,6 @@ describe.concurrent('buildDocument', () => {
 		});
 	});
 
-	test('should document the 422 without detail in production, as Elysia sends it', () => {
-		const nodeEnv = process.env.NODE_ENV;
-		process.env.NODE_ENV = 'production';
-		const document = buildDocument(
-			new Elysia().post('/checked', { body: t.Object({ a: t.String() }) }, () => 1)
-		);
-		process.env.NODE_ENV = nodeEnv ?? 'test';
-
-		expect(document.components?.schemas?.['validation']).toMatchObject({
-			required: ['type', 'title', 'status']
-		});
-		expect(document.components?.schemas?.['validation']).not.toHaveProperty(
-			'properties.detail'
-		);
-	});
-
 	test('should skip hidden, websocket and OPTIONS routes', () => {
 		const app = new Elysia()
 			.get('/hidden', { detail: { hide: true } }, () => 1)
@@ -1043,5 +1027,23 @@ describe.concurrent('openapiPlugin', () => {
 			await (await app.handle(new Request('http://localhost/api/openapi/'))).text()
 		).toContain('"url":"/api/openapi/json"');
 		expect(spec.status).toBe(200);
+	});
+});
+
+describe('buildDocument in production', () => {
+	test('should document the 422 without detail, as Elysia sends it', () => {
+		const nodeEnv = process.env.NODE_ENV;
+		process.env.NODE_ENV = 'production';
+		try {
+			const validation = buildDocument(
+				new Elysia().post('/checked', { body: t.Object({ a: t.String() }) }, () => 1)
+			).components?.schemas?.['validation'];
+
+			expect(validation).toMatchObject({ required: ['type', 'title', 'status'] });
+			expect(validation).not.toHaveProperty('properties.detail');
+		} finally {
+			if (nodeEnv === undefined) delete process.env.NODE_ENV;
+			else process.env.NODE_ENV = nodeEnv;
+		}
 	});
 });
