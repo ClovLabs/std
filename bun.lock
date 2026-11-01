@@ -72,7 +72,7 @@
       "peerDependencies": {
         "@clov-std/kv-store": "workspace:^",
         "elysia": "catalog:elysia",
-        "typebox": "^1.3.36",
+        "typebox": "^1.4.3",
       },
     },
     "packages/error": {
@@ -108,7 +108,7 @@
       "version": "2.0.5",
       "dependencies": {
         "@clov-std/error": "workspace:^",
-        "jose": "^6.2.12",
+        "jose": "^6.2.14",
       },
       "devDependencies": {
         "@types/bun": "catalog:base",
@@ -373,7 +373,7 @@
 
     "exact-mirror": ["exact-mirror@1.2.6", "", { "peerDependencies": { "typebox": ">= 1.1.0" }, "optionalPeers": ["typebox"] }, "sha512-EGx81nhFP1GE94coJsz94FLzdxWrnkNCJdfdX44rbd7pVcAotWzDlBJUC7yy1Ae7d7dYKpoTtZ1jCAIz2IVtfA=="],
 
-    "jose": ["jose@6.2.13", "", {}, "sha512-7TIg10ZE1x82YediN+lcrPNvGMKge9yFHQD+Qho/b8y2adfugU3AsvvHfxV0fzyFllT6l9xCjf4RWY9g/Z9PJQ=="],
+    "jose": ["jose@6.2.14", "", {}, "sha512-3JasLuki1NRLQvY4wCoC37KZk4qxoBx2k2aFqLxT84IezqW0bkJKnNtxnZj/Fu1xsQivoc/lytxaRHJoGLjJ1A=="],
 
     "memoirist": ["memoirist@1.2.3", "", {}, "sha512-6wkntadi3vDUBX6y5UDuLsLr+hsojMkaapsZyGGzP6rZoYD6K/pAbrp1cZki24jMewoca3KofRYO0T6EEeHNVg=="],
 
