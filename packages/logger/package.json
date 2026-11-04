@@ -26,6 +26,7 @@
 		}
 	},
 	"scripts": {
+		"bench": "bun bench/logger.bench.ts",
 		"build": "bun builder.ts",
 		"docs": "bunx typedoc --tsconfig tsconfig.build.json",
 		"fmt:check": "oxfmt --check",
