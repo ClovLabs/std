@@ -7,18 +7,28 @@ import type { LoggerSink } from '../types/logger-sink';
  *
  * @typeParam TLogObject - The shape of the objects this sink accepts.
  */
-export const consoleSink = <TLogObject = unknown>(): LoggerSink<TLogObject> => ({
-	log(level: LogLevels, timestamp: number, object: TLogObject): void {
-		const logEntry = { timestamp, level, content: object };
-		const logLevel: Lowercase<LogLevels> = level.toLowerCase() as Lowercase<LogLevels>;
-		const methods: Record<Lowercase<LogLevels>, (msg: string) => void> = {
-			error: console.error,
-			warn: console.warn,
-			info: console.info,
-			debug: console.debug,
-			log: console.log,
-			trace: console.trace
-		};
-		methods[logLevel](JSON.stringify(logEntry));
-	}
-});
+export const consoleSink = <TLogObject = unknown>(): LoggerSink<TLogObject> => {
+	const methods: Record<LogLevels, (msg: string) => void> = {
+		ERROR: console.error,
+		WARN: console.warn,
+		INFO: console.info,
+		DEBUG: console.debug,
+		LOG: console.log
+	};
+
+	// Same output as `JSON.stringify({ timestamp, level, content })`, without re-serializing.
+	const logJson = (level: LogLevels, timestamp: number, json: string | undefined): void => {
+		methods[level](
+			json === undefined
+				? `{"timestamp":${timestamp},"level":"${level}"}`
+				: `{"timestamp":${timestamp},"level":"${level}","content":${json}}`
+		);
+	};
+
+	return {
+		logJson,
+		log(level: LogLevels, timestamp: number, object: TLogObject): void {
+			logJson(level, timestamp, JSON.stringify(object));
+		}
+	};
+};

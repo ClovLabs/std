@@ -9,5 +9,9 @@ import type { LoggerSink } from '../types/logger-sink';
 export const devNullSink = <TLogObject = unknown>(): LoggerSink<TLogObject> => ({
 	log(): void {
 		// Do nothing - discard the log
+	},
+	// Present so the worker never parses logs that are discarded anyway.
+	logJson(): void {
+		// Do nothing - discard the log
 	}
 });
