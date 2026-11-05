@@ -1,5 +1,5 @@
 import type { AnySchema } from 'elysia';
-import { Intersect, IsIntersect, IsKind, IsObject, IsRef, IsUnion, Union } from 'typebox';
+import { Intersect, IsArray, IsIntersect, IsKind, IsObject, IsRef, IsUnion, Union } from 'typebox';
 
 import type { SchemaObject } from './openapi-types-3.2';
 
@@ -54,6 +54,109 @@ const toEnum = (schema: Record<string, unknown>): Record<string, unknown> => {
 	};
 };
 
+/** Options of `t.File` and `t.Files`, sizes in bytes. */
+interface FileOptions {
+	types?: string[];
+	minSize?: number;
+	maxSize?: number;
+	minItems?: number;
+	maxItems?: number;
+}
+
+/** Elysia's `FileUnit`: `'600k'`, `'3m'` or a number of bytes. */
+const parseFileUnit = (size: string): number => {
+	const unit = { k: 1024, m: 1024 * 1024 }[size.slice(-1)];
+	return unit === undefined ? Number(size) : Number(size.slice(0, -1)) * unit;
+};
+
+/**
+ * The options of a `t.File`, or of a `t.Files` for its items count.
+ *
+ * shortcut: Elysia 2.0.0-rc.3 keeps them only in its validation closures, they are read back from the messages of
+ * `~refine`; read them from the schema once Elysia keeps them there.
+ */
+const fileOptionsOf = (node: unknown): FileOptions => {
+	const refines = (node as { readonly '~refine'?: unknown } | undefined)?.['~refine'];
+	const options: FileOptions = {};
+	for (const refine of Array.isArray(refines) ? (refines as unknown[]) : []) {
+		const error = (refine as { readonly error?: unknown } | null)?.error;
+		const message = typeof error === 'function' ? String((error as () => unknown)()) : '';
+		const [, types] = /^Expect file type to be (?:one of )?(.+)$/.exec(message) ?? [];
+		// Elysia accepts a bare `image` for `image/*`
+		if (types)
+			options.types = types
+				.split(', ')
+				.map((type) => (type.includes('/') ? type : `${type}/*`));
+		const [, minSize] = /^Expect file size to be more than (.+)$/.exec(message) ?? [];
+		if (minSize) options.minSize = parseFileUnit(minSize);
+		const [, maxSize] = /^Expect file size to be less than (.+)$/.exec(message) ?? [];
+		if (maxSize) options.maxSize = parseFileUnit(maxSize);
+		const [, minItems] = /^Expect at least (\d+) files$/.exec(message) ?? [];
+		if (minItems) options.minItems = Number(minItems);
+		const [, maxItems] = /^Expect less than (\d+) files$/.exec(message) ?? [];
+		if (maxItems) options.maxItems = Number(maxItems);
+	}
+	return options;
+};
+
+/** The annotations Elysia keeps on its own kinds. */
+const metaOf = (node: Record<string, unknown>): Record<string, unknown> =>
+	Object.fromEntries(
+		Object.entries(node).filter(([key]) =>
+			['title', 'description', 'examples', 'default'].includes(key)
+		)
+	);
+
+/** `t.ArrayBuffer()` and `t.Uint8Array()`, read by Elysia from an `application/octet-stream` body. */
+export const isRawBinary = (node: unknown): boolean =>
+	IsKind(node, 'ArrayBuffer') || IsKind(node, 'Uint8Array');
+
+export const isFile = (node: unknown): boolean => IsKind(node, 'File');
+
+/** The file of a `t.Files()`, an `anyOf` of an array of files and a single one. */
+const filesItemOf = (node: unknown): Record<string, unknown> | undefined => {
+	if (!IsUnion(node) || node.anyOf.length !== 2) return undefined;
+	const [array, file] = node.anyOf;
+	return IsArray(array) && isFile(array.items) && isFile(file)
+		? (file as Record<string, unknown>)
+		: undefined;
+};
+
+/** The media types a `t.File` or `t.Files` accepts, as an Encoding Object's `contentType` lists them. */
+export const fileMediaTypesOf = (node: unknown): string[] | undefined =>
+	fileOptionsOf(isFile(node) ? node : filesItemOf(node)).types;
+
+/** `maxLength` bounds unencoded binary in bytes (OAS 3.2 4.14.3.2). */
+const toFileSchema = (node: Record<string, unknown>): Record<string, unknown> => {
+	const { minSize, maxSize } = fileOptionsOf(node);
+	return {
+		...metaOf(node),
+		...(minSize !== undefined && { minLength: minSize }),
+		...(maxSize !== undefined && { maxLength: maxSize })
+	};
+};
+
+/**
+ * Raw binary schemas, the media type of the body or of its multipart part saying it is binary (OAS 3.2 4.24.4.3).
+ *
+ * @returns `undefined` when `node` is not binary
+ */
+const toBinarySchema = (node: Record<string, unknown>): Record<string, unknown> | undefined => {
+	if (isFile(node)) return toFileSchema(node);
+	if (isRawBinary(node)) return metaOf(node);
+	const file = filesItemOf(node);
+	if (!file) return undefined;
+
+	const { minItems, maxItems } = fileOptionsOf(node);
+	return {
+		...metaOf(node),
+		type: 'array',
+		items: toFileSchema(file),
+		...(minItems !== undefined && { minItems }),
+		...(maxItems !== undefined && { maxItems })
+	};
+};
+
 /**
  * Converts a TypeBox schema to a plain JSON Schema 2020-12, without mutating it.
  *
@@ -67,8 +170,8 @@ export const toSchema = (node: unknown): unknown => {
 			.map(toSchema);
 	if (!isPlainObject(node)) return node;
 
-	if (['File', 'ArrayBuffer', 'Uint8Array'].some((kind) => IsKind(node, kind)))
-		return { contentMediaType: 'application/octet-stream' };
+	const binary = toBinarySchema(node);
+	if (binary) return binary;
 	if (IsKind(node, 'Date')) return { type: 'string', format: 'date-time' };
 	// nothing to describe: the multipart envelope, or values JSON never carries
 	if (IsKind(node, 'FormData') || IsKind(node, 'Void') || IsKind(node, 'Undefined')) return {};
@@ -176,11 +279,60 @@ export const isPrimitive = (node: unknown, models: Models): boolean => {
 		: jsonTypeOf(schema) === 'null' || TEXT_TYPES.has(jsonTypeOf(schema));
 };
 
-/** `t.ArrayBuffer()` and `t.Uint8Array()`, read by Elysia from an `application/octet-stream` body. */
-export const isRawBinary = (node: unknown): boolean =>
-	IsKind(node, 'ArrayBuffer') || IsKind(node, 'Uint8Array');
+/**
+ * Marks a response schema as a Server-Sent Events stream, documented as `text/event-stream`.
+ *
+ * The schema is the one Elysia validates each event against, `{ data, event?, id?, retry? }`.
+ *
+ * @param schema - The schema of an event
+ *
+ * @returns A copy of `schema` marked as an event stream
+ */
+export const withSSE = <const Schema extends AnySchema>(schema: Schema): Schema =>
+	// copies the descriptors, Elysia's kind marker is not enumerable and the schema is frozen
+	Object.defineProperty(
+		Object.create(
+			Object.getPrototypeOf(schema) as object | null,
+			Object.getOwnPropertyDescriptors(schema)
+		),
+		'~sse',
+		{ value: true, enumerable: true }
+	) as Schema;
 
-export const isFile = (node: unknown): boolean => IsKind(node, 'File');
+export const isSSE = (node: unknown): boolean =>
+	typeof node === 'object' && node !== null && '~sse' in node;
+
+/**
+ * The schema of a parsed event: its `data` is a string, JSON-encoded when it is not one (OAS 3.2 4.14.4).
+ *
+ * @param schema - A converted event schema, or a union of them
+ */
+export const toEventSchema = (schema: Record<string, unknown>): Record<string, unknown> => {
+	if (Array.isArray(schema.anyOf))
+		return {
+			...schema,
+			anyOf: schema.anyOf.map((branch) => toEventSchema(branch as Record<string, unknown>))
+		};
+
+	const { properties } = schema;
+	if (
+		!isPlainObject(properties) ||
+		!isPlainObject(properties.data) ||
+		properties.data.type === 'string'
+	)
+		return schema;
+	return {
+		...schema,
+		properties: {
+			...properties,
+			data: {
+				type: 'string',
+				contentMediaType: 'application/json',
+				contentSchema: properties.data
+			}
+		}
+	};
+};
 
 export const containsFile = (node: unknown, models: Models, seen = new Set<unknown>()): boolean => {
 	const schema = IsRef(node) ? models[node.$ref] : node;

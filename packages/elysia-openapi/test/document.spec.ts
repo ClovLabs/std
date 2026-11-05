@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { Elysia, t, type AnyElysia } from 'elysia';
+import { Elysia, sse, t, type AnyElysia } from 'elysia';
 
 import { buildDocument } from '#/document';
-import { openapiPlugin, withHeaders } from '#/index';
+import { openapiPlugin, withHeaders, withSSE } from '#/index';
 import type {
 	OpenAPIObject,
 	OperationObject,
@@ -351,7 +351,7 @@ describe.concurrent('buildDocument', () => {
 					schema: {
 						type: 'object',
 						properties: {
-							file: { contentMediaType: 'application/octet-stream' },
+							file: {},
 							at: {
 								anyOf: [
 									{ type: 'string', format: 'date-time' },
@@ -381,6 +381,111 @@ describe.concurrent('buildDocument', () => {
 		).toEqual(['multipart/form-data']);
 	});
 
+	test('should document the options of files as binary bounds and part media types', () => {
+		const app = new Elysia().post(
+			'/files',
+			{
+				body: t.Object({
+					avatar: t.File({ description: 'Avatar', type: 'image/png', maxSize: '1m' }),
+					files: t.Files({
+						type: ['image', 'application/pdf'],
+						minSize: 3,
+						minItems: 1,
+						maxItems: 4
+					})
+				})
+			},
+			() => 1
+		);
+
+		expect(buildDocument(app).paths?.['/files']?.post?.requestBody).toEqual({
+			required: true,
+			content: {
+				'multipart/form-data': {
+					schema: {
+						type: 'object',
+						properties: {
+							avatar: { description: 'Avatar', maxLength: 1024 * 1024 },
+							files: {
+								type: 'array',
+								items: { minLength: 3 },
+								minItems: 1,
+								maxItems: 4
+							}
+						},
+						required: ['avatar', 'files']
+					},
+					encoding: {
+						avatar: { contentType: 'image/png' },
+						files: { contentType: 'image/*, application/pdf' }
+					}
+				}
+			}
+		});
+	});
+
+	test('should document a typed file response under its media types', () => {
+		const app = new Elysia().get(
+			'/png',
+			{ response: t.File({ type: 'image/png' }) },
+			() => new File([], 'a.png')
+		);
+
+		expect(
+			(
+				buildDocument(app).paths?.['/png']?.get?.responses?.['200'] as
+					| ResponseObject
+					| undefined
+			)?.content
+		).toEqual({
+			'image/png': { schema: {} }
+		});
+	});
+
+	test('should document withSSE responses as an event stream', () => {
+		const app = new Elysia().get(
+			'/events',
+			{
+				response: withSSE(
+					t.Object({
+						event: t.Optional(t.String()),
+						data: t.Object({ n: t.Number() })
+					})
+				)
+			},
+			async function* () {
+				yield sse({ data: { n: 1 } });
+			}
+		);
+
+		expect(
+			(
+				buildDocument(app).paths?.['/events']?.get?.responses?.['200'] as
+					| ResponseObject
+					| undefined
+			)?.content
+		).toEqual({
+			'text/event-stream': {
+				itemSchema: {
+					type: 'object',
+					properties: {
+						event: { type: 'string' },
+						data: {
+							type: 'string',
+							contentMediaType: 'application/json',
+							contentSchema: {
+								type: 'object',
+								properties: { n: { type: 'number' } },
+								required: ['n']
+							}
+						}
+					},
+					required: ['data']
+				}
+			}
+		});
+	});
+
 	test('should document raw binary bodies as octet-stream', () => {
 		const app = new Elysia().post('/raw', { body: t.Uint8Array() }, () => 1);
 
@@ -388,7 +493,7 @@ describe.concurrent('buildDocument', () => {
 			required: true,
 			content: {
 				'application/octet-stream': {
-					schema: { contentMediaType: 'application/octet-stream' }
+					schema: {}
 				}
 			}
 		});
@@ -877,7 +982,7 @@ describe.concurrent('buildDocument edge cases', () => {
 
 		expect(contentOf(operationOf(app, '/b')?.responses?.['200'])).toEqual({
 			'application/octet-stream': {
-				schema: { contentMediaType: 'application/octet-stream' }
+				schema: {}
 			},
 			'text/plain': { schema: { type: 'string' } }
 		});

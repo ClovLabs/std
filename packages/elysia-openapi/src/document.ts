@@ -23,16 +23,19 @@ import type {
 import {
 	containsFile,
 	descriptionOf,
+	fileMediaTypesOf,
 	hasDefault,
 	type HookSchema,
 	isFile,
 	isPrimitive,
 	isRawBinary,
+	isSSE,
 	isText,
 	jsonTypeOf,
 	type Models,
 	objectShapeOf,
 	resolveModel,
+	toEventSchema,
 	toRootSchema,
 	toSchema,
 	uniqueSchemas
@@ -201,6 +204,17 @@ const toRequestBody = (
 	if (first === undefined) return;
 
 	const schema = toCombinedSchema(bodies, 'allOf');
+	// the media types of the file parts, their schemas say only that they are binary
+	const encoding = Object.fromEntries(
+		bodies.flatMap((body) =>
+			Object.entries(objectShapeOf(body, models)?.properties ?? {}).flatMap(
+				([name, property]) => {
+					const mediaTypes = fileMediaTypesOf(resolveModel(property, models));
+					return mediaTypes ? [[name, { contentType: mediaTypes.join(', ') }]] : [];
+				}
+			)
+		)
+	);
 	const description = descriptionOf(resolveModel(first, models));
 	return {
 		...(description !== undefined && { description }),
@@ -219,7 +233,11 @@ const toRequestBody = (
 		content: Object.fromEntries(
 			toBodyMediaTypes(hooks.parse, bodies, models).map((mediaType) => [
 				mediaType,
-				{ schema }
+				{
+					schema,
+					...(mediaType === 'multipart/form-data' &&
+						Object.keys(encoding).length > 0 && { encoding })
+				}
 			])
 		)
 	};
@@ -236,8 +254,21 @@ const toResponseContent = (
 	const type = jsonTypeOf(resolved);
 	// Elysia sends these without a body
 	if (type === 'void' || type === 'null' || type === 'undefined') return;
+	if (isSSE(resolved))
+		return {
+			'text/event-stream': {
+				itemSchema: toEventSchema(
+					toSchema(resolved) as Record<string, unknown>
+				) as SchemaObject
+			}
+		};
 	if (isRawBinary(resolved) || isFile(resolved))
-		return { 'application/octet-stream': { schema: toRootSchema(first) } };
+		return Object.fromEntries(
+			(fileMediaTypesOf(resolved) ?? ['application/octet-stream']).map((mediaType) => [
+				mediaType,
+				{ schema: toRootSchema(first) }
+			])
+		);
 
 	// a single union mixing binary, text and JSON values is sent with the media type of the value
 	if (schemas.length === 1 && IsUnion(resolved)) {
@@ -389,7 +420,10 @@ const validationProblemSchema = (): SchemaObject => ({
 			enum: ['params', 'query', 'headers', 'cookie', 'body'],
 			description: 'The part of the request that failed.'
 		},
-		property: { type: 'string', description: 'Path of the first invalid property.' },
+		property: {
+			type: 'string',
+			description: 'Path of the first invalid property.'
+		},
 		...(isProduction()
 			? {}
 			: {
@@ -491,7 +525,12 @@ const withPathParameters = (operation: OperationObject, path: string): Operation
 	);
 	for (const name of names)
 		if (!parameters.some((parameter) => isPathParameter(parameter) && parameter.name === name))
-			parameters.push({ name, in: 'path', required: true, schema: { type: 'string' } });
+			parameters.push({
+				name,
+				in: 'path',
+				required: true,
+				schema: { type: 'string' }
+			});
 
 	const { parameters: _parameters, ...rest } = operation;
 	return parameters.length > 0 ? { ...rest, parameters } : rest;
