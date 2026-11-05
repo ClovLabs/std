@@ -275,7 +275,7 @@ describe.concurrent('buildDocument', () => {
 			params: 'IdRole',
 			query: 'Search',
 			body: 'User',
-			response: { 200: 'User' }
+			response: { 200: 'User', 401: 'Other' }
 		} as const;
 		const operations = {
 			default: new Elysia()
@@ -317,7 +317,7 @@ describe.concurrent('buildDocument', () => {
 				expect(namesOf(operation)).toEqual(['path:idRole', 'query:q', 'path:idUser']);
 				expect(schemaOf(operation?.requestBody)).toEqual(ref('User'));
 				expect(schemaOf(operation?.responses?.['200'])).toEqual(ref('User'));
-				expect(schemaOf(operation?.responses?.['401'])).toEqual(ref('Err'));
+				expect(schemaOf(operation?.responses?.['401'])).toEqual(ref('Other'));
 			});
 
 		test('should combine the route and a merge guard', () => {
@@ -330,10 +330,13 @@ describe.concurrent('buildDocument', () => {
 				'query:page'
 			]);
 			expect(schemaOf(operation?.requestBody)).toEqual({ allOf: [ref('User'), ref('Role')] });
+			// a returned value is validated against both, a thrown error against none
 			expect(schemaOf(operation?.responses?.['200'])).toEqual({
-				anyOf: [ref('User'), ref('Other')]
+				allOf: [ref('User'), ref('Other')]
 			});
-			expect(schemaOf(operation?.responses?.['401'])).toEqual(ref('Err'));
+			expect(schemaOf(operation?.responses?.['401'])).toEqual({
+				anyOf: [ref('Other'), ref('Err')]
+			});
 		});
 	});
 
@@ -644,7 +647,6 @@ describe.concurrent('buildDocument', () => {
 						schema: {
 							type: 'object',
 							properties: { name: { anyOf: [{ type: 'string' }, { type: 'null' }] } },
-							// Elysia rc.1 lets t.MaybeEmpty also take undefined: the property is optional
 							required: []
 						}
 					}

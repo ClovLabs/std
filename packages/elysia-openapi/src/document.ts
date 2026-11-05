@@ -296,8 +296,9 @@ const toResponseContent = (
 	const mediaType = isProblem ? 'application/problem+json' : 'application/json';
 	return {
 		[isText(first, models) ? 'text/plain' : mediaType]: {
-			// a client gets one of them: values thrown to `onError` skip response validation
-			schema: toCombinedSchema(schemas, 'anyOf')
+			// Elysia validates a returned value against all of them, a thrown error against none: errors are
+			// assumed thrown, so a client gets one of them
+			schema: toCombinedSchema(schemas, Number(status) >= 400 ? 'anyOf' : 'allOf')
 		}
 	};
 };
