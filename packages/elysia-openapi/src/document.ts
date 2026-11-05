@@ -588,9 +588,8 @@ const toResponseLayers = (
 /**
  * Reads each route with its instance `tags` and `detail` merged in, and every schema its responses may match.
  *
- * shortcut: Elysia 2 beta does not apply `new Elysia({ tags, detail })` to routes and hides `merge` responses in
- * `app.routes`, only the internal `~routes` has the owner instance and the route's own hook, drop once Elysia
- * exposes them
+ * Elysia does not apply `new Elysia({ tags, detail })` to routes and hides `merge` responses in `app.routes`, only
+ * the internal `~routes` has the owner instance and the route's own hook.
  */
 const readRoutes = (app: AnyElysia): DocumentedRoute[] => {
 	const internals = new Map(
