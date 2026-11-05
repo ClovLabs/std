@@ -315,17 +315,20 @@ const toResponseHeaders = (
 	if (!shape) return;
 
 	return Object.fromEntries(
-		Object.entries(shape.properties).map(([name, property]) => {
-			const description = descriptionOf(resolveModel(property, models));
-			return [
-				name,
-				{
-					...(description !== undefined && { description }),
-					required: shape.required.has(name),
-					schema: toRootSchema(property)
-				}
-			];
-		})
+		Object.entries(shape.properties)
+			// the spec ignores a `Content-Type` response header, `content` describes it
+			.filter(([name]) => name.toLowerCase() !== 'content-type')
+			.map(([name, property]) => {
+				const description = descriptionOf(resolveModel(property, models));
+				return [
+					name,
+					{
+						...(description !== undefined && { description }),
+						required: shape.required.has(name),
+						schema: toRootSchema(property)
+					}
+				];
+			})
 	);
 };
 
@@ -413,7 +416,7 @@ const validationProblemSchema = (): SchemaObject => ({
 	properties: {
 		type: { type: 'string', const: VALIDATION_PROBLEM },
 		code: { type: 'string', const: VALIDATION_PROBLEM },
-		title: { type: 'string', example: 'Validation Error' },
+		title: { type: 'string', examples: ['Validation Error'] },
 		status: { type: 'integer', const: 422 },
 		on: {
 			type: 'string',

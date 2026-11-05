@@ -136,24 +136,31 @@ const toFileSchema = (node: Record<string, unknown>): Record<string, unknown> =>
 };
 
 /**
- * Raw binary schemas, the media type of the body or of its multipart part saying it is binary (OAS 3.2 4.24.4.3).
+ * Elysia's and TypeBox's kinds that are not JSON Schema.
  *
- * @returns `undefined` when `node` is not binary
+ * @returns `undefined` when `node` is plain JSON Schema
  */
-const toBinarySchema = (node: Record<string, unknown>): Record<string, unknown> | undefined => {
+const toKindSchema = (node: Record<string, unknown>): Record<string, unknown> | undefined => {
+	// raw binary: the media type of the body or of its multipart part says it is binary (OAS 3.2 4.24.4.3)
 	if (isFile(node)) return toFileSchema(node);
 	if (isRawBinary(node)) return metaOf(node);
 	const file = filesItemOf(node);
-	if (!file) return undefined;
-
-	const { minItems, maxItems } = fileOptionsOf(node);
-	return {
-		...metaOf(node),
-		type: 'array',
-		items: toFileSchema(file),
-		...(minItems !== undefined && { minItems }),
-		...(maxItems !== undefined && { maxItems })
-	};
+	if (file) {
+		const { minItems, maxItems } = fileOptionsOf(node);
+		return {
+			...metaOf(node),
+			type: 'array',
+			items: toFileSchema(file),
+			...(minItems !== undefined && { minItems }),
+			...(maxItems !== undefined && { maxItems })
+		};
+	}
+	if (IsKind(node, 'Date')) return { type: 'string', format: 'date-time' };
+	// nothing to describe: the multipart envelope, or values JSON never carries
+	if (IsKind(node, 'FormData') || IsKind(node, 'Void') || IsKind(node, 'Undefined')) return {};
+	// JSON has no bigint, Elysia reads it from an integer
+	if (IsKind(node, 'BigInt')) return { type: 'integer' };
+	return undefined;
 };
 
 /**
@@ -169,13 +176,8 @@ export const toSchema = (node: unknown): unknown => {
 			.map(toSchema);
 	if (!isPlainObject(node)) return node;
 
-	const binary = toBinarySchema(node);
-	if (binary) return binary;
-	if (IsKind(node, 'Date')) return { type: 'string', format: 'date-time' };
-	// nothing to describe: the multipart envelope, or values JSON never carries
-	if (IsKind(node, 'FormData') || IsKind(node, 'Void') || IsKind(node, 'Undefined')) return {};
-	// JSON has no bigint, Elysia reads it from an integer
-	if (IsKind(node, 'BigInt')) return { type: 'integer' };
+	const kind = toKindSchema(node);
+	if (kind) return kind;
 
 	const schema: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(node)) {
@@ -200,12 +202,18 @@ export const toSchema = (node: unknown): unknown => {
 			schema[key] = Object.fromEntries(
 				Object.entries(value).map(([name, sub]) => [name, toSchema(sub)])
 			);
+		// TypeBox writes tuples in the draft-07 form, 2020-12 has `prefixItems` and `items` for the rest
+		else if (key === 'items' && Array.isArray(value)) schema.prefixItems = toSchema(value);
+		else if (key === 'additionalItems') schema.items = toSchema(value);
+		// OAS 3.2 deprecates `example` for JSON Schema's `examples`
+		else if (key === 'example')
+			schema.examples = [
+				...(Array.isArray(node.examples) ? (node.examples as unknown[]) : []),
+				value
+			];
 		// values, not schemas
-		else if (
-			['const', 'enum', 'default', 'example', 'examples'].includes(key) ||
-			key.startsWith('x-')
-		)
-			schema[key] = value;
+		else if (['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-'))
+			schema[key] ??= value;
 		else schema[key] = toSchema(value);
 	}
 
@@ -302,7 +310,8 @@ export const isSSE = (node: unknown): boolean =>
 	typeof node === 'object' && node !== null && '~sse' in node;
 
 /**
- * The schema of a parsed event: its `data` is a string, JSON-encoded when it is not one (OAS 3.2 4.14.4).
+ * The schema of a parsed event (OAS 3.2 4.14.4): its fields are strings, `data` JSON-encoded when it is not one,
+ * except `retry`, an integer.
  *
  * @param schema - A converted event schema, or a union of them
  */
@@ -314,21 +323,23 @@ export const toEventSchema = (schema: Record<string, unknown>): Record<string, u
 		};
 
 	const { properties } = schema;
-	if (
-		!isPlainObject(properties) ||
-		!isPlainObject(properties.data) ||
-		properties.data.type === 'string'
-	)
-		return schema;
+	if (!isPlainObject(properties)) return schema;
+	const { data, id, retry } = properties;
 	return {
 		...schema,
 		properties: {
 			...properties,
-			data: {
-				type: 'string',
-				contentMediaType: 'application/json',
-				contentSchema: properties.data
-			}
+			...(isPlainObject(data) &&
+				data.type !== 'string' && {
+					data: {
+						type: 'string',
+						contentMediaType: 'application/json',
+						contentSchema: data
+					}
+				}),
+			// Elysia accepts a number, sent as its digits
+			...(isPlainObject(id) && id.type !== 'string' && { id: { type: 'string' } }),
+			...(isPlainObject(retry) && { retry: { ...retry, type: 'integer' } })
 		}
 	};
 };

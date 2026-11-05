@@ -449,6 +449,8 @@ describe.concurrent('buildDocument', () => {
 				response: withSSE(
 					t.Object({
 						event: t.Optional(t.String()),
+						id: t.Optional(t.Number()),
+						retry: t.Optional(t.Number()),
 						data: t.Object({ n: t.Number() })
 					})
 				)
@@ -470,6 +472,8 @@ describe.concurrent('buildDocument', () => {
 					type: 'object',
 					properties: {
 						event: { type: 'string' },
+						id: { type: 'string' },
+						retry: { type: 'integer' },
 						data: {
 							type: 'string',
 							contentMediaType: 'application/json',
@@ -484,6 +488,41 @@ describe.concurrent('buildDocument', () => {
 				}
 			}
 		});
+	});
+
+	test('should document tuples, examples and response headers as OAS 3.2 does', () => {
+		const app = new Elysia().get(
+			'/t',
+			{
+				query: t.Object({
+					range: t.Tuple([t.Number(), t.Number()]),
+					at: t.String({ example: 'now', examples: ['today'] })
+				}),
+				response: withHeaders(
+					t.String(),
+					t.Object({ 'content-type': t.String(), 'x-total': t.Integer() })
+				)
+			},
+			() => 'x'
+		);
+		const operation = buildDocument(app).paths?.['/t']?.get;
+
+		expect(
+			operation?.parameters?.map((parameter) =>
+				'schema' in parameter ? parameter.schema : undefined
+			)
+		).toEqual([
+			{
+				type: 'array',
+				prefixItems: [{ type: 'number' }, { type: 'number' }],
+				items: false,
+				minItems: 2
+			},
+			{ type: 'string', examples: ['today', 'now'] }
+		]);
+		expect(
+			Object.keys((operation?.responses?.['200'] as ResponseObject).headers ?? {})
+		).toEqual(['x-total']);
 	});
 
 	test('should document raw binary bodies as octet-stream', () => {
