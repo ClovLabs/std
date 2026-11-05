@@ -72,7 +72,7 @@ const parseFileUnit = (size: string): number => {
 /**
  * The options of a `t.File`, or of a `t.Files` for its items count.
  *
- * shortcut: Elysia 2.0.0-rc.3 keeps them only in its validation closures, they are read back from the messages of
+ * shortcut: Elysia 2 rc keeps them only in its validation closures, they are read back from the messages of
  * `~refine`; read them from the schema once Elysia keeps them there.
  */
 const fileOptionsOf = (node: unknown): FileOptions => {

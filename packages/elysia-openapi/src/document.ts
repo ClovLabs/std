@@ -420,10 +420,7 @@ const validationProblemSchema = (): SchemaObject => ({
 			enum: ['params', 'query', 'headers', 'cookie', 'body'],
 			description: 'The part of the request that failed.'
 		},
-		property: {
-			type: 'string',
-			description: 'Path of the first invalid property.'
-		},
+		property: { type: 'string', description: 'Path of the first invalid property.' },
 		...(isProduction()
 			? {}
 			: {
@@ -525,12 +522,7 @@ const withPathParameters = (operation: OperationObject, path: string): Operation
 	);
 	for (const name of names)
 		if (!parameters.some((parameter) => isPathParameter(parameter) && parameter.name === name))
-			parameters.push({
-				name,
-				in: 'path',
-				required: true,
-				schema: { type: 'string' }
-			});
+			parameters.push({ name, in: 'path', required: true, schema: { type: 'string' } });
 
 	const { parameters: _parameters, ...rest } = operation;
 	return parameters.length > 0 ? { ...rest, parameters } : rest;
