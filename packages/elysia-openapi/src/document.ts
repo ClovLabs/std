@@ -23,16 +23,19 @@ import type {
 import {
 	containsFile,
 	descriptionOf,
+	fileMediaTypesOf,
 	hasDefault,
 	type HookSchema,
 	isFile,
 	isPrimitive,
 	isRawBinary,
+	isSSE,
 	isText,
 	jsonTypeOf,
 	type Models,
 	objectShapeOf,
 	resolveModel,
+	toEventSchema,
 	toRootSchema,
 	toSchema,
 	uniqueSchemas
@@ -201,6 +204,17 @@ const toRequestBody = (
 	if (first === undefined) return;
 
 	const schema = toCombinedSchema(bodies, 'allOf');
+	// the media types of the file parts, their schemas say only that they are binary
+	const encoding = Object.fromEntries(
+		bodies.flatMap((body) =>
+			Object.entries(objectShapeOf(body, models)?.properties ?? {}).flatMap(
+				([name, property]) => {
+					const mediaTypes = fileMediaTypesOf(resolveModel(property, models));
+					return mediaTypes ? [[name, { contentType: mediaTypes.join(', ') }]] : [];
+				}
+			)
+		)
+	);
 	const description = descriptionOf(resolveModel(first, models));
 	return {
 		...(description !== undefined && { description }),
@@ -219,7 +233,11 @@ const toRequestBody = (
 		content: Object.fromEntries(
 			toBodyMediaTypes(hooks.parse, bodies, models).map((mediaType) => [
 				mediaType,
-				{ schema }
+				{
+					schema,
+					...(mediaType === 'multipart/form-data' &&
+						Object.keys(encoding).length > 0 && { encoding })
+				}
 			])
 		)
 	};
@@ -236,8 +254,21 @@ const toResponseContent = (
 	const type = jsonTypeOf(resolved);
 	// Elysia sends these without a body
 	if (type === 'void' || type === 'null' || type === 'undefined') return;
+	if (isSSE(resolved))
+		return {
+			'text/event-stream': {
+				itemSchema: toEventSchema(
+					toSchema(resolved) as Record<string, unknown>
+				) as SchemaObject
+			}
+		};
 	if (isRawBinary(resolved) || isFile(resolved))
-		return { 'application/octet-stream': { schema: toRootSchema(first) } };
+		return Object.fromEntries(
+			(fileMediaTypesOf(resolved) ?? ['application/octet-stream']).map((mediaType) => [
+				mediaType,
+				{ schema: toRootSchema(first) }
+			])
+		);
 
 	// a single union mixing binary, text and JSON values is sent with the media type of the value
 	if (schemas.length === 1 && IsUnion(resolved)) {
@@ -265,8 +296,9 @@ const toResponseContent = (
 	const mediaType = isProblem ? 'application/problem+json' : 'application/json';
 	return {
 		[isText(first, models) ? 'text/plain' : mediaType]: {
-			// a client gets one of them: values thrown to `onError` skip response validation
-			schema: toCombinedSchema(schemas, 'anyOf')
+			// Elysia validates a returned value against all of them, a thrown error against none: errors are
+			// assumed thrown, so a client gets one of them
+			schema: toCombinedSchema(schemas, Number(status) >= 400 ? 'anyOf' : 'allOf')
 		}
 	};
 };
@@ -284,17 +316,20 @@ const toResponseHeaders = (
 	if (!shape) return;
 
 	return Object.fromEntries(
-		Object.entries(shape.properties).map(([name, property]) => {
-			const description = descriptionOf(resolveModel(property, models));
-			return [
-				name,
-				{
-					...(description !== undefined && { description }),
-					required: shape.required.has(name),
-					schema: toRootSchema(property)
-				}
-			];
-		})
+		Object.entries(shape.properties)
+			// the spec ignores a `Content-Type` response header, `content` describes it
+			.filter(([name]) => name.toLowerCase() !== 'content-type')
+			.map(([name, property]) => {
+				const description = descriptionOf(resolveModel(property, models));
+				return [
+					name,
+					{
+						...(description !== undefined && { description }),
+						required: shape.required.has(name),
+						schema: toRootSchema(property)
+					}
+				];
+			})
 	);
 };
 
@@ -382,7 +417,7 @@ const validationProblemSchema = (): SchemaObject => ({
 	properties: {
 		type: { type: 'string', const: VALIDATION_PROBLEM },
 		code: { type: 'string', const: VALIDATION_PROBLEM },
-		title: { type: 'string', example: 'Validation Error' },
+		title: { type: 'string', examples: ['Validation Error'] },
 		status: { type: 'integer', const: 422 },
 		on: {
 			type: 'string',
@@ -557,9 +592,8 @@ const toResponseLayers = (
 /**
  * Reads each route with its instance `tags` and `detail` merged in, and every schema its responses may match.
  *
- * shortcut: Elysia 2 beta does not apply `new Elysia({ tags, detail })` to routes and hides `merge` responses in
- * `app.routes`, only the internal `~routes` has the owner instance and the route's own hook, drop once Elysia
- * exposes them
+ * Elysia does not apply `new Elysia({ tags, detail })` to routes and hides `merge` responses in `app.routes`, only
+ * the internal `~routes` has the owner instance and the route's own hook.
  */
 const readRoutes = (app: AnyElysia): DocumentedRoute[] => {
 	const internals = new Map(

@@ -14,10 +14,20 @@ export const fileSink = <TLogObject = unknown>(path: string): LoggerSink<TLogObj
 	const sink: FileSink = Bun.file(path).writer();
 	let isClosed = false;
 
+	// Same output as `JSON.stringify({ timestamp, level, content })`, without re-serializing.
+	const logJson = (level: LogLevels, timestamp: number, json: string | undefined): void => {
+		if (isClosed) return;
+		void sink.write(
+			json === undefined
+				? `{"timestamp":${timestamp},"level":"${level}"}\n`
+				: `{"timestamp":${timestamp},"level":"${level}","content":${json}}\n`
+		);
+	};
+
 	return {
+		logJson,
 		log(level: LogLevels, timestamp: number, object: TLogObject): void {
-			if (isClosed) return;
-			void sink.write(JSON.stringify({ timestamp, level, content: object }) + '\n');
+			logJson(level, timestamp, JSON.stringify(object));
 		},
 		async flush(): Promise<void> {
 			if (isClosed) return;

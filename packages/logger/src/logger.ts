@@ -14,32 +14,13 @@ import { workerFunction } from './worker-logger';
  */
 export interface LoggerOptions {
 	/**
-	 * Maximum number of log messages that can be queued in memory before dropping new logs.
-	 * @default 10_000
+	 * Size in bytes of the ring buffer shared with the worker.
+	 * Each log takes a 16-byte header plus its JSON payload. When the ring is full,
+	 * the logging call blocks until the worker frees space, so no log is dropped.
+	 * A single log cannot exceed half of this size.
+	 * @default 4 MiB
 	 */
-	maxPendingLogs?: number;
-
-	/**
-	 * Maximum number of messages that can be sent to the worker without acknowledgment.
-	 * Controls backpressure to prevent overwhelming the worker thread.
-	 * @default 100
-	 */
-	maxMessagesInFlight?: number;
-
-	/**
-	 * Maximum number of logs to batch together before sending to the worker.
-	 * Higher values = better throughput but higher latency.
-	 * @default 100
-	 */
-	batchSize?: number;
-
-	/**
-	 * Maximum time in milliseconds to wait before flushing a partial batch.
-	 * Prevents logs from being delayed indefinitely when batch size is not reached.
-	 * Set to 0 to disable time-based flushing.
-	 * @default 0.1 (milliseconds)
-	 */
-	batchTimeout?: number;
+	bufferSize?: number;
 
 	/**
 	 * Whether to automatically flush and close the logger when the process exits.
@@ -47,13 +28,6 @@ export interface LoggerOptions {
 	 * @default true
 	 */
 	autoEnd?: boolean;
-
-	/**
-	 * Whether to flush pending logs before the process exits.
-	 * Only applies when `autoEnd` is true.
-	 * @default true
-	 */
-	flushOnBeforeExit?: boolean;
 }
 
 export const LOGGER_ERROR_CODES = {
@@ -62,22 +36,31 @@ export const LOGGER_ERROR_CODES = {
 	SINK_WRITE_FAILED: 'logger.sink.write-failed',
 	SINK_CLOSE_FAILED: 'logger.sink.close-failed',
 	SINK_REGISTRATION_FAILED: 'logger.sink.registration-failed',
-	EXIT_FLUSH_FAILED: 'logger.exit.flush-failed',
-	EXIT_CLOSE_FAILED: 'logger.exit.close-failed'
+	SINK_LIMIT: 'logger.sink.limit',
+	LOG_SERIALIZATION_FAILED: 'logger.log.serialization-failed',
+	LOG_TOO_LARGE: 'logger.log.too-large'
 } as const;
 
-/**
- * Pending log message corresponding to a log entry waiting to be processed by the worker.
- */
-interface PendingLogMessage {
-	readonly sinkNames: string[];
-	readonly level: LogLevels;
-	readonly timestamp: number;
-	readonly object: unknown;
-}
+// Ring layout shared with `workerFunction` (see its doc comment).
+const HEAD = 0;
+const TAIL = 1;
+const SLEEPING = 2;
+const CONTROL_BYTES = 16;
+const HEADER_BYTES = 16;
+const WRAP = 0xff_ff_ff_ff;
+/** Sink names travel as a 32-bit mask */
+const MAX_SINKS = 32;
+/** How long the producer parks on a full ring before checking the worker is alive */
+const FULL_WAIT_MS = 50;
+const LEVEL_INDEX: Record<LogLevels, number> = {
+	ERROR: 0,
+	WARN: 1,
+	INFO: 2,
+	DEBUG: 3,
+	LOG: 4
+};
 
 type WorkerResponseMessage =
-	| { type: 'BATCH_COMPLETE' }
 	| { type: 'FLUSH_COMPLETE' }
 	| { type: 'REGISTER_SINK_ERROR'; sinkName: string; error: Error }
 	| { type: 'SINK_LOG_ERROR'; sinkName: string; error: Error; object: unknown }
@@ -87,47 +70,32 @@ type WorkerResponseMessage =
 export class Logger<
 	TSinks extends SinkMap = Record<never, never>
 > extends TypedEventEmitter<LoggerEvent> {
-	/** Map of registered sinks (logging destinations) */
-	private readonly sinks: TSinks;
 	/** List of registered sink keys for quick access */
 	private readonly sinkKeys: (keyof TSinks)[] = [];
 	/** Worker instance handling log processing */
 	private readonly worker: Worker;
-	/** Object URL backing the worker module, revoked once the worker has loaded */
+	/** Object URL backing the worker module, revoked when the worker is terminated */
 	private readonly workerUrl: string;
-	/** Maximum number of pending log messages allowed in the queue */
-	private readonly maxPendingLogs: number;
-	/** Maximum number of messages in flight to the worker */
-	private readonly maxMessagesInFlight: number;
-	/** Number of logs to batch before sending to worker */
-	private readonly batchSize: number;
-	/** Timeout in milliseconds before flushing incomplete batch */
-	private readonly batchTimeout: number;
-	/** Whether to auto flush and close on process exit */
-	private readonly autoEnd: boolean;
-	/** Whether to flush before process exit */
-	private readonly flushOnBeforeExit: boolean;
-
-	/** Backing buffer of pending log messages (consumed from {@link pendingHead}) */
-	private readonly pendingLogs: PendingLogMessage[] = [];
-	/** Index of the first not-yet-dispatched entry in {@link pendingLogs} */
-	private pendingHead = 0;
-	/** Number of log messages currently being processed by the worker */
-	private messagesInFlight = 0;
-	/** Timer for batching log messages */
-	private batchTimer: Timer | null = null;
-	/** Whether the logger is currently writing log messages to the worker */
-	private isWriting = false;
-	/** Resolvers for flush promises awaiting the next flush round */
+	/** Size in bytes of the ring's data region */
+	private readonly capacity: number;
+	/** Ring control slots: head, tail, worker sleeping flag */
+	private readonly control: Int32Array;
+	/** Ring data region viewed as bytes, 32-bit words and 64-bit floats */
+	private readonly bytes: Buffer;
+	private readonly words: Uint32Array;
+	private readonly floats: Float64Array;
+	/** Local copy of the published head (only this thread writes it) */
+	private head = 0;
+	/** Sink index (bit position in the mask) by sink name */
+	private readonly sinkIndexes = new Map<string, number>();
+	/** Mask targeting every registered sink */
+	private allSinksMask = 0;
+	/** Resolvers of flush calls, completed in order by FLUSH_COMPLETE */
 	private readonly flushResolvers: (() => void)[] = [];
-	/** Resolvers captured by the flush round currently in flight */
-	private readonly flushingResolvers: (() => void)[] = [];
-	/** Whether a FLUSH round-trip is currently in flight to the worker */
-	private flushPending = false;
 	/** Resolver for the close promise */
 	private closeResolver: (() => void) | null = null;
-	/** Resolver for backpressure when maxMessagesInFlight is reached */
-	private backpressureResolver: (() => void) | null = null;
+	/** Pending close, shared by repeated close() calls */
+	private closing: Promise<void> | null = null;
 	/** Whether the worker has already been terminated (guards double teardown) */
 	private workerTerminated = false;
 	/** Handle the exit event */
@@ -145,28 +113,21 @@ export class Logger<
 	 *
 	 * @param options - Configuration options for the logger
 	 */
-	public constructor({
-		autoEnd = true,
-		batchSize = 100,
-		batchTimeout = 0.1,
-		flushOnBeforeExit = true,
-		maxMessagesInFlight = 100,
-		maxPendingLogs = 10_000
-	}: LoggerOptions = {}) {
+	public constructor({ autoEnd = true, bufferSize = 4 * 1024 * 1024 }: LoggerOptions = {}) {
 		super();
-		this.sinks = {} as TSinks;
-		this.maxPendingLogs = maxPendingLogs;
-		this.maxMessagesInFlight = maxMessagesInFlight;
-		this.batchSize = batchSize;
-		this.batchTimeout = batchTimeout;
-		this.autoEnd = autoEnd;
-		this.flushOnBeforeExit = flushOnBeforeExit;
 		this.workerUrl = URL.createObjectURL(
 			new Blob([`(${workerFunction.toString()})()`], { type: 'application/javascript' })
 		);
 		this.worker = new Worker(this.workerUrl, { type: 'module' }); // create a new worker
+		this.capacity = bufferSize & ~7; // records are 8-byte aligned
+		const buffer = new SharedArrayBuffer(CONTROL_BYTES + this.capacity);
+		this.control = new Int32Array(buffer, 0, 4);
+		this.bytes = Buffer.from(buffer, CONTROL_BYTES, this.capacity);
+		this.words = new Uint32Array(buffer, CONTROL_BYTES);
+		this.floats = new Float64Array(buffer, CONTROL_BYTES);
+		this.worker.postMessage({ type: 'INIT', buffer });
 		this.setupWorkerMessages(); // setup message handling from the worker
-		if (this.autoEnd) this.setupAutoEnd(); // setup auto-end on process exit
+		if (autoEnd) this.setupAutoEnd(); // setup auto-end on process exit
 	}
 
 	/**
@@ -190,23 +151,28 @@ export class Logger<
 		sinkFactory: (...args: TSinkArgs) => TSink,
 		...sinkArgs: TSinkArgs
 	): Logger<TSinks & Record<TSinkName, (...args: TSinkArgs) => TSink>> {
-		// `Object.hasOwn` rather than an `undefined` check: `sinkName` is a name absent from
-		// `TSinks` by definition, so indexing it would need a cast that tells the compiler the
-		// value always exists and makes the guard look dead.
-		if (Object.hasOwn(this.sinks, sinkName))
+		if (this.sinkIndexes.has(sinkName))
 			throw new Exception('Sink is already registered', {
 				code: LOGGER_ERROR_CODES.SINK_DUPLICATE,
 				cause: { sinkName }
 			});
+		const sinkIndex = this.sinkKeys.length;
+		if (sinkIndex >= MAX_SINKS)
+			throw new Exception('Too many sinks registered', {
+				code: LOGGER_ERROR_CODES.SINK_LIMIT,
+				cause: { sinkName, max: MAX_SINKS }
+			});
 		this.worker.postMessage({
 			type: 'REGISTER_SINK',
+			sinkIndex,
 			sinkName,
 			sinkFactoryString: sinkFactory.toString(),
 			sinkArgs
 		});
-		this.sinks[sinkName as keyof TSinks] = sinkFactory as unknown as TSinks[keyof TSinks];
 		this.sinkKeys.push(sinkName);
-		return this as unknown as Logger<TSinks & Record<TSinkName, (...args: TSinkArgs) => TSink>>;
+		this.sinkIndexes.set(sinkName, sinkIndex);
+		this.allSinksMask = (this.allSinksMask | (1 << sinkIndex)) >>> 0;
+		return this;
 	}
 
 	/**
@@ -262,7 +228,7 @@ export class Logger<
 	}
 
 	/**
-	 * Logs a message at the TRACE level to the specified sinks.
+	 * Logs a message at the LOG level to the specified sinks.
 	 *
 	 * @param object - The log message object
 	 * @param sinkNames - Optional array of sink names to log to; logs to all sinks if omitted
@@ -278,35 +244,35 @@ export class Logger<
 	 * Flushes all pending logs and the sinks' buffers, and waits for completion.
 	 */
 	public flush(): Promise<void> {
+		if (this.workerTerminated) return Promise.resolve();
 		return new Promise<void>((resolve) => {
 			this.flushResolvers.push(resolve);
-			this.tryFlush();
+			this.worker.postMessage({ type: 'FLUSH' });
 		});
 	}
 
 	/**
 	 * Closes the logger, flushes pending logs, and releases resources.
 	 */
-	public async close(): Promise<void> {
-		await this.flush();
-
-		return new Promise<void>((resolve) => {
+	public close(): Promise<void> {
+		this.closing ??= new Promise<void>((resolve) => {
 			this.closeResolver = resolve;
 			this.worker.postMessage({ type: 'CLOSE' });
 		});
+		return this.closing;
 	}
 
 	/**
-	 * Enqueues a log message to be processed by the worker.
+	 * Serializes a log entry straight into the shared ring and wakes the worker if it sleeps.
 	 *
 	 * @param level - The log level
 	 * @param object - The log message object
-	 * @param sinkNames - Optional array of sink names to log to; logs to all sinks if omitted
+	 * @param sinkNames - The target sinks (`sinkKeys` itself means all of them)
 	 */
 	private enqueue<TLogObject>(
 		level: LogLevels,
 		object: TLogObject,
-		sinkNames?: (keyof TSinks)[]
+		sinkNames: (keyof TSinks)[]
 	): void {
 		if (this.sinkKeys.length === 0)
 			throw new Exception('No sinks provided', {
@@ -314,122 +280,91 @@ export class Logger<
 				cause: { level, object }
 			});
 
-		const pendingLength = this.pendingLogs.length - this.pendingHead;
-		if (pendingLength >= this.maxPendingLogs) return;
-
-		this.pendingLogs.push({
-			sinkNames: (sinkNames ?? this.sinkKeys) as string[],
-			level,
-			timestamp: Date.now(),
-			object
-		});
-
-		// If the batch size is reached, trigger immediate processing
-		if (pendingLength + 1 >= this.batchSize) {
-			if (this.batchTimer !== null) {
-				clearTimeout(this.batchTimer);
-				this.batchTimer = null;
-			}
-			this.triggerProcessing();
-		} else if (this.batchTimer === null && this.batchTimeout > 0)
-			// Otherwise, start a timer if not already started
-			this.batchTimer = setTimeout(() => {
-				this.batchTimer = null;
-				this.triggerProcessing();
-			}, this.batchTimeout);
-	}
-
-	/**
-	 * Triggers processing of pending logs.
-	 */
-	private triggerProcessing(): void {
-		if (this.isWriting) return;
-		this.isWriting = true;
-		void this.processPendingLogs();
-	}
-
-	/**
-	 * Processes pending log messages by sending them to the worker in batches.
-	 */
-	private async processPendingLogs(): Promise<void> {
-		while (this.pendingLogs.length - this.pendingHead > 0) {
-			// Backpressure: the loop must idle until the worker drains before queueing the next
-			// batch. Sequential by design, so `Promise.all` would defeat the mechanism.
-			if (this.messagesInFlight >= this.maxMessagesInFlight)
-				// oxlint-disable-next-line no-await-in-loop
-				await new Promise<void>((resolve) => {
-					this.backpressureResolver = resolve;
-				});
-
-			const end = Math.min(this.pendingHead + this.batchSize, this.pendingLogs.length);
-			const batch = this.pendingLogs.slice(this.pendingHead, end);
-			this.pendingHead = end;
-			this.reclaimPending();
-
-			this.messagesInFlight++;
-			this.worker.postMessage({
-				type: 'LOG_BATCH',
-				logs: batch
+		let json: string | undefined;
+		try {
+			// The lib types omit it, but `undefined` (or a function) stringifies to `undefined`.
+			json = JSON.stringify(object) as string | undefined;
+		} catch (error) {
+			throw new Exception('Failed to serialize log', {
+				code: LOGGER_ERROR_CODES.LOG_SERIALIZATION_FAILED,
+				cause: { level, object, error }
 			});
 		}
 
-		this.isWriting = false;
-		this.emit('drained');
+		// Worst case is 3 bytes per UTF-16 unit; measure exactly only when that is too pessimistic.
+		let maxBytes = json === undefined ? 0 : json.length * 3;
+		if (HEADER_BYTES + maxBytes >= this.capacity / 2 && json !== undefined)
+			maxBytes = Buffer.byteLength(json);
+		const reserved = (HEADER_BYTES + maxBytes + 7) & ~7;
+		if (reserved >= this.capacity / 2)
+			throw new Exception('Log is larger than half the buffer', {
+				code: LOGGER_ERROR_CODES.LOG_TOO_LARGE,
+				cause: { level, bytes: maxBytes, bufferSize: this.capacity }
+			});
+
+		const position = this.reserve(reserved);
+		if (position === -1) return; // worker is gone, nothing can consume the log
+
+		const written =
+			json === undefined
+				? 0
+				: this.bytes.write(json, position + HEADER_BYTES, maxBytes, 'utf8');
+		const word = position >>> 2;
+		this.words[word] = (written | (LEVEL_INDEX[level] << 28)) >>> 0;
+		this.words[word + 1] = this.toMask(sinkNames);
+		this.floats[(position >>> 3) + 1] = Date.now();
+
+		this.head = position + ((HEADER_BYTES + written + 7) & ~7);
+		Atomics.store(this.control, HEAD, this.head);
+		this.wakeWorker();
 	}
 
 	/**
-	 * Reclaims consumed slots in the pending buffer.
-	 * Fully resets the buffer when drained, otherwise compacts only once the consumed
-	 * prefix dominates the backing array, keeping dequeue amortized O(1).
+	 * Finds a contiguous free slot of `size` bytes, wrapping or parking until the worker frees one.
+	 *
+	 * @returns The byte offset of the slot, or `-1` if the worker was terminated.
 	 */
-	private reclaimPending(): void {
-		if (this.pendingHead === this.pendingLogs.length) {
-			this.pendingLogs.length = 0;
-			this.pendingHead = 0;
-		} else if (
-			this.pendingHead > this.batchSize &&
-			this.pendingHead * 2 >= this.pendingLogs.length
-		) {
-			this.pendingLogs.splice(0, this.pendingHead);
-			this.pendingHead = 0;
+	private reserve(size: number): number {
+		for (;;) {
+			const tail = Atomics.load(this.control, TAIL);
+			const { head } = this;
+			// `head` must never land on `tail` after a write, which would read as empty.
+			if (tail <= head) {
+				if (head + size < this.capacity) return head;
+				if (tail > size) {
+					this.words[head >>> 2] = WRAP; // published with the next head store
+					return 0;
+				}
+			} else if (head + size < tail) return head;
+
+			if (this.workerTerminated) return -1;
+			this.wakeWorker();
+			Atomics.wait(this.control, TAIL, tail, FULL_WAIT_MS);
 		}
 	}
 
 	/**
-	 * Releases a batch by decrementing the in-flight counter and resolving backpressure if needed.
+	 * Notifies the worker only when it is parked, so a busy worker costs no syscall.
 	 */
-	private releaseBatch(): void {
-		this.messagesInFlight--;
-
-		if (this.backpressureResolver !== null) {
-			this.backpressureResolver();
-			this.backpressureResolver = null;
-		}
+	private wakeWorker(): void {
+		if (
+			Atomics.load(this.control, SLEEPING) === 1 &&
+			Atomics.exchange(this.control, SLEEPING, 0) === 1
+		)
+			Atomics.notify(this.control, HEAD);
 	}
 
 	/**
-	 * Advances the flush state machine: drains pending logs, then asks the worker to
-	 * flush the sinks' buffers once everything has been dispatched and acknowledged.
+	 * Converts target sink names into the bit mask stored in the record header.
 	 */
-	private tryFlush(): void {
-		if (this.flushResolvers.length === 0) return;
-
-		// Drain queued logs first; the flush round is armed once they're acknowledged.
-		if (this.pendingLogs.length - this.pendingHead > 0) {
-			if (!this.isWriting) {
-				this.isWriting = true;
-				void this.processPendingLogs();
-			}
-			return;
+	private toMask(sinkNames: (keyof TSinks)[]): number {
+		if (sinkNames === this.sinkKeys) return this.allSinksMask;
+		let mask = 0;
+		for (const sinkName of sinkNames) {
+			const index = this.sinkIndexes.get(sinkName as string);
+			if (index !== undefined) mask |= 1 << index;
 		}
-
-		// Everything dispatched and acknowledged → flush the sinks' buffers.
-		if (this.messagesInFlight === 0 && !this.flushPending) {
-			this.flushPending = true;
-			this.flushingResolvers.push(...this.flushResolvers);
-			this.flushResolvers.length = 0;
-			this.worker.postMessage({ type: 'FLUSH' });
-		}
+		return mask >>> 0;
 	}
 
 	/**
@@ -438,22 +373,9 @@ export class Logger<
 	private setupWorkerMessages(): void {
 		this.worker.addEventListener('message', (event: BunMessageEvent<WorkerResponseMessage>) => {
 			switch (event.data.type) {
-				case 'BATCH_COMPLETE':
-					this.releaseBatch();
-					this.tryFlush();
+				case 'FLUSH_COMPLETE':
+					this.flushResolvers.shift()?.();
 					break;
-
-				case 'FLUSH_COMPLETE': {
-					this.flushPending = false;
-					const resolvers = this.flushingResolvers.splice(
-						0,
-						this.flushingResolvers.length
-					);
-					for (const resolve of resolvers) resolve();
-					// Re-arm if new flushes were requested during the round-trip.
-					this.tryFlush();
-					break;
-				}
 
 				case 'SINK_LOG_ERROR':
 					this.emit(
@@ -511,10 +433,12 @@ export class Logger<
 		this.workerTerminated = true;
 		this.worker.terminate();
 		URL.revokeObjectURL(this.workerUrl);
+		// A FLUSH queued behind CLOSE never gets its answer; nothing is left to flush anyway.
+		for (const resolve of this.flushResolvers.splice(0)) resolve();
 	}
 
 	/**
-	 * Sets up automatic flushing and closing of the logger on process exit.
+	 * Sets up automatic closing (which flushes) of the logger on process exit.
 	 */
 	private setupAutoEnd(): void {
 		process.on('beforeExit', this.handleBeforeExit);
@@ -526,27 +450,6 @@ export class Logger<
 	 * Handles the beforeExit event.
 	 */
 	private readonly handleBeforeExit = (): void => {
-		if (this.flushOnBeforeExit)
-			void this.flush()
-				.then(() => this.close())
-				.catch((error: unknown) => {
-					this.emit(
-						'onBeforeExitError',
-						new Exception('Failed to flush before exit', {
-							code: LOGGER_ERROR_CODES.EXIT_FLUSH_FAILED,
-							cause: { error: error as Error }
-						})
-					);
-				});
-		else
-			void this.close().catch((error: unknown) => {
-				this.emit(
-					'onBeforeExitError',
-					new Exception('Failed to close before exit', {
-						code: LOGGER_ERROR_CODES.EXIT_CLOSE_FAILED,
-						cause: { error: error as Error }
-					})
-				);
-			});
+		void this.close();
 	};
 }

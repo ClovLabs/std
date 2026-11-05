@@ -4,7 +4,7 @@
 
 # Clov Logger
 
-A logger for Bun that does its writing in a worker thread, so logging doesn't hold up your main loop. Logs are batched, sent to one or more sinks (console, file, or your own), and typed: if a sink expects `{ userId, action }`, TypeScript makes you pass it.
+A logger for Bun that does its writing in a worker thread, so logging doesn't hold up your main loop. Each log is serialized once, handed to the worker through shared memory, and written by one or more sinks (console, file, or your own). Logs are typed: if a sink expects `{ userId, action }`, TypeScript makes you pass it.
 
 ```bash
 bun add @clov-std/logger
@@ -104,12 +104,13 @@ await logger.close();
 ```ts
 interface LoggerSink<TLogObject = unknown> {
 	log(level: LogLevels, timestamp: number, object: TLogObject): Promise<void> | void;
+	logJson?(level: LogLevels, timestamp: number, json: string | undefined): Promise<void> | void;
 	flush?(): Promise<void> | void; // called by Logger.flush()
 	close?(): Promise<void> | void; // called on Logger.close()
 }
 ```
 
-Only `log` is required. Implement `flush` if your sink buffers writes, so `logger.flush()` pushes them through, and `close` to release file handles or connections.
+Only `log` is required. Logs reach the worker as JSON, so `log` receives the result of `JSON.parse`. A sink that writes JSON anyway can implement `logJson` to get the string as is: the worker then calls it instead of `log` and never parses the log. The built-in sinks all do. Implement `flush` if your sink buffers writes, so `logger.flush()` pushes them through, and `close` to release file handles or connections.
 
 ## Typed logs
 
@@ -262,24 +263,44 @@ await logger.flush();
 await logger.close();
 ```
 
-`flush()` drains the in-memory queue and then each sink's own buffer, through the optional `flush()` on `LoggerSink`.
+`flush()` waits until the worker has read everything already logged, then flushes each sink's own buffer through the optional `flush()` on `LoggerSink`.
+
+## How it works
+
+A log call serializes the object with `JSON.stringify` and copies the result into a ring buffer shared with the worker (`SharedArrayBuffer`). There is no message per log and no batching timer: the worker reads the buffer as it fills and wakes up only when it has gone idle.
+
+This has a few consequences:
+
+- Sinks receive what `JSON.parse` gives back. `Date` becomes a string, `Map`, `Set` and `Error` become `{}`, and a `BigInt` or a circular object makes the call throw `logger.log.serialization-failed`.
+- When the buffer is full, the log call waits for the worker to catch up instead of dropping the log.
+- A single log larger than half of the buffer throws `logger.log.too-large`.
+- A logger holds at most 32 sinks.
 
 ## Configuration
-
-Batching and queue limits:
 
 ```ts
 import { Logger, consoleSink } from '@clov-std/logger';
 
 const logger = new Logger({
-	maxPendingLogs: 10_000, // Max queued logs (default: 10,000)
-	batchSize: 100, // Logs per batch (default: 100)
-	batchTimeout: 0.1, // Ms before flushing a partial batch (default: 0.1)
-	maxMessagesInFlight: 100, // Max batches being processed (default: 100)
-	autoEnd: true, // Auto-close on process exit (default: true)
-	flushOnBeforeExit: true // Flush before exit (default: true)
+	bufferSize: 4 * 1024 * 1024, // Shared buffer size in bytes (default: 4 MiB)
+	autoEnd: true // Close (and flush) on process exit (default: true)
 }).registerSink('console', consoleSink);
 ```
+
+## Benchmark
+
+`bun run bench` compares Clov with pino, both writing the same object to a real file. pino runs without `pid` and `hostname` so both write comparable lines.
+
+Results on an Intel Core Ultra 7 155H with Bun 1.4.4:
+
+| Logger                    | 10,000 logs to disk | One `info()` call |
+| ------------------------- | ------------------- | ----------------- |
+| Clov (`fileSink`)         | 4.4 ms              | 453 ns            |
+| pino `transport` (worker) | 16.5 ms             | 1.01 µs           |
+| pino, sync destination    | 45.2 ms             | 2.29 µs           |
+| pino, async destination   | 48.2 ms             | 2.11 µs           |
+
+pino is measured under Bun here. It is built for Node and may do better there.
 
 ## Docs
 

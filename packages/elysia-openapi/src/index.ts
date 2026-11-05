@@ -1,5 +1,5 @@
 export { openapiPlugin, type OpenAPIOptions } from './openapi';
-export { withHeaders } from './schema';
+export { withHeaders, withSSE } from './schema';
 export type { ScalarConfiguration } from './scalar-types';
 export type {
 	SpecificationExtensions,

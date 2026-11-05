@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { Elysia, t, type AnyElysia } from 'elysia';
+import { Elysia, sse, t, type AnyElysia } from 'elysia';
 
 import { buildDocument } from '#/document';
-import { openapiPlugin, withHeaders } from '#/index';
+import { openapiPlugin, withHeaders, withSSE } from '#/index';
 import type {
 	OpenAPIObject,
 	OperationObject,
@@ -275,7 +275,7 @@ describe.concurrent('buildDocument', () => {
 			params: 'IdRole',
 			query: 'Search',
 			body: 'User',
-			response: { 200: 'User' }
+			response: { 200: 'User', 401: 'Other' }
 		} as const;
 		const operations = {
 			default: new Elysia()
@@ -317,7 +317,7 @@ describe.concurrent('buildDocument', () => {
 				expect(namesOf(operation)).toEqual(['path:idRole', 'query:q', 'path:idUser']);
 				expect(schemaOf(operation?.requestBody)).toEqual(ref('User'));
 				expect(schemaOf(operation?.responses?.['200'])).toEqual(ref('User'));
-				expect(schemaOf(operation?.responses?.['401'])).toEqual(ref('Err'));
+				expect(schemaOf(operation?.responses?.['401'])).toEqual(ref('Other'));
 			});
 
 		test('should combine the route and a merge guard', () => {
@@ -330,10 +330,13 @@ describe.concurrent('buildDocument', () => {
 				'query:page'
 			]);
 			expect(schemaOf(operation?.requestBody)).toEqual({ allOf: [ref('User'), ref('Role')] });
+			// a returned value is validated against both, a thrown error against none
 			expect(schemaOf(operation?.responses?.['200'])).toEqual({
-				anyOf: [ref('User'), ref('Other')]
+				allOf: [ref('User'), ref('Other')]
 			});
-			expect(schemaOf(operation?.responses?.['401'])).toEqual(ref('Err'));
+			expect(schemaOf(operation?.responses?.['401'])).toEqual({
+				anyOf: [ref('Other'), ref('Err')]
+			});
 		});
 	});
 
@@ -351,7 +354,7 @@ describe.concurrent('buildDocument', () => {
 					schema: {
 						type: 'object',
 						properties: {
-							file: { contentMediaType: 'application/octet-stream' },
+							file: {},
 							at: {
 								anyOf: [
 									{ type: 'string', format: 'date-time' },
@@ -381,6 +384,150 @@ describe.concurrent('buildDocument', () => {
 		).toEqual(['multipart/form-data']);
 	});
 
+	test('should document the options of files as binary bounds and part media types', () => {
+		const app = new Elysia().post(
+			'/files',
+			{
+				body: t.Object({
+					avatar: t.File({ description: 'Avatar', type: 'image/png', maxSize: '1m' }),
+					files: t.Files({
+						type: ['image', 'application/pdf'],
+						minSize: 3,
+						minItems: 1,
+						maxItems: 4
+					})
+				})
+			},
+			() => 1
+		);
+
+		expect(buildDocument(app).paths?.['/files']?.post?.requestBody).toEqual({
+			required: true,
+			content: {
+				'multipart/form-data': {
+					schema: {
+						type: 'object',
+						properties: {
+							avatar: { description: 'Avatar', maxLength: 1024 * 1024 },
+							files: {
+								type: 'array',
+								items: { minLength: 3 },
+								minItems: 1,
+								maxItems: 4
+							}
+						},
+						required: ['avatar', 'files']
+					},
+					encoding: {
+						avatar: { contentType: 'image/png' },
+						files: { contentType: 'image/*, application/pdf' }
+					}
+				}
+			}
+		});
+	});
+
+	test('should document a typed file response under its media types', () => {
+		const app = new Elysia().get(
+			'/png',
+			{ response: t.File({ type: 'image/png' }) },
+			() => new File([], 'a.png')
+		);
+
+		expect(
+			(
+				buildDocument(app).paths?.['/png']?.get?.responses?.['200'] as
+					| ResponseObject
+					| undefined
+			)?.content
+		).toEqual({
+			'image/png': { schema: {} }
+		});
+	});
+
+	test('should document withSSE responses as an event stream', () => {
+		const app = new Elysia().get(
+			'/events',
+			{
+				response: withSSE(
+					t.Object({
+						event: t.Optional(t.String()),
+						id: t.Optional(t.Number()),
+						retry: t.Optional(t.Number()),
+						data: t.Object({ n: t.Number() })
+					})
+				)
+			},
+			async function* () {
+				yield sse({ data: { n: 1 } });
+			}
+		);
+
+		expect(
+			(
+				buildDocument(app).paths?.['/events']?.get?.responses?.['200'] as
+					| ResponseObject
+					| undefined
+			)?.content
+		).toEqual({
+			'text/event-stream': {
+				itemSchema: {
+					type: 'object',
+					properties: {
+						event: { type: 'string' },
+						id: { type: 'string' },
+						retry: { type: 'integer' },
+						data: {
+							type: 'string',
+							contentMediaType: 'application/json',
+							contentSchema: {
+								type: 'object',
+								properties: { n: { type: 'number' } },
+								required: ['n']
+							}
+						}
+					},
+					required: ['data']
+				}
+			}
+		});
+	});
+
+	test('should document tuples, examples and response headers as OAS 3.2 does', () => {
+		const app = new Elysia().get(
+			'/t',
+			{
+				query: t.Object({
+					range: t.Tuple([t.Number(), t.Number()]),
+					at: t.String({ example: 'now', examples: ['today'] })
+				}),
+				response: withHeaders(
+					t.String(),
+					t.Object({ 'content-type': t.String(), 'x-total': t.Integer() })
+				)
+			},
+			() => 'x'
+		);
+		const operation = buildDocument(app).paths?.['/t']?.get;
+
+		expect(
+			operation?.parameters?.map((parameter) =>
+				'schema' in parameter ? parameter.schema : undefined
+			)
+		).toEqual([
+			{
+				type: 'array',
+				prefixItems: [{ type: 'number' }, { type: 'number' }],
+				items: false,
+				minItems: 2
+			},
+			{ type: 'string', examples: ['today', 'now'] }
+		]);
+		expect(
+			Object.keys((operation?.responses?.['200'] as ResponseObject).headers ?? {})
+		).toEqual(['x-total']);
+	});
+
 	test('should document raw binary bodies as octet-stream', () => {
 		const app = new Elysia().post('/raw', { body: t.Uint8Array() }, () => 1);
 
@@ -388,7 +535,7 @@ describe.concurrent('buildDocument', () => {
 			required: true,
 			content: {
 				'application/octet-stream': {
-					schema: { contentMediaType: 'application/octet-stream' }
+					schema: {}
 				}
 			}
 		});
@@ -500,7 +647,6 @@ describe.concurrent('buildDocument', () => {
 						schema: {
 							type: 'object',
 							properties: { name: { anyOf: [{ type: 'string' }, { type: 'null' }] } },
-							// Elysia rc.1 lets t.MaybeEmpty also take undefined: the property is optional
 							required: []
 						}
 					}
@@ -877,7 +1023,7 @@ describe.concurrent('buildDocument edge cases', () => {
 
 		expect(contentOf(operationOf(app, '/b')?.responses?.['200'])).toEqual({
 			'application/octet-stream': {
-				schema: { contentMediaType: 'application/octet-stream' }
+				schema: {}
 			},
 			'text/plain': { schema: { type: 'string' } }
 		});

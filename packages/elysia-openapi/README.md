@@ -58,6 +58,31 @@ app.get(
 
 This only documents the headers. Elysia doesn't validate response headers.
 
+### Files
+
+`t.File()` and `t.Files()` are documented as OpenAPI 3.2 raw binary: an empty schema in a `multipart/form-data` body, an array of them for `t.Files()`. Their `type` goes to the part's `encoding.contentType`, `minSize` and `maxSize` to `minLength` and `maxLength` in bytes, `minItems` and `maxItems` to the array. A `t.File({ type })` response is documented under its media types.
+
+### Server-Sent Events
+
+```ts
+import { withSSE } from '@clov-std/elysia-openapi';
+import { sse } from 'elysia';
+
+app.get(
+	'/events',
+	{
+		response: withSSE(
+			t.Object({ event: t.Optional(t.String()), data: t.Object({ n: t.Number() }) })
+		)
+	},
+	async function* () {
+		yield sse({ data: { n: 1 } });
+	}
+);
+```
+
+The schema is the event Elysia validates, `{ data, event?, id?, retry? }`. It is documented as `text/event-stream` with an `itemSchema`, a non-string `data` as JSON (`contentMediaType` and `contentSchema`). It composes with `withHeaders`.
+
 ## API
 
 ### `openapiPlugin(options?)`
@@ -74,6 +99,10 @@ Returns a function to pass to `app.use`.
 ### `withHeaders(schema, headers)`
 
 Returns a copy of the response `schema` documented with the `headers` object schema.
+
+### `withSSE(schema)`
+
+Returns a copy of the event `schema` documenting the response as a Server-Sent Events stream.
 
 ## Docs
 
