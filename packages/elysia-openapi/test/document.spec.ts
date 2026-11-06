@@ -401,7 +401,12 @@ describe.concurrent('buildDocument', () => {
 						t.File({ type: 'image/png' }),
 						t.File({ type: 'application/pdf' })
 					]),
-					any: t.Union([t.File(), t.File({ type: 'image/png' })])
+					any: t.Union([t.File(), t.File({ type: 'image/png' })]),
+					nested: t.Union([
+						t.Nullable(t.File({ type: 'text/csv' })),
+						t.File({ type: 'image/png' })
+					]),
+					nestedAny: t.Union([t.Nullable(t.File()), t.File({ type: 'image/png' })])
 				})
 			},
 			() => 1
@@ -423,15 +428,18 @@ describe.concurrent('buildDocument', () => {
 							},
 							csv: { anyOf: [{}, { type: 'null' }] },
 							doc: { anyOf: [{}, {}] },
-							any: { anyOf: [{}, {}] }
+							any: { anyOf: [{}, {}] },
+							nested: { anyOf: [{ anyOf: [{}, { type: 'null' }] }, {}] },
+							nestedAny: { anyOf: [{ anyOf: [{}, { type: 'null' }] }, {}] }
 						},
-						required: ['avatar', 'files', 'csv', 'doc', 'any']
+						required: ['avatar', 'files', 'csv', 'doc', 'any', 'nested', 'nestedAny']
 					},
 					encoding: {
 						avatar: { contentType: 'image/png' },
 						files: { contentType: 'image/*, application/pdf' },
 						csv: { contentType: 'text/csv' },
-						doc: { contentType: 'image/png, application/pdf' }
+						doc: { contentType: 'image/png, application/pdf' },
+						nested: { contentType: 'text/csv, image/png' }
 					}
 				}
 			}

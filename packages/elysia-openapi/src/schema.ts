@@ -121,6 +121,12 @@ const filesItemOf = (node: unknown): Record<string, unknown> | undefined => {
 		: undefined;
 };
 
+/** A `t.File`, a `t.Files`, or a union holding one at any depth. */
+const holdsFile = (node: unknown): boolean =>
+	isFile(node) ||
+	filesItemOf(node) !== undefined ||
+	(IsUnion(node) && node.anyOf.some(holdsFile));
+
 /** The media types a `t.File` or `t.Files` accepts, as an Encoding Object's `contentType` lists them. */
 export const fileMediaTypesOf = (node: unknown): string[] | undefined => {
 	if (isFile(node)) return fileOptionsOf(node).types;
@@ -129,9 +135,7 @@ export const fileMediaTypesOf = (node: unknown): string[] | undefined => {
 	if (!IsUnion(node)) return undefined;
 
 	// files in a union, `t.Nullable(t.File())` included: a file without types accepts any
-	const types = node.anyOf
-		.filter((branch) => isFile(branch) || filesItemOf(branch))
-		.map(fileMediaTypesOf);
+	const types = node.anyOf.filter(holdsFile).map(fileMediaTypesOf);
 	return types.length > 0 && types.every((branch) => branch !== undefined)
 		? [...new Set(types.flat())]
 		: undefined;
