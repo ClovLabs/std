@@ -1,8 +1,7 @@
 import { StatusMapBack, type AnyElysia, type InputSchema } from 'elysia';
 import { isProduction } from 'elysia/error';
 import type { ContentType, UnwrapArray } from 'elysia/types';
-import { isRecordNumber } from 'elysia/utils';
-import { IsOptional, IsUnion } from 'typebox';
+import { IsOptional, IsUnion, Union } from 'typebox';
 
 import type {
 	HeaderObject,
@@ -21,10 +20,12 @@ import type {
 	TagObject
 } from './openapi-types-3.2';
 import {
+	componentName,
 	containsFile,
 	descriptionOf,
 	fileMediaTypesOf,
 	hasDefault,
+	hoistDefs,
 	type HookSchema,
 	isFile,
 	isPrimitive,
@@ -143,8 +144,10 @@ const toParameters = (
 				required: location === 'path' || (shape.required.has(name) && !hasDefault(resolved))
 			};
 			const schema = toRootSchema(property);
-			// Elysia reads an object query value as JSON only
-			return location === 'query' && jsonTypeOf(resolved) === 'object'
+			// Elysia reads an object query value, and an object or array cookie, as JSON only
+			const type = jsonTypeOf(resolved);
+			return (location === 'query' && type === 'object') ||
+				(location === 'cookie' && (type === 'object' || type === 'array'))
 				? { ...common, content: { 'application/json': { schema } } }
 				: { ...common, schema };
 		});
@@ -162,6 +165,8 @@ const toBodyMediaTypes = (
 	// Elysia only applies the first parser
 	const [parser] = [parse].flat();
 	if (typeof parser === 'function') return ['*/*'];
+	const schemas = bodies.map((body) => resolveModel(body, models));
+	const hasFile = schemas.some((schema) => containsFile(schema, models));
 	if (typeof parser === 'string') {
 		// Elysia's `parse` shorthands, a media type is read as is
 		const shorthands: Readonly<Record<string, readonly string[]>> = {
@@ -176,12 +181,17 @@ const toBodyMediaTypes = (
 			readonly string[]
 		>;
 		const mediaTypes = parser.includes('/') ? [parser] : shorthands[parser];
-		if (mediaTypes) return mediaTypes;
+		// a text form cannot carry a raw file (OAS 3.2 4.15.3.2), unless it is all the parser reads
+		if (mediaTypes)
+			return hasFile && mediaTypes.length > 1
+				? mediaTypes.filter(
+						(mediaType) => mediaType !== 'application/x-www-form-urlencoded'
+					)
+				: mediaTypes;
 	}
 
-	const schemas = bodies.map((body) => resolveModel(body, models));
 	if (schemas.some(isRawBinary)) return ['application/octet-stream'];
-	if (schemas.some((schema) => containsFile(schema, models))) return ['multipart/form-data'];
+	if (hasFile) return ['multipart/form-data'];
 	if (bodies.every((body) => isPrimitive(body, models)))
 		return ['application/json', 'text/plain'];
 	return FORM_MEDIA_TYPES;
@@ -209,7 +219,7 @@ const toRequestBody = (
 		bodies.flatMap((body) =>
 			Object.entries(objectShapeOf(body, models)?.properties ?? {}).flatMap(
 				([name, property]) => {
-					const mediaTypes = fileMediaTypesOf(resolveModel(property, models));
+					const mediaTypes = fileMediaTypesOf(property, models);
 					return mediaTypes ? [[name, { contentType: mediaTypes.join(', ') }]] : [];
 				}
 			)
@@ -252,8 +262,23 @@ const toResponseContent = (
 	const [first] = schemas;
 	const resolved = resolveModel(first, models);
 	const type = jsonTypeOf(resolved);
-	// Elysia sends these without a body
+	// Elysia sends these without a body, a union's payloads are its other branches
 	if (type === 'void' || type === 'null' || type === 'undefined') return;
+	if (schemas.length === 1 && IsUnion(resolved)) {
+		const payloads = resolved.anyOf.filter(
+			(branch) =>
+				!['void', 'null', 'undefined'].includes(
+					jsonTypeOf(resolveModel(branch, models)) as string
+				)
+		);
+		if (payloads.length === 0) return;
+		if (payloads.length < resolved.anyOf.length)
+			return toResponseContent(
+				[payloads.length === 1 ? (payloads[0] as HookSchema) : Union(payloads)],
+				models,
+				status
+			);
+	}
 	if (isSSE(resolved))
 		return {
 			'text/event-stream': {
@@ -264,24 +289,40 @@ const toResponseContent = (
 		};
 	if (isRawBinary(resolved) || isFile(resolved))
 		return Object.fromEntries(
-			(fileMediaTypesOf(resolved) ?? ['application/octet-stream']).map((mediaType) => [
-				mediaType,
-				{ schema: toRootSchema(first) }
-			])
+			(fileMediaTypesOf(resolved, models) ?? ['application/octet-stream']).map(
+				(mediaType) => [mediaType, { schema: toRootSchema(first) }]
+			)
 		);
 
 	// a single union mixing binary, text and JSON values is sent with the media type of the value
 	if (schemas.length === 1 && IsUnion(resolved)) {
-		const branches = Map.groupBy(resolved.anyOf, (branch) => {
-			const schema = resolveModel(branch, models);
-			if (isRawBinary(schema) || isFile(schema)) return 'application/octet-stream';
-			return isText(branch, models) ? 'text/plain' : 'application/json';
-		});
+		// a file is sent with each of its media types
+		const branches = Map.groupBy(
+			resolved.anyOf.flatMap((branch) => {
+				const schema = resolveModel(branch, models);
+				if (isRawBinary(schema) || isFile(schema))
+					return (fileMediaTypesOf(schema, models) ?? ['application/octet-stream']).map(
+						(mediaType) => ({ mediaType, branch })
+					);
+				return [
+					{
+						mediaType: isText(branch, models) ? 'text/plain' : 'application/json',
+						branch
+					}
+				];
+			}),
+			({ mediaType }) => mediaType
+		);
 		if (branches.size > 1)
 			return Object.fromEntries(
 				[...branches].map(([mediaType, group]) => [
 					mediaType,
-					{ schema: toCombinedSchema(group, 'anyOf') }
+					{
+						schema: toCombinedSchema(
+							group.map(({ branch }) => branch),
+							'anyOf'
+						)
+					}
 				])
 			);
 	}
@@ -506,7 +547,8 @@ const toTemplate = (segment: string): string => {
 const toOpenAPIPaths = (path: string): `/${string}`[] => {
 	const segments = path.split('/');
 	const templated = segments.map(toTemplate);
-	const paths = [templated.join('/')];
+	// Elysia serves `''` as `/`, a path key starts with `/` (OAS 3.2 4.8.1)
+	const paths = [templated.join('/') || '/'];
 	segments.forEach((segment, index) => {
 		if (segment.includes(':') && segment.endsWith('?'))
 			paths.push(templated.slice(0, index).join('/') || '/');
@@ -518,13 +560,32 @@ const isPathParameter = (
 	parameter: ParameterObject | ReferenceObject
 ): parameter is ParameterObject => !isReference(parameter) && parameter.in === 'path';
 
-/** Keeps only the path parameters templated in `path`, declares the missing ones as required strings. */
-const withPathParameters = (operation: OperationObject, path: string): OperationObject => {
-	const names = path.match(/\{[^}]+\}/g)?.map((template) => template.slice(1, -1)) ?? [];
-	const parameters = (operation.parameters ?? []).filter(
-		(parameter) => !isPathParameter(parameter) || names.includes(parameter.name)
-	);
-	for (const name of names)
+/**
+ * Keeps only the path parameters templated in `path`, named as in `documented`, the path of the same hierarchy it
+ * is documented under, and declares the missing ones as required strings.
+ */
+const withPathParameters = (
+	operation: OperationObject,
+	path: string,
+	documented: string
+): OperationObject => {
+	const namesOf = (template: string): string[] =>
+		template.match(/\{[^}]+\}/g)?.map((name) => name.slice(1, -1)) ?? [];
+	const names = namesOf(path);
+	const documentedNames = namesOf(documented);
+	const parameters = (operation.parameters ?? [])
+		.filter((parameter) => !isPathParameter(parameter) || names.includes(parameter.name))
+		// a path parameter is required (OAS 3.2 4.12.2.1), one from `detail.parameters` included
+		.map((parameter) =>
+			isPathParameter(parameter)
+				? {
+						...parameter,
+						name: documentedNames[names.indexOf(parameter.name)] ?? parameter.name,
+						required: true
+					}
+				: parameter
+		);
+	for (const name of documentedNames)
 		if (!parameters.some((parameter) => isPathParameter(parameter) && parameter.name === name))
 			parameters.push({ name, in: 'path', required: true, schema: { type: 'string' } });
 
@@ -561,9 +622,12 @@ const toTags = (names: Iterable<string>, base: readonly TagObject[]): TagObject[
 /** Elysia takes a single schema as the `200` response, or a status map. */
 const toStatusMap = (response: InputSchema['response']): Readonly<Record<string, HookSchema>> => {
 	if (response === undefined) return {};
-	return typeof response === 'object' && isRecordNumber(response)
+	// a map of statuses, `default` included (OAS 3.2 4.16.1), otherwise the 200 schema
+	return typeof response === 'object' &&
+		Object.keys(response).length > 0 &&
+		Object.keys(response).every((key) => key === 'default' || !Number.isNaN(Number(key)))
 		? (response as Record<string, HookSchema>)
-		: { 200: response };
+		: { 200: response as HookSchema };
 };
 
 /**
@@ -578,7 +642,8 @@ const toResponseLayers = (
 	const merged = (hooks.schemas ?? []).map((layer) => toStatusMap(layer.response));
 
 	return Object.fromEntries(
-		Object.entries(toStatusMap(hooks.response)).map(([status, schema]) => {
+		// `app.routes` drops a route's own `default`
+		Object.entries({ ...own, ...toStatusMap(hooks.response) }).map(([status, schema]) => {
 			const layers = uniqueSchemas(
 				[own[status], ...merged.map((layer) => layer[status])].filter(
 					(layer) => layer !== undefined
@@ -638,6 +703,31 @@ const readRoutes = (app: AnyElysia): DocumentedRoute[] => {
 };
 
 /**
+ * The components' schemas: the base ones, the validation problem, the models, and the `$defs` of a `t.Cyclic`
+ * moved out of `paths` and of the models.
+ */
+const toComponentSchemas = (
+	models: Models,
+	base: Partial<OpenAPIObject>,
+	paths: PathsObject,
+	operations: readonly OperationObject[]
+): Record<string, SchemaObject> => {
+	const schemas: Record<string, SchemaObject> = {
+		...base.components?.schemas,
+		...validationComponent(operations),
+		...Object.fromEntries(
+			Object.entries(models).map(([name, model]) => [
+				componentName(name),
+				toSchema(model) as SchemaObject
+			])
+		)
+	};
+	hoistDefs(paths, schemas);
+	for (const schema of Object.values(schemas)) hoistDefs(schema, schemas);
+	return schemas;
+};
+
+/**
  * Builds the OpenAPI 3.2 document from the routes and models registered on `app`.
  *
  * @param app - The Elysia instance to document
@@ -652,6 +742,8 @@ export const buildDocument = (app: AnyElysia, base: Partial<OpenAPIObject> = {})
 	const tagNames = new Set<string>();
 	// each generated operation with the operationId it asks for
 	const generated = new Map<OperationObject, string>();
+	// templated paths of the same hierarchy are one path (OAS 3.2 4.8.1): the first one's names are kept
+	const hierarchies = new Map<string, `/${string}`>();
 
 	for (const route of readRoutes(app)) {
 		const routeMethod = route.method.toLowerCase();
@@ -666,12 +758,15 @@ export const buildDocument = (app: AnyElysia, base: Partial<OpenAPIObject> = {})
 		// `.all()` routes answer every method
 		for (const method of isCatchAll ? FIXED_METHODS : [routeMethod]) {
 			const operation = toOperation(route, models, method);
-			for (const path of toOpenAPIPaths(route.path)) {
+			for (const routePath of toOpenAPIPaths(route.path)) {
+				const hierarchy = routePath.replaceAll(/\{[^}]+\}/g, '{}');
+				const path = hierarchies.get(hierarchy) ?? routePath;
+				hierarchies.set(hierarchy, path);
 				const item: PathItemObject = { ...paths[path] };
 				// a method's own route answers before `.all()`
 				if (isCatchAll && isFixedMethod(method) && item[method]) continue;
 
-				const identified = withPathParameters(operation, path);
+				const identified = withPathParameters(operation, routePath, path);
 				generated.set(identified, identified.operationId ?? toOperationId(method, path));
 				if (isFixedMethod(method)) item[method] = identified;
 				else
@@ -729,16 +824,7 @@ export const buildDocument = (app: AnyElysia, base: Partial<OpenAPIObject> = {})
 		tags: toTags(tagNames, base.tags ?? []),
 		components: {
 			...base.components,
-			schemas: {
-				...base.components?.schemas,
-				...validationComponent([...generated.keys()]),
-				...Object.fromEntries(
-					Object.entries(models).map(([name, model]) => [
-						name,
-						toSchema(model) as SchemaObject
-					])
-				)
-			}
+			schemas: toComponentSchemas(models, base, mergedPaths, [...generated.keys()])
 		}
 	};
 };

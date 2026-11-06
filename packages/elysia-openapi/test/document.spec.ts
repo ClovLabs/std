@@ -9,7 +9,8 @@ import type {
 	PathItemObject,
 	RequestBodyObject,
 	ReferenceObject,
-	ResponseObject
+	ResponseObject,
+	SchemaObject
 } from '#/index';
 
 describe.concurrent('buildDocument', () => {
@@ -395,7 +396,19 @@ describe.concurrent('buildDocument', () => {
 						minSize: 3,
 						minItems: 1,
 						maxItems: 4
-					})
+					}),
+					csv: t.Nullable(t.File({ type: 'text/csv' })),
+					doc: t.Union([
+						t.File({ type: 'image/png' }),
+						t.File({ type: 'application/pdf' })
+					]),
+					any: t.Union([t.File(), t.File({ type: 'image/png' })]),
+					nested: t.Union([
+						t.Nullable(t.File({ type: 'text/csv' })),
+						t.File({ type: 'image/png' })
+					]),
+					nestedAny: t.Union([t.Nullable(t.File()), t.File({ type: 'image/png' })]),
+					orText: t.Union([t.File({ type: 'image/png' }), t.String()])
 				})
 			},
 			() => 1
@@ -414,13 +427,34 @@ describe.concurrent('buildDocument', () => {
 								items: { minLength: 3 },
 								minItems: 1,
 								maxItems: 4
-							}
+							},
+							csv: { anyOf: [{}, { type: 'null' }] },
+							doc: { anyOf: [{}, {}] },
+							any: { anyOf: [{}, {}] },
+							nested: { anyOf: [{ anyOf: [{}, { type: 'null' }] }, {}] },
+							nestedAny: { anyOf: [{ anyOf: [{}, { type: 'null' }] }, {}] },
+							orText: { anyOf: [{}, { type: 'string' }] }
 						},
-						required: ['avatar', 'files']
+						required: [
+							'avatar',
+							'files',
+							'csv',
+							'doc',
+							'any',
+							'nested',
+							'nestedAny',
+							'orText'
+						]
 					},
 					encoding: {
 						avatar: { contentType: 'image/png' },
-						files: { contentType: 'image/*, application/pdf' }
+						files: { contentType: 'image/*, application/pdf' },
+						csv: { contentType: 'text/csv' },
+						doc: { contentType: 'image/png, application/pdf' },
+						any: { contentType: 'application/octet-stream, image/png' },
+						nested: { contentType: 'text/csv, image/png' },
+						nestedAny: { contentType: 'application/octet-stream, image/png' },
+						orText: { contentType: 'image/png, text/plain' }
 					}
 				}
 			}
@@ -452,7 +486,7 @@ describe.concurrent('buildDocument', () => {
 				response: withSSE(
 					t.Object({
 						event: t.Optional(t.String()),
-						id: t.Optional(t.Number()),
+						id: t.Optional(t.Number({ description: 'Event id' })),
 						retry: t.Optional(t.Number()),
 						data: t.Object({ n: t.Number() })
 					})
@@ -475,7 +509,7 @@ describe.concurrent('buildDocument', () => {
 					type: 'object',
 					properties: {
 						event: { type: 'string' },
-						id: { type: 'string' },
+						id: { description: 'Event id', type: 'string' },
 						retry: { type: 'integer' },
 						data: {
 							type: 'string',
@@ -499,7 +533,8 @@ describe.concurrent('buildDocument', () => {
 			{
 				query: t.Object({
 					range: t.Tuple([t.Number(), t.Number()]),
-					at: t.String({ example: 'now', examples: ['today'] })
+					none: t.Tuple([]),
+					at: t.String({ example: 'now', examples: ['today', 'now'] })
 				}),
 				response: withHeaders(
 					t.String(),
@@ -521,11 +556,292 @@ describe.concurrent('buildDocument', () => {
 				items: false,
 				minItems: 2
 			},
+			{ type: 'array', items: false, minItems: 0 },
 			{ type: 'string', examples: ['today', 'now'] }
 		]);
 		expect(
 			Object.keys((operation?.responses?.['200'] as ResponseObject).headers ?? {})
 		).toEqual(['x-total']);
+	});
+
+	test('should encode a file part with the type of each value, arrays per item and models resolved', () => {
+		const app = new Elysia().model({ x: t.Object({ a: t.String() }) }).post(
+			'/parts',
+			{
+				body: t.Object({
+					pngs: t.Array(t.File({ type: 'image/png' })),
+					filesOrTexts: t.Union([t.Files({ type: 'image/png' }), t.Array(t.String())]),
+					fileOrModel: t.Union([t.File({ type: 'image/png' }), t.Ref('x')]),
+					fileOrDate: t.Union([t.File({ type: 'image/png' }), t.Date()])
+				})
+			},
+			() => 1
+		);
+
+		expect(
+			(
+				buildDocument(app).paths?.['/parts']?.post?.requestBody as
+					| RequestBodyObject
+					| undefined
+			)?.content['multipart/form-data']
+		).toMatchObject({
+			encoding: {
+				pngs: { contentType: 'image/png' },
+				filesOrTexts: { contentType: 'image/png, text/plain' },
+				fileOrModel: { contentType: 'image/png, application/json' },
+				fileOrDate: { contentType: 'image/png, text/plain' }
+			}
+		});
+	});
+
+	test('should keep paths, cookies, default responses, form bodies and enums within the spec', () => {
+		const app = new Elysia()
+			.get('', () => 'root')
+			.get(
+				'/c',
+				{
+					cookie: t.Cookie({ o: t.Object({ a: t.String() }), list: t.Array(t.String()) }),
+					response: { 200: t.String(), default: t.Object({ e: t.String() }) }
+				},
+				() => 'x'
+			)
+			.post(
+				'/form',
+				{
+					parse: 'formdata',
+					body: t.Object({
+						f: t.File(),
+						k: t.Union([t.Literal('a'), t.Literal('a')], { error: 'bad kind' })
+					})
+				},
+				() => 1
+			);
+		const { paths } = buildDocument(app);
+
+		expect(Object.keys(paths ?? {})).toContain('/');
+		expect(paths?.['/c']?.get?.parameters).toEqual([
+			{
+				name: 'o',
+				in: 'cookie',
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: { a: { type: 'string' } },
+							required: ['a']
+						}
+					}
+				}
+			},
+			{
+				name: 'list',
+				in: 'cookie',
+				required: true,
+				content: {
+					'application/json': { schema: { type: 'array', items: { type: 'string' } } }
+				}
+			}
+		]);
+		expect(Object.keys(paths?.['/c']?.get?.responses ?? {})).toEqual(['200', '422', 'default']);
+		const body = paths?.['/form']?.post?.requestBody as RequestBodyObject | undefined;
+		expect(Object.keys(body?.content ?? {})).toEqual(['multipart/form-data']);
+		expect(
+			(
+				body?.content['multipart/form-data'] as
+					| { schema?: { properties?: unknown } }
+					| undefined
+			)?.schema?.properties
+		).toEqual({ f: {}, k: { type: 'string', enum: ['a'] } });
+	});
+
+	test('should keep names, paths, unions, cyclic schemas and byte bounds within the spec', () => {
+		const app = new Elysia()
+			.model({ 'My Model': t.Object({ a: t.String() }) })
+			.get(
+				'/u/:id',
+				{
+					response: 'My Model',
+					detail: {
+						parameters: [{ name: 'id', in: 'path', schema: { type: 'integer' } }]
+					} as never
+				},
+				() => ({ a: 'x' })
+			)
+			.post('/u/:name', { params: t.Object({ name: t.String() }) }, () => 1)
+			.post('/never', { body: t.Object({ n: t.Union([]) }) }, () => 1)
+			.post(
+				'/cyclic',
+				{ body: t.Cyclic({ Node: t.Object({ next: t.Optional(t.Ref('Node')) }) }, 'Node') },
+				() => 1
+			)
+			.get(
+				'/events',
+				{
+					response: withSSE(
+						t.Object({ data: t.Union([t.String(), t.Object({ n: t.Number() })]) })
+					)
+				},
+				async function* () {
+					yield sse({ data: 'x' });
+				}
+			)
+			.get('/maybe', { response: t.Union([t.String(), t.Null()]) }, () => null)
+			.post('/raw', { body: t.Uint8Array({ minByteLength: 2, maxByteLength: 10 }) }, () => 1);
+		const { paths, components } = buildDocument(app);
+		const jsonBody = (path: '/never' | '/cyclic' | '/raw', mediaType = 'application/json') =>
+			(paths?.[path]?.post?.requestBody as RequestBodyObject | undefined)?.content[mediaType];
+
+		expect(Object.keys(components?.schemas ?? {})).toEqual(['validation', 'My_Model', 'Node']);
+		expect(Object.keys(paths ?? {}).filter((path) => path.startsWith('/u/'))).toEqual([
+			'/u/{id}'
+		]);
+		expect(paths?.['/u/{id}']?.get?.parameters).toEqual([
+			{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
+		]);
+		expect(paths?.['/u/{id}']?.post?.parameters).toEqual([
+			{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+		]);
+		expect(jsonBody('/never')).toEqual({
+			schema: { type: 'object', properties: { n: { not: {} } }, required: ['n'] }
+		});
+		expect(jsonBody('/cyclic')).toEqual({ schema: { $ref: '#/components/schemas/Node' } });
+		expect(components?.schemas?.Node).toEqual({
+			type: 'object',
+			properties: { next: { $ref: '#/components/schemas/Node' } },
+			required: []
+		});
+		expect(
+			(paths?.['/events']?.get?.responses?.['200'] as ResponseObject | undefined)?.content
+		).toEqual({
+			'text/event-stream': {
+				itemSchema: {
+					type: 'object',
+					properties: {
+						data: {
+							anyOf: [
+								{ type: 'string' },
+								{
+									type: 'string',
+									contentMediaType: 'application/json',
+									contentSchema: {
+										type: 'object',
+										properties: { n: { type: 'number' } },
+										required: ['n']
+									}
+								}
+							]
+						}
+					},
+					required: ['data']
+				}
+			}
+		});
+		expect(
+			(paths?.['/maybe']?.get?.responses?.['200'] as ResponseObject | undefined)?.content
+		).toEqual({ 'text/plain': { schema: { type: 'string' } } });
+		expect(jsonBody('/raw', 'application/octet-stream')).toEqual({
+			schema: { minLength: 2, maxLength: 10 }
+		});
+	});
+
+	test('should rename a cyclic definition whose name is taken, and leave the base schemas alone', () => {
+		const tree = (properties: Parameters<typeof t.Object>[0]) =>
+			t.Cyclic({ Node: t.Object({ ...properties, kids: t.Array(t.Ref('Node')) }) }, 'Node');
+		const withLeaf = (leaf: ReturnType<typeof t.Object>) =>
+			t.Cyclic(
+				{
+					Twig: t.Object({ leaf: t.Ref('Leaf'), kids: t.Array(t.Ref('Twig')) }),
+					Leaf: leaf
+				},
+				'Twig'
+			);
+		const app = new Elysia()
+			.model({ Tree: t.Object({ leaf: t.Boolean() }) })
+			.post('/a', { body: tree({ a: t.String() }) }, () => 1)
+			.post('/b', { body: tree({ b: t.Number() }) }, () => 1)
+			.post('/same', { body: tree({ a: t.String() }) }, () => 1)
+			.post(
+				'/tree',
+				{ body: t.Cyclic({ Tree: t.Object({ up: t.Optional(t.Ref('Tree')) }) }, 'Tree') },
+				() => 1
+			)
+			.post(
+				'/unknown',
+				{ body: t.Object({ f: t.Union([t.File({ type: 'image/png' }), t.Ref('Nope')]) }) },
+				() => 1
+			)
+			.post('/b2', { body: tree({ b: t.Number() }) }, () => 1)
+			.post('/la', { body: withLeaf(t.Object({ a: t.String() })) }, () => 1)
+			.post('/lb', { body: withLeaf(t.Object({ b: t.Number() })) }, () => 1)
+			.post('/fn', { body: tree({ id: t.String({ default: () => 'generated' }) }) }, () => 1);
+		const foo: SchemaObject = {
+			$defs: { Bar: { type: 'string' } },
+			properties: { b: { $ref: '#/$defs/Bar' } }
+		};
+		const { paths, components } = buildDocument(app, {
+			components: { schemas: { Foo: structuredClone(foo) } }
+		});
+		const bodyOf = (path: `/${string}`) =>
+			(paths?.[path]?.post?.requestBody as RequestBodyObject | undefined)?.content;
+
+		expect(
+			(['/a', '/b', '/same', '/tree', '/b2', '/la', '/lb', '/fn'] as const).map(
+				(path) => bodyOf(path)?.['application/json']
+			)
+		).toEqual(
+			['Node', 'Node2', 'Node', 'Tree2', 'Node2', 'Twig', 'Twig2', 'Node3'].map((name) => ({
+				schema: { $ref: `#/components/schemas/${name}` }
+			}))
+		);
+		expect(Object.keys(components?.schemas ?? {})).toEqual([
+			'Foo',
+			'validation',
+			'Tree',
+			'Node',
+			'Node2',
+			'Tree2',
+			'Twig',
+			'Leaf',
+			'Twig2',
+			'Leaf2',
+			'Node3'
+		]);
+		// a function default is kept as it is, JSON drops it
+		expect(
+			(components?.schemas?.Node3 as { properties: { id: { default: unknown } } }).properties
+				.id.default
+		).toBeFunction();
+		expect(components?.schemas?.Twig2).toEqual({
+			type: 'object',
+			properties: {
+				leaf: { $ref: '#/components/schemas/Leaf2' },
+				kids: { type: 'array', items: { $ref: '#/components/schemas/Twig2' } }
+			},
+			required: ['leaf', 'kids']
+		});
+		expect(components?.schemas?.Leaf2).toEqual({
+			type: 'object',
+			properties: { b: { type: 'number' } },
+			required: ['b']
+		});
+		expect(components?.schemas?.Node2).toEqual({
+			type: 'object',
+			properties: {
+				b: { type: 'number' },
+				kids: { type: 'array', items: { $ref: '#/components/schemas/Node2' } }
+			},
+			required: ['b', 'kids']
+		});
+		expect(components?.schemas?.Tree).toEqual({
+			type: 'object',
+			properties: { leaf: { type: 'boolean' } },
+			required: ['leaf']
+		});
+		expect(components?.schemas?.Foo).toEqual(foo);
+		expect(bodyOf('/unknown')?.['multipart/form-data']).toMatchObject({
+			encoding: { f: { contentType: 'image/png, application/octet-stream' } }
+		});
 	});
 
 	test('should document raw binary bodies as octet-stream', () => {
@@ -882,7 +1198,7 @@ describe.concurrent('buildDocument edge cases', () => {
 					e: { type: 'string', enum: ['a', 'b'] },
 					s: { anyOf: [{ type: 'string' }, { type: 'null' }] },
 					m: { $ref: '#/components/schemas/Missing' },
-					w: { $ref: '#/components/schemas/Foo~1Bar' }
+					w: { $ref: '#/components/schemas/Foo_Bar' }
 				},
 				required: ['v', 'u', 'n', 'e', 's', 'm', 'w']
 			}
@@ -1027,6 +1343,25 @@ describe.concurrent('buildDocument edge cases', () => {
 			},
 			'text/plain': { schema: { type: 'string' } }
 		});
+	});
+
+	test('should document a typed file branch of a response union under its media types', () => {
+		const app = new Elysia().get(
+			'/f',
+			{
+				response: t.Union([
+					t.File({ type: ['image/png', 'image/jpeg'] }),
+					t.Object({ a: t.String() })
+				])
+			},
+			() => ({ a: 'x' })
+		);
+
+		expect(Object.keys(contentOf(operationOf(app, '/f')?.responses?.['200']))).toEqual([
+			'image/png',
+			'image/jpeg',
+			'application/json'
+		]);
 	});
 
 	test('should keep generated operation ids unique against the base ones', () => {

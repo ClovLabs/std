@@ -1,5 +1,15 @@
 import type { AnySchema } from 'elysia';
-import { Intersect, IsArray, IsIntersect, IsKind, IsObject, IsRef, IsUnion, Union } from 'typebox';
+import {
+	Intersect,
+	IsArray,
+	IsCyclic,
+	IsIntersect,
+	IsKind,
+	IsObject,
+	IsRef,
+	IsUnion,
+	Union
+} from 'typebox';
 
 import type { SchemaObject } from './openapi-types-3.2';
 
@@ -17,9 +27,13 @@ export interface ObjectShape {
 /** Types Elysia sends as text. */
 const TEXT_TYPES: ReadonlySet<unknown> = new Set(['string', 'number', 'integer', 'boolean']);
 
-/** JSON Pointer to a component schema, escaped per RFC 6901. */
-const componentRef = (name: string): string =>
-	`#/components/schemas/${name.replaceAll('~', '~0').replaceAll('/', '~1')}`;
+/** A model name as a component key, which only takes letters, digits, `.`, `-` and `_` (OAS 3.2 4.7.1). */
+export const componentName = (name: string): string => name.replaceAll(/[^a-zA-Z0-9.\-_]/g, '_');
+
+const COMPONENT_PREFIX = '#/components/schemas/';
+
+/** JSON Pointer to a component schema, its key needing no escaping. */
+const componentRef = (name: string): string => `${COMPONENT_PREFIX}${componentName(name)}`;
 
 export const uniqueSchemas = <T>(schemas: readonly T[]): T[] =>
 	schemas.filter(
@@ -32,9 +46,10 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 /** `anyOf` of `{ const }` branches (a union of literals) as an `enum`. */
 const toEnum = (schema: Record<string, unknown>): Record<string, unknown> => {
 	const { anyOf, ...rest } = schema;
+	// an empty union accepts nothing, and `anyOf` needs a branch
+	if (Array.isArray(anyOf) && anyOf.length === 0) return { ...rest, not: {} };
 	if (
 		!Array.isArray(anyOf) ||
-		anyOf.length === 0 ||
 		!anyOf.every(
 			(branch) =>
 				isPlainObject(branch) &&
@@ -50,11 +65,11 @@ const toEnum = (schema: Record<string, unknown>): Record<string, unknown> => {
 	return {
 		...rest,
 		...(types.size === 1 && type !== undefined && { type }),
-		enum: branches.map((branch) => branch.const)
+		enum: uniqueSchemas(branches.map((branch) => branch.const))
 	};
 };
 
-/** Options of `t.File` and `t.Files`, sizes in bytes. */
+/** Options of `t.File` and `t.Files`, sizes in bytes, also the byte lengths of `t.ArrayBuffer` and `t.Uint8Array`. */
 interface FileOptions {
 	types?: string[];
 	minSize?: number;
@@ -94,6 +109,10 @@ const fileOptionsOf = (node: unknown): FileOptions => {
 		if (minItems) options.minItems = Number(minItems);
 		const [, maxItems] = /^Expect less than (\d+) files$/.exec(message) ?? [];
 		if (maxItems) options.maxItems = Number(maxItems);
+		const [, minBytes] = /^Expect byte to be more than (\d+)$/.exec(message) ?? [];
+		if (minBytes) options.minSize = Number(minBytes);
+		const [, maxBytes] = /^Expect byte to be less than (\d+)$/.exec(message) ?? [];
+		if (maxBytes) options.maxSize = Number(maxBytes);
 	}
 	return options;
 };
@@ -121,10 +140,6 @@ const filesItemOf = (node: unknown): Record<string, unknown> | undefined => {
 		: undefined;
 };
 
-/** The media types a `t.File` or `t.Files` accepts, as an Encoding Object's `contentType` lists them. */
-export const fileMediaTypesOf = (node: unknown): string[] | undefined =>
-	fileOptionsOf(isFile(node) ? node : filesItemOf(node)).types;
-
 /** `maxLength` bounds unencoded binary in bytes (OAS 3.2 4.14.3.2). */
 const toFileSchema = (node: Record<string, unknown>): Record<string, unknown> => {
 	const { minSize, maxSize } = fileOptionsOf(node);
@@ -142,8 +157,7 @@ const toFileSchema = (node: Record<string, unknown>): Record<string, unknown> =>
  */
 const toKindSchema = (node: Record<string, unknown>): Record<string, unknown> | undefined => {
 	// raw binary: the media type of the body or of its multipart part says it is binary (OAS 3.2 4.24.4.3)
-	if (isFile(node)) return toFileSchema(node);
-	if (isRawBinary(node)) return metaOf(node);
+	if (isFile(node) || isRawBinary(node)) return toFileSchema(node);
 	const file = filesItemOf(node);
 	if (file) {
 		const { minItems, maxItems } = fileOptionsOf(node);
@@ -163,6 +177,22 @@ const toKindSchema = (node: Record<string, unknown>): Record<string, unknown> | 
 	return undefined;
 };
 
+/** Keys left out of a converted schema. */
+const isDroppedKeyword = (key: string, value: unknown): boolean =>
+	// `~` keys are Elysia internals, `nullable` is OpenAPI 3.0 only, `headers` belongs to the Response Object
+	// (`withHeaders`), `$id` would rebase every `$ref` inside the component
+	key.startsWith('~') ||
+	key === 'nullable' ||
+	key === 'headers' ||
+	key === '$id' ||
+	// Elysia's custom validation message, not a description
+	key === 'error' ||
+	// an empty tuple: `prefixItems` needs an item, `items: false` alone describes it
+	(key === 'items' && Array.isArray(value) && value.length === 0);
+
+/** The converted `$defs` of each `t.Cyclic`, which its `$ref`s, rewritten to components, no longer reach. */
+const cyclicDefs = new WeakSet<object>();
+
 /**
  * Converts a TypeBox schema to a plain JSON Schema 2020-12, without mutating it.
  *
@@ -181,10 +211,7 @@ export const toSchema = (node: unknown): unknown => {
 
 	const schema: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(node)) {
-		// `~` keys are Elysia internals, `nullable` is OpenAPI 3.0 only, `headers` belongs to the Response Object
-		// (`withHeaders`), `$id` would rebase every `$ref` inside the component
-		if (key.startsWith('~') || key === 'nullable' || key === 'headers' || key === '$id')
-			continue;
+		if (isDroppedKeyword(key, value)) continue;
 
 		// a `$ref` that is neither a pointer nor a URI names a model (`t.Ref('User')`)
 		if (
@@ -207,20 +234,101 @@ export const toSchema = (node: unknown): unknown => {
 		else if (key === 'additionalItems') schema.items = toSchema(value);
 		// OAS 3.2 deprecates `example` for JSON Schema's `examples`
 		else if (key === 'example')
-			schema.examples = [
+			schema.examples = uniqueSchemas([
 				...(Array.isArray(node.examples) ? (node.examples as unknown[]) : []),
 				value
-			];
+			]);
 		// values, not schemas
 		else if (['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-'))
 			schema[key] ??= value;
 		else schema[key] = toSchema(value);
 	}
 
+	if (IsCyclic(node)) cyclicDefs.add(schema.$defs as object);
 	// a bare OpenAPI 3.0 `nullable`, Elysia's `t.Nullable` already has a `null` branch
 	if (node.nullable === true && !('anyOf' in node))
 		return { anyOf: [toEnum(schema), { type: 'null' }] };
 	return toEnum(schema);
+};
+
+/** Keywords whose values are values, not schemas. */
+const isValueKeyword = (key: string): boolean =>
+	['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-');
+
+/** Keywords whose keys are names, not keywords, and whose values are schemas. */
+const NAMED_KEYWORDS: ReadonlySet<string> = new Set([
+	'properties',
+	'patternProperties',
+	'$defs',
+	'dependentSchemas'
+]);
+
+/** The parts of a converted schema that may hold schemas. */
+const schemaChildren = (node: Record<string, unknown>): unknown[] =>
+	Object.entries(node).flatMap(([key, value]) => {
+		if (isValueKeyword(key)) return [];
+		return NAMED_KEYWORDS.has(key) && isPlainObject(value) ? Object.values(value) : [value];
+	});
+
+/**
+ * A copy of `node` whose `$ref`s named in `renames` point to their new target. Only the schemas are copied, values
+ * (a function `default` included) are kept as they are.
+ */
+const renameRefs = (node: unknown, renames: ReadonlyMap<string, string>): unknown => {
+	if (Array.isArray(node)) return node.map((item) => renameRefs(item, renames));
+	if (!isPlainObject(node)) return node;
+	return Object.fromEntries(
+		Object.entries(node).map(([key, value]) => {
+			if (isValueKeyword(key)) return [key, value];
+			if (key === '$ref' && typeof value === 'string')
+				return [key, renames.get(value) ?? value];
+			if (NAMED_KEYWORDS.has(key) && isPlainObject(value))
+				return [
+					key,
+					Object.fromEntries(
+						Object.entries(value).map(([name, sub]) => [name, renameRefs(sub, renames)])
+					)
+				];
+			return [key, renameRefs(value, renames)];
+		})
+	);
+};
+
+/**
+ * Moves the `$defs` of each `t.Cyclic` converted by {@link toSchema} into `schemas`, so that its `$ref`s, rewritten to
+ * components, resolve. When a name is taken by a different schema, all the `t.Cyclic`'s definitions get the same
+ * numeric suffix, and its `$ref`s follow them. Any other schema, the `base` ones included, is left untouched.
+ *
+ * @param node - A converted schema, or any part of the document holding some
+ * @param schemas - The components' schemas, completed in place
+ */
+export const hoistDefs = (node: unknown, schemas: Record<string, unknown>): void => {
+	if (Array.isArray(node)) for (const item of node) hoistDefs(item, schemas);
+	if (!isPlainObject(node)) return;
+	for (const child of schemaChildren(node)) hoistDefs(child, schemas);
+
+	const { $defs } = node;
+	if (!isPlainObject($defs) || !cyclicDefs.has($defs)) return;
+	delete node.$defs;
+	// the definitions are named together: a definition changes through a renamed one it refers to
+	const defs = Object.entries($defs);
+	for (let suffix = 1; ; suffix++) {
+		const keyOf = (name: string): string => `${componentName(name)}${suffix > 1 ? suffix : ''}`;
+		const renames = new Map(
+			defs.map(([name]) => [componentRef(name), `${COMPONENT_PREFIX}${keyOf(name)}`])
+		);
+		const renamed = defs.map(([name, def]) => [keyOf(name), renameRefs(def, renames)] as const);
+		// each name is free, or holds the same schema
+		if (
+			renamed.every(
+				([key, def]) => schemas[key] === undefined || Bun.deepEquals(schemas[key], def)
+			)
+		) {
+			Object.assign(node, renameRefs(node, renames));
+			for (const [key, def] of renamed) schemas[key] ??= def;
+			return;
+		}
+	}
 };
 
 /**
@@ -309,6 +417,25 @@ export const withSSE = <const Schema extends AnySchema>(schema: Schema): Schema 
 export const isSSE = (node: unknown): boolean =>
 	typeof node === 'object' && node !== null && '~sse' in node;
 
+/** An event's `data`: Elysia sends a string as is, any other value as JSON. */
+const toEventData = (data: Record<string, unknown>): Record<string, unknown> => {
+	if (data.type === 'string') return data;
+	const toJson = (contentSchema: unknown): Record<string, unknown> => ({
+		type: 'string',
+		contentMediaType: 'application/json',
+		contentSchema
+	});
+	const { anyOf, ...rest } = data;
+	const branches = (Array.isArray(anyOf) ? anyOf : []) as Record<string, unknown>[];
+	const texts = branches.filter((branch) => branch.type === 'string');
+	if (texts.length === 0) return toJson(data);
+	const values = branches.filter((branch) => branch.type !== 'string');
+	return {
+		...rest,
+		anyOf: [...texts, toJson(values.length === 1 ? values[0] : { anyOf: values })]
+	};
+};
+
 /**
  * The schema of a parsed event (OAS 3.2 4.14.4): its fields are strings, `data` JSON-encoded when it is not one,
  * except `retry`, an integer.
@@ -329,19 +456,73 @@ export const toEventSchema = (schema: Record<string, unknown>): Record<string, u
 		...schema,
 		properties: {
 			...properties,
-			...(isPlainObject(data) &&
-				data.type !== 'string' && {
-					data: {
-						type: 'string',
-						contentMediaType: 'application/json',
-						contentSchema: data
+			...(isPlainObject(data) && { data: toEventData(data) }),
+			// Elysia accepts a number, sent as its digits: only its annotations still apply
+			...(isPlainObject(id) &&
+				id.type !== 'string' && {
+					id: {
+						...Object.fromEntries(
+							Object.entries(id).filter(([key]) =>
+								['title', 'description'].includes(key)
+							)
+						),
+						type: 'string'
 					}
 				}),
-			// Elysia accepts a number, sent as its digits
-			...(isPlainObject(id) && id.type !== 'string' && { id: { type: 'string' } }),
 			...(isPlainObject(retry) && { retry: { ...retry, type: 'integer' } })
 		}
 	};
+};
+
+/** A `t.File`, a `t.Files`, or an array or a union holding one at any depth. */
+const holdsFile = (node: unknown, models: Models): boolean => {
+	const schema = resolveModel(node, models);
+	return (
+		isFile(schema) ||
+		filesItemOf(schema) !== undefined ||
+		(IsArray(schema) && holdsFile(schema.items, models)) ||
+		(IsUnion(schema) && schema.anyOf.some((branch) => holdsFile(branch, models)))
+	);
+};
+
+/**
+ * The media types a part is sent with: a file's own types, otherwise the defaults of the Encoding Object's
+ * `contentType` (OAS 3.2 4.15.1.1) for the converted schema, `application/octet-stream` for a file without types.
+ *
+ * @param isItem - Whether `node` is an item of an array part, whose arrays are sent as JSON instead of one part each
+ */
+const partMediaTypesOf = (node: unknown, models: Models, isItem = false): string[] => {
+	const schema = resolveModel(node, models);
+	if (isFile(schema)) return fileOptionsOf(schema).types ?? ['application/octet-stream'];
+	const file = filesItemOf(schema);
+	if (file) return partMediaTypesOf(file, models, isItem);
+	if (IsUnion(schema))
+		return [
+			...new Set(schema.anyOf.flatMap((branch) => partMediaTypesOf(branch, models, isItem)))
+		];
+	// a `null` or `undefined` is omitted, its media type is irrelevant
+	if (['null', 'undefined'].includes(jsonTypeOf(schema) as string)) return [];
+	// an array part is sent as one part per item (OAS 3.2 4.14.5.1)
+	if (IsArray(schema) && !isItem) return partMediaTypesOf(schema.items, models, true);
+
+	// an unknown model has no type
+	const { type } = (toSchema(schema) ?? {}) as { readonly type?: unknown };
+	if (type === 'object' || type === 'array') return ['application/json'];
+	return type === undefined ? ['application/octet-stream'] : ['text/plain'];
+};
+
+/**
+ * The `contentType` of a part holding a `t.File` or `t.Files`, as a list of media types.
+ *
+ * @returns `undefined` when the part holds no file, or is sent with the default `application/octet-stream` of a
+ * schema without `type`
+ */
+export const fileMediaTypesOf = (node: unknown, models: Models): string[] | undefined => {
+	if (!holdsFile(node, models)) return undefined;
+	const mediaTypes = partMediaTypesOf(node, models);
+	return mediaTypes.length === 1 && mediaTypes[0] === 'application/octet-stream'
+		? undefined
+		: mediaTypes;
 };
 
 export const containsFile = (node: unknown, models: Models, seen = new Set<unknown>()): boolean => {
