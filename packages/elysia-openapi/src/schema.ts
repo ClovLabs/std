@@ -50,7 +50,7 @@ const toEnum = (schema: Record<string, unknown>): Record<string, unknown> => {
 	return {
 		...rest,
 		...(types.size === 1 && type !== undefined && { type }),
-		enum: branches.map((branch) => branch.const)
+		enum: uniqueSchemas(branches.map((branch) => branch.const))
 	};
 };
 
@@ -167,6 +167,8 @@ const isDroppedKeyword = (key: string, value: unknown): boolean =>
 	key === 'nullable' ||
 	key === 'headers' ||
 	key === '$id' ||
+	// Elysia's custom validation message, not a description
+	key === 'error' ||
 	// an empty tuple: `prefixItems` needs an item, `items: false` alone describes it
 	(key === 'items' && Array.isArray(value) && value.length === 0);
 

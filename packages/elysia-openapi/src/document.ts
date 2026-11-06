@@ -1,7 +1,6 @@
 import { StatusMapBack, type AnyElysia, type InputSchema } from 'elysia';
 import { isProduction } from 'elysia/error';
 import type { ContentType, UnwrapArray } from 'elysia/types';
-import { isRecordNumber } from 'elysia/utils';
 import { IsOptional, IsUnion } from 'typebox';
 
 import type {
@@ -143,8 +142,10 @@ const toParameters = (
 				required: location === 'path' || (shape.required.has(name) && !hasDefault(resolved))
 			};
 			const schema = toRootSchema(property);
-			// Elysia reads an object query value as JSON only
-			return location === 'query' && jsonTypeOf(resolved) === 'object'
+			// Elysia reads an object query value, and an object or array cookie, as JSON only
+			const type = jsonTypeOf(resolved);
+			return (location === 'query' && type === 'object') ||
+				(location === 'cookie' && (type === 'object' || type === 'array'))
 				? { ...common, content: { 'application/json': { schema } } }
 				: { ...common, schema };
 		});
@@ -162,6 +163,8 @@ const toBodyMediaTypes = (
 	// Elysia only applies the first parser
 	const [parser] = [parse].flat();
 	if (typeof parser === 'function') return ['*/*'];
+	const schemas = bodies.map((body) => resolveModel(body, models));
+	const hasFile = schemas.some((schema) => containsFile(schema, models));
 	if (typeof parser === 'string') {
 		// Elysia's `parse` shorthands, a media type is read as is
 		const shorthands: Readonly<Record<string, readonly string[]>> = {
@@ -176,12 +179,17 @@ const toBodyMediaTypes = (
 			readonly string[]
 		>;
 		const mediaTypes = parser.includes('/') ? [parser] : shorthands[parser];
-		if (mediaTypes) return mediaTypes;
+		// a text form cannot carry a raw file (OAS 3.2 4.15.3.2), unless it is all the parser reads
+		if (mediaTypes)
+			return hasFile && mediaTypes.length > 1
+				? mediaTypes.filter(
+						(mediaType) => mediaType !== 'application/x-www-form-urlencoded'
+					)
+				: mediaTypes;
 	}
 
-	const schemas = bodies.map((body) => resolveModel(body, models));
 	if (schemas.some(isRawBinary)) return ['application/octet-stream'];
-	if (schemas.some((schema) => containsFile(schema, models))) return ['multipart/form-data'];
+	if (hasFile) return ['multipart/form-data'];
 	if (bodies.every((body) => isPrimitive(body, models)))
 		return ['application/json', 'text/plain'];
 	return FORM_MEDIA_TYPES;
@@ -522,7 +530,8 @@ const toTemplate = (segment: string): string => {
 const toOpenAPIPaths = (path: string): `/${string}`[] => {
 	const segments = path.split('/');
 	const templated = segments.map(toTemplate);
-	const paths = [templated.join('/')];
+	// Elysia serves `''` as `/`, a path key starts with `/` (OAS 3.2 4.8.1)
+	const paths = [templated.join('/') || '/'];
 	segments.forEach((segment, index) => {
 		if (segment.includes(':') && segment.endsWith('?'))
 			paths.push(templated.slice(0, index).join('/') || '/');
@@ -577,9 +586,12 @@ const toTags = (names: Iterable<string>, base: readonly TagObject[]): TagObject[
 /** Elysia takes a single schema as the `200` response, or a status map. */
 const toStatusMap = (response: InputSchema['response']): Readonly<Record<string, HookSchema>> => {
 	if (response === undefined) return {};
-	return typeof response === 'object' && isRecordNumber(response)
+	// a map of statuses, `default` included (OAS 3.2 4.16.1), otherwise the 200 schema
+	return typeof response === 'object' &&
+		Object.keys(response).length > 0 &&
+		Object.keys(response).every((key) => key === 'default' || !Number.isNaN(Number(key)))
 		? (response as Record<string, HookSchema>)
-		: { 200: response };
+		: { 200: response as HookSchema };
 };
 
 /**
@@ -594,7 +606,8 @@ const toResponseLayers = (
 	const merged = (hooks.schemas ?? []).map((layer) => toStatusMap(layer.response));
 
 	return Object.fromEntries(
-		Object.entries(toStatusMap(hooks.response)).map(([status, schema]) => {
+		// `app.routes` drops a route's own `default`
+		Object.entries({ ...own, ...toStatusMap(hooks.response) }).map(([status, schema]) => {
 			const layers = uniqueSchemas(
 				[own[status], ...merged.map((layer) => layer[status])].filter(
 					(layer) => layer !== undefined

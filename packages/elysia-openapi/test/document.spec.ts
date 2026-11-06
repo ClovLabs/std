@@ -593,6 +593,67 @@ describe.concurrent('buildDocument', () => {
 		});
 	});
 
+	test('should keep paths, cookies, default responses, form bodies and enums within the spec', () => {
+		const app = new Elysia()
+			.get('', () => 'root')
+			.get(
+				'/c',
+				{
+					cookie: t.Cookie({ o: t.Object({ a: t.String() }), list: t.Array(t.String()) }),
+					response: { 200: t.String(), default: t.Object({ e: t.String() }) }
+				},
+				() => 'x'
+			)
+			.post(
+				'/form',
+				{
+					parse: 'formdata',
+					body: t.Object({
+						f: t.File(),
+						k: t.Union([t.Literal('a'), t.Literal('a')], { error: 'bad kind' })
+					})
+				},
+				() => 1
+			);
+		const { paths } = buildDocument(app);
+
+		expect(Object.keys(paths ?? {})).toContain('/');
+		expect(paths?.['/c']?.get?.parameters).toEqual([
+			{
+				name: 'o',
+				in: 'cookie',
+				required: true,
+				content: {
+					'application/json': {
+						schema: {
+							type: 'object',
+							properties: { a: { type: 'string' } },
+							required: ['a']
+						}
+					}
+				}
+			},
+			{
+				name: 'list',
+				in: 'cookie',
+				required: true,
+				content: {
+					'application/json': { schema: { type: 'array', items: { type: 'string' } } }
+				}
+			}
+		]);
+		expect(Object.keys(paths?.['/c']?.get?.responses ?? {})).toEqual(['200', '422', 'default']);
+		const body = paths?.['/form']?.post?.requestBody as RequestBodyObject | undefined;
+		expect(Object.keys(body?.content ?? {})).toEqual(['multipart/form-data']);
+		expect(
+			(
+				body?.content['multipart/form-data'] as
+					| { schema?: { properties?: unknown } }
+					| undefined
+			)?.schema?.properties
+		).toEqual({ f: {}, k: { type: 'string', enum: ['a'] } });
+	});
+
 	test('should document raw binary bodies as octet-stream', () => {
 		const app = new Elysia().post('/raw', { body: t.Uint8Array() }, () => 1);
 
