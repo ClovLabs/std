@@ -17,9 +17,11 @@ export interface ObjectShape {
 /** Types Elysia sends as text. */
 const TEXT_TYPES: ReadonlySet<unknown> = new Set(['string', 'number', 'integer', 'boolean']);
 
-/** JSON Pointer to a component schema, escaped per RFC 6901. */
-const componentRef = (name: string): string =>
-	`#/components/schemas/${name.replaceAll('~', '~0').replaceAll('/', '~1')}`;
+/** A model name as a component key, which only takes letters, digits, `.`, `-` and `_` (OAS 3.2 4.7.1). */
+export const componentName = (name: string): string => name.replaceAll(/[^a-zA-Z0-9.\-_]/g, '_');
+
+/** JSON Pointer to a component schema, its key needing no escaping. */
+const componentRef = (name: string): string => `#/components/schemas/${componentName(name)}`;
 
 export const uniqueSchemas = <T>(schemas: readonly T[]): T[] =>
 	schemas.filter(
@@ -32,9 +34,10 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 /** `anyOf` of `{ const }` branches (a union of literals) as an `enum`. */
 const toEnum = (schema: Record<string, unknown>): Record<string, unknown> => {
 	const { anyOf, ...rest } = schema;
+	// an empty union accepts nothing, and `anyOf` needs a branch
+	if (Array.isArray(anyOf) && anyOf.length === 0) return { ...rest, not: {} };
 	if (
 		!Array.isArray(anyOf) ||
-		anyOf.length === 0 ||
 		!anyOf.every(
 			(branch) =>
 				isPlainObject(branch) &&
@@ -54,7 +57,7 @@ const toEnum = (schema: Record<string, unknown>): Record<string, unknown> => {
 	};
 };
 
-/** Options of `t.File` and `t.Files`, sizes in bytes. */
+/** Options of `t.File` and `t.Files`, sizes in bytes, also the byte lengths of `t.ArrayBuffer` and `t.Uint8Array`. */
 interface FileOptions {
 	types?: string[];
 	minSize?: number;
@@ -94,6 +97,10 @@ const fileOptionsOf = (node: unknown): FileOptions => {
 		if (minItems) options.minItems = Number(minItems);
 		const [, maxItems] = /^Expect less than (\d+) files$/.exec(message) ?? [];
 		if (maxItems) options.maxItems = Number(maxItems);
+		const [, minBytes] = /^Expect byte to be more than (\d+)$/.exec(message) ?? [];
+		if (minBytes) options.minSize = Number(minBytes);
+		const [, maxBytes] = /^Expect byte to be less than (\d+)$/.exec(message) ?? [];
+		if (maxBytes) options.maxSize = Number(maxBytes);
 	}
 	return options;
 };
@@ -138,8 +145,7 @@ const toFileSchema = (node: Record<string, unknown>): Record<string, unknown> =>
  */
 const toKindSchema = (node: Record<string, unknown>): Record<string, unknown> | undefined => {
 	// raw binary: the media type of the body or of its multipart part says it is binary (OAS 3.2 4.24.4.3)
-	if (isFile(node)) return toFileSchema(node);
-	if (isRawBinary(node)) return metaOf(node);
+	if (isFile(node) || isRawBinary(node)) return toFileSchema(node);
 	const file = filesItemOf(node);
 	if (file) {
 		const { minItems, maxItems } = fileOptionsOf(node);
@@ -230,6 +236,31 @@ export const toSchema = (node: unknown): unknown => {
 };
 
 /**
+ * Moves the `$defs` of `node` into `schemas`: `t.Cyclic` keeps its schemas there, while its `$ref`s are rewritten to
+ * components. A component of the same name is kept.
+ *
+ * @param node - A converted schema, or any part of the document holding some
+ * @param schemas - The components' schemas, completed in place
+ */
+export const hoistDefs = (node: unknown, schemas: Record<string, unknown>): void => {
+	if (Array.isArray(node)) for (const item of node) hoistDefs(item, schemas);
+	if (!isPlainObject(node)) return;
+
+	for (const [key, value] of Object.entries(node)) {
+		// values, not schemas
+		if (['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-'))
+			continue;
+		if (key === '$defs' && isPlainObject(value)) {
+			delete node.$defs;
+			for (const [name, def] of Object.entries(value)) {
+				hoistDefs(def, schemas);
+				schemas[componentName(name)] ??= def;
+			}
+		} else hoistDefs(value, schemas);
+	}
+};
+
+/**
  * Attaches response headers to a response schema, documented as the response's `headers`.
  *
  * Elysia does not validate response headers, this is documentation only.
@@ -315,6 +346,25 @@ export const withSSE = <const Schema extends AnySchema>(schema: Schema): Schema 
 export const isSSE = (node: unknown): boolean =>
 	typeof node === 'object' && node !== null && '~sse' in node;
 
+/** An event's `data`: Elysia sends a string as is, any other value as JSON. */
+const toEventData = (data: Record<string, unknown>): Record<string, unknown> => {
+	if (data.type === 'string') return data;
+	const toJson = (contentSchema: unknown): Record<string, unknown> => ({
+		type: 'string',
+		contentMediaType: 'application/json',
+		contentSchema
+	});
+	const { anyOf, ...rest } = data;
+	const branches = (Array.isArray(anyOf) ? anyOf : []) as Record<string, unknown>[];
+	const texts = branches.filter((branch) => branch.type === 'string');
+	if (texts.length === 0) return toJson(data);
+	const values = branches.filter((branch) => branch.type !== 'string');
+	return {
+		...rest,
+		anyOf: [...texts, toJson(values.length === 1 ? values[0] : { anyOf: values })]
+	};
+};
+
 /**
  * The schema of a parsed event (OAS 3.2 4.14.4): its fields are strings, `data` JSON-encoded when it is not one,
  * except `retry`, an integer.
@@ -335,14 +385,7 @@ export const toEventSchema = (schema: Record<string, unknown>): Record<string, u
 		...schema,
 		properties: {
 			...properties,
-			...(isPlainObject(data) &&
-				data.type !== 'string' && {
-					data: {
-						type: 'string',
-						contentMediaType: 'application/json',
-						contentSchema: data
-					}
-				}),
+			...(isPlainObject(data) && { data: toEventData(data) }),
 			// Elysia accepts a number, sent as its digits: only its annotations still apply
 			...(isPlainObject(id) &&
 				id.type !== 'string' && {

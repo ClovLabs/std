@@ -1,7 +1,7 @@
 import { StatusMapBack, type AnyElysia, type InputSchema } from 'elysia';
 import { isProduction } from 'elysia/error';
 import type { ContentType, UnwrapArray } from 'elysia/types';
-import { IsOptional, IsUnion } from 'typebox';
+import { IsOptional, IsUnion, Union } from 'typebox';
 
 import type {
 	HeaderObject,
@@ -20,10 +20,12 @@ import type {
 	TagObject
 } from './openapi-types-3.2';
 import {
+	componentName,
 	containsFile,
 	descriptionOf,
 	fileMediaTypesOf,
 	hasDefault,
+	hoistDefs,
 	type HookSchema,
 	isFile,
 	isPrimitive,
@@ -260,8 +262,23 @@ const toResponseContent = (
 	const [first] = schemas;
 	const resolved = resolveModel(first, models);
 	const type = jsonTypeOf(resolved);
-	// Elysia sends these without a body
+	// Elysia sends these without a body, a union's payloads are its other branches
 	if (type === 'void' || type === 'null' || type === 'undefined') return;
+	if (schemas.length === 1 && IsUnion(resolved)) {
+		const payloads = resolved.anyOf.filter(
+			(branch) =>
+				!['void', 'null', 'undefined'].includes(
+					jsonTypeOf(resolveModel(branch, models)) as string
+				)
+		);
+		if (payloads.length === 0) return;
+		if (payloads.length < resolved.anyOf.length)
+			return toResponseContent(
+				[payloads.length === 1 ? (payloads[0] as HookSchema) : Union(payloads)],
+				models,
+				status
+			);
+	}
 	if (isSSE(resolved))
 		return {
 			'text/event-stream': {
@@ -543,13 +560,32 @@ const isPathParameter = (
 	parameter: ParameterObject | ReferenceObject
 ): parameter is ParameterObject => !isReference(parameter) && parameter.in === 'path';
 
-/** Keeps only the path parameters templated in `path`, declares the missing ones as required strings. */
-const withPathParameters = (operation: OperationObject, path: string): OperationObject => {
-	const names = path.match(/\{[^}]+\}/g)?.map((template) => template.slice(1, -1)) ?? [];
-	const parameters = (operation.parameters ?? []).filter(
-		(parameter) => !isPathParameter(parameter) || names.includes(parameter.name)
-	);
-	for (const name of names)
+/**
+ * Keeps only the path parameters templated in `path`, named as in `documented`, the path of the same hierarchy it
+ * is documented under, and declares the missing ones as required strings.
+ */
+const withPathParameters = (
+	operation: OperationObject,
+	path: string,
+	documented: string
+): OperationObject => {
+	const namesOf = (template: string): string[] =>
+		template.match(/\{[^}]+\}/g)?.map((name) => name.slice(1, -1)) ?? [];
+	const names = namesOf(path);
+	const documentedNames = namesOf(documented);
+	const parameters = (operation.parameters ?? [])
+		.filter((parameter) => !isPathParameter(parameter) || names.includes(parameter.name))
+		// a path parameter is required (OAS 3.2 4.12.2.1), one from `detail.parameters` included
+		.map((parameter) =>
+			isPathParameter(parameter)
+				? {
+						...parameter,
+						name: documentedNames[names.indexOf(parameter.name)] ?? parameter.name,
+						required: true
+					}
+				: parameter
+		);
+	for (const name of documentedNames)
 		if (!parameters.some((parameter) => isPathParameter(parameter) && parameter.name === name))
 			parameters.push({ name, in: 'path', required: true, schema: { type: 'string' } });
 
@@ -667,6 +703,31 @@ const readRoutes = (app: AnyElysia): DocumentedRoute[] => {
 };
 
 /**
+ * The components' schemas: the base ones, the validation problem, the models, and the `$defs` of a `t.Cyclic`
+ * moved out of `paths` and of the models.
+ */
+const toComponentSchemas = (
+	models: Models,
+	base: Partial<OpenAPIObject>,
+	paths: PathsObject,
+	operations: readonly OperationObject[]
+): Record<string, SchemaObject> => {
+	const schemas: Record<string, SchemaObject> = {
+		...base.components?.schemas,
+		...validationComponent(operations),
+		...Object.fromEntries(
+			Object.entries(models).map(([name, model]) => [
+				componentName(name),
+				toSchema(model) as SchemaObject
+			])
+		)
+	};
+	hoistDefs(paths, schemas);
+	for (const schema of Object.values(schemas)) hoistDefs(schema, schemas);
+	return schemas;
+};
+
+/**
  * Builds the OpenAPI 3.2 document from the routes and models registered on `app`.
  *
  * @param app - The Elysia instance to document
@@ -681,6 +742,8 @@ export const buildDocument = (app: AnyElysia, base: Partial<OpenAPIObject> = {})
 	const tagNames = new Set<string>();
 	// each generated operation with the operationId it asks for
 	const generated = new Map<OperationObject, string>();
+	// templated paths of the same hierarchy are one path (OAS 3.2 4.8.1): the first one's names are kept
+	const hierarchies = new Map<string, `/${string}`>();
 
 	for (const route of readRoutes(app)) {
 		const routeMethod = route.method.toLowerCase();
@@ -695,12 +758,15 @@ export const buildDocument = (app: AnyElysia, base: Partial<OpenAPIObject> = {})
 		// `.all()` routes answer every method
 		for (const method of isCatchAll ? FIXED_METHODS : [routeMethod]) {
 			const operation = toOperation(route, models, method);
-			for (const path of toOpenAPIPaths(route.path)) {
+			for (const routePath of toOpenAPIPaths(route.path)) {
+				const hierarchy = routePath.replaceAll(/\{[^}]+\}/g, '{}');
+				const path = hierarchies.get(hierarchy) ?? routePath;
+				hierarchies.set(hierarchy, path);
 				const item: PathItemObject = { ...paths[path] };
 				// a method's own route answers before `.all()`
 				if (isCatchAll && isFixedMethod(method) && item[method]) continue;
 
-				const identified = withPathParameters(operation, path);
+				const identified = withPathParameters(operation, routePath, path);
 				generated.set(identified, identified.operationId ?? toOperationId(method, path));
 				if (isFixedMethod(method)) item[method] = identified;
 				else
@@ -758,16 +824,7 @@ export const buildDocument = (app: AnyElysia, base: Partial<OpenAPIObject> = {})
 		tags: toTags(tagNames, base.tags ?? []),
 		components: {
 			...base.components,
-			schemas: {
-				...base.components?.schemas,
-				...validationComponent([...generated.keys()]),
-				...Object.fromEntries(
-					Object.entries(models).map(([name, model]) => [
-						name,
-						toSchema(model) as SchemaObject
-					])
-				)
-			}
+			schemas: toComponentSchemas(models, base, mergedPaths, [...generated.keys()])
 		}
 	};
 };

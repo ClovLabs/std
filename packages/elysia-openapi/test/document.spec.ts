@@ -654,6 +654,96 @@ describe.concurrent('buildDocument', () => {
 		).toEqual({ f: {}, k: { type: 'string', enum: ['a'] } });
 	});
 
+	test('should keep names, paths, unions, cyclic schemas and byte bounds within the spec', () => {
+		const app = new Elysia()
+			.model({ 'My Model': t.Object({ a: t.String() }) })
+			.get(
+				'/u/:id',
+				{
+					response: 'My Model',
+					detail: {
+						parameters: [{ name: 'id', in: 'path', schema: { type: 'integer' } }]
+					} as never
+				},
+				() => ({ a: 'x' })
+			)
+			.post('/u/:name', { params: t.Object({ name: t.String() }) }, () => 1)
+			.post('/never', { body: t.Object({ n: t.Union([]) }) }, () => 1)
+			.post(
+				'/cyclic',
+				{ body: t.Cyclic({ Node: t.Object({ next: t.Optional(t.Ref('Node')) }) }, 'Node') },
+				() => 1
+			)
+			.get(
+				'/events',
+				{
+					response: withSSE(
+						t.Object({ data: t.Union([t.String(), t.Object({ n: t.Number() })]) })
+					)
+				},
+				async function* () {
+					yield sse({ data: 'x' });
+				}
+			)
+			.get('/maybe', { response: t.Union([t.String(), t.Null()]) }, () => null)
+			.post('/raw', { body: t.Uint8Array({ minByteLength: 2, maxByteLength: 10 }) }, () => 1);
+		const { paths, components } = buildDocument(app);
+		const jsonBody = (path: '/never' | '/cyclic' | '/raw', mediaType = 'application/json') =>
+			(paths?.[path]?.post?.requestBody as RequestBodyObject | undefined)?.content[mediaType];
+
+		expect(Object.keys(components?.schemas ?? {})).toEqual(['validation', 'My_Model', 'Node']);
+		expect(Object.keys(paths ?? {}).filter((path) => path.startsWith('/u/'))).toEqual([
+			'/u/{id}'
+		]);
+		expect(paths?.['/u/{id}']?.get?.parameters).toEqual([
+			{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
+		]);
+		expect(paths?.['/u/{id}']?.post?.parameters).toEqual([
+			{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+		]);
+		expect(jsonBody('/never')).toEqual({
+			schema: { type: 'object', properties: { n: { not: {} } }, required: ['n'] }
+		});
+		expect(jsonBody('/cyclic')).toEqual({ schema: { $ref: '#/components/schemas/Node' } });
+		expect(components?.schemas?.Node).toEqual({
+			type: 'object',
+			properties: { next: { $ref: '#/components/schemas/Node' } },
+			required: []
+		});
+		expect(
+			(paths?.['/events']?.get?.responses?.['200'] as ResponseObject | undefined)?.content
+		).toEqual({
+			'text/event-stream': {
+				itemSchema: {
+					type: 'object',
+					properties: {
+						data: {
+							anyOf: [
+								{ type: 'string' },
+								{
+									type: 'string',
+									contentMediaType: 'application/json',
+									contentSchema: {
+										type: 'object',
+										properties: { n: { type: 'number' } },
+										required: ['n']
+									}
+								}
+							]
+						}
+					},
+					required: ['data']
+				}
+			}
+		});
+		expect(
+			(paths?.['/maybe']?.get?.responses?.['200'] as ResponseObject | undefined)?.content
+		).toEqual({ 'text/plain': { schema: { type: 'string' } } });
+		expect(jsonBody('/raw', 'application/octet-stream')).toEqual({
+			schema: { minLength: 2, maxLength: 10 }
+		});
+	});
+
 	test('should document raw binary bodies as octet-stream', () => {
 		const app = new Elysia().post('/raw', { body: t.Uint8Array() }, () => 1);
 
@@ -1008,7 +1098,7 @@ describe.concurrent('buildDocument edge cases', () => {
 					e: { type: 'string', enum: ['a', 'b'] },
 					s: { anyOf: [{ type: 'string' }, { type: 'null' }] },
 					m: { $ref: '#/components/schemas/Missing' },
-					w: { $ref: '#/components/schemas/Foo~1Bar' }
+					w: { $ref: '#/components/schemas/Foo_Bar' }
 				},
 				required: ['v', 'u', 'n', 'e', 's', 'm', 'w']
 			}
