@@ -773,7 +773,8 @@ describe.concurrent('buildDocument', () => {
 			)
 			.post('/b2', { body: tree({ b: t.Number() }) }, () => 1)
 			.post('/la', { body: withLeaf(t.Object({ a: t.String() })) }, () => 1)
-			.post('/lb', { body: withLeaf(t.Object({ b: t.Number() })) }, () => 1);
+			.post('/lb', { body: withLeaf(t.Object({ b: t.Number() })) }, () => 1)
+			.post('/fn', { body: tree({ id: t.String({ default: () => 'generated' }) }) }, () => 1);
 		const foo: SchemaObject = {
 			$defs: { Bar: { type: 'string' } },
 			properties: { b: { $ref: '#/$defs/Bar' } }
@@ -785,11 +786,11 @@ describe.concurrent('buildDocument', () => {
 			(paths?.[path]?.post?.requestBody as RequestBodyObject | undefined)?.content;
 
 		expect(
-			(['/a', '/b', '/same', '/tree', '/b2', '/la', '/lb'] as const).map(
+			(['/a', '/b', '/same', '/tree', '/b2', '/la', '/lb', '/fn'] as const).map(
 				(path) => bodyOf(path)?.['application/json']
 			)
 		).toEqual(
-			['Node', 'Node2', 'Node', 'Tree2', 'Node2', 'Twig', 'Twig2'].map((name) => ({
+			['Node', 'Node2', 'Node', 'Tree2', 'Node2', 'Twig', 'Twig2', 'Node3'].map((name) => ({
 				schema: { $ref: `#/components/schemas/${name}` }
 			}))
 		);
@@ -803,8 +804,14 @@ describe.concurrent('buildDocument', () => {
 			'Twig',
 			'Leaf',
 			'Twig2',
-			'Leaf2'
+			'Leaf2',
+			'Node3'
 		]);
+		// a function default is kept as it is, JSON drops it
+		expect(
+			(components?.schemas?.Node3 as { properties: { id: { default: unknown } } }).properties
+				.id.default
+		).toBeFunction();
 		expect(components?.schemas?.Twig2).toEqual({
 			type: 'object',
 			properties: {

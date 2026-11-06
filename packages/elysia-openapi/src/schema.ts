@@ -251,25 +251,47 @@ export const toSchema = (node: unknown): unknown => {
 	return toEnum(schema);
 };
 
-/** The parts of a converted schema that may hold schemas, skipping values (`const`, `enum`, `examples`…). */
+/** Keywords whose values are values, not schemas. */
+const isValueKeyword = (key: string): boolean =>
+	['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-');
+
+/** Keywords whose keys are names, not keywords, and whose values are schemas. */
+const NAMED_KEYWORDS: ReadonlySet<string> = new Set([
+	'properties',
+	'patternProperties',
+	'$defs',
+	'dependentSchemas'
+]);
+
+/** The parts of a converted schema that may hold schemas. */
 const schemaChildren = (node: Record<string, unknown>): unknown[] =>
 	Object.entries(node).flatMap(([key, value]) => {
-		if (['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-'))
-			return [];
-		// keywords whose keys are names, not keywords
-		return ['properties', 'patternProperties', '$defs', 'dependentSchemas'].includes(key) &&
-			isPlainObject(value)
-			? Object.values(value)
-			: [value];
+		if (isValueKeyword(key)) return [];
+		return NAMED_KEYWORDS.has(key) && isPlainObject(value) ? Object.values(value) : [value];
 	});
 
-/** Rewrites, in place, the `$ref`s named in `renames` to their new target. */
-const renameRefs = (node: unknown, renames: ReadonlyMap<string, string>): void => {
-	if (Array.isArray(node)) for (const item of node) renameRefs(item, renames);
-	if (!isPlainObject(node)) return;
-	const renamed = typeof node.$ref === 'string' ? renames.get(node.$ref) : undefined;
-	if (renamed) node.$ref = renamed;
-	for (const child of schemaChildren(node)) renameRefs(child, renames);
+/**
+ * A copy of `node` whose `$ref`s named in `renames` point to their new target. Only the schemas are copied, values
+ * (a function `default` included) are kept as they are.
+ */
+const renameRefs = (node: unknown, renames: ReadonlyMap<string, string>): unknown => {
+	if (Array.isArray(node)) return node.map((item) => renameRefs(item, renames));
+	if (!isPlainObject(node)) return node;
+	return Object.fromEntries(
+		Object.entries(node).map(([key, value]) => {
+			if (isValueKeyword(key)) return [key, value];
+			if (key === '$ref' && typeof value === 'string')
+				return [key, renames.get(value) ?? value];
+			if (NAMED_KEYWORDS.has(key) && isPlainObject(value))
+				return [
+					key,
+					Object.fromEntries(
+						Object.entries(value).map(([name, sub]) => [name, renameRefs(sub, renames)])
+					)
+				];
+			return [key, renameRefs(value, renames)];
+		})
+	);
 };
 
 /**
@@ -295,18 +317,14 @@ export const hoistDefs = (node: unknown, schemas: Record<string, unknown>): void
 		const renames = new Map(
 			defs.map(([name]) => [componentRef(name), `${COMPONENT_PREFIX}${keyOf(name)}`])
 		);
-		const renamed = defs.map(([name, def]) => {
-			const copy = structuredClone(def);
-			renameRefs(copy, renames);
-			return [keyOf(name), copy] as const;
-		});
+		const renamed = defs.map(([name, def]) => [keyOf(name), renameRefs(def, renames)] as const);
 		// each name is free, or holds the same schema
 		if (
 			renamed.every(
 				([key, def]) => schemas[key] === undefined || Bun.deepEquals(schemas[key], def)
 			)
 		) {
-			renameRefs(node, renames);
+			Object.assign(node, renameRefs(node, renames));
 			for (const [key, def] of renamed) schemas[key] ??= def;
 			return;
 		}
