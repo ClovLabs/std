@@ -748,6 +748,14 @@ describe.concurrent('buildDocument', () => {
 	test('should rename a cyclic definition whose name is taken, and leave the base schemas alone', () => {
 		const tree = (properties: Parameters<typeof t.Object>[0]) =>
 			t.Cyclic({ Node: t.Object({ ...properties, kids: t.Array(t.Ref('Node')) }) }, 'Node');
+		const withLeaf = (leaf: ReturnType<typeof t.Object>) =>
+			t.Cyclic(
+				{
+					Twig: t.Object({ leaf: t.Ref('Leaf'), kids: t.Array(t.Ref('Twig')) }),
+					Leaf: leaf
+				},
+				'Twig'
+			);
 		const app = new Elysia()
 			.model({ Tree: t.Object({ leaf: t.Boolean() }) })
 			.post('/a', { body: tree({ a: t.String() }) }, () => 1)
@@ -762,7 +770,10 @@ describe.concurrent('buildDocument', () => {
 				'/unknown',
 				{ body: t.Object({ f: t.Union([t.File({ type: 'image/png' }), t.Ref('Nope')]) }) },
 				() => 1
-			);
+			)
+			.post('/b2', { body: tree({ b: t.Number() }) }, () => 1)
+			.post('/la', { body: withLeaf(t.Object({ a: t.String() })) }, () => 1)
+			.post('/lb', { body: withLeaf(t.Object({ b: t.Number() })) }, () => 1);
 		const foo: SchemaObject = {
 			$defs: { Bar: { type: 'string' } },
 			properties: { b: { $ref: '#/$defs/Bar' } }
@@ -770,16 +781,43 @@ describe.concurrent('buildDocument', () => {
 		const { paths, components } = buildDocument(app, {
 			components: { schemas: { Foo: structuredClone(foo) } }
 		});
-		const bodyOf = (path: '/a' | '/b' | '/same' | '/tree' | '/unknown') =>
+		const bodyOf = (path: `/${string}`) =>
 			(paths?.[path]?.post?.requestBody as RequestBodyObject | undefined)?.content;
 
 		expect(
-			['/a', '/b', '/same', '/tree'].map((path) => bodyOf(path as '/a')?.['application/json'])
+			(['/a', '/b', '/same', '/tree', '/b2', '/la', '/lb'] as const).map(
+				(path) => bodyOf(path)?.['application/json']
+			)
 		).toEqual(
-			['Node', 'Node2', 'Node', 'Tree2'].map((name) => ({
+			['Node', 'Node2', 'Node', 'Tree2', 'Node2', 'Twig', 'Twig2'].map((name) => ({
 				schema: { $ref: `#/components/schemas/${name}` }
 			}))
 		);
+		expect(Object.keys(components?.schemas ?? {})).toEqual([
+			'Foo',
+			'validation',
+			'Tree',
+			'Node',
+			'Node2',
+			'Tree2',
+			'Twig',
+			'Leaf',
+			'Twig2',
+			'Leaf2'
+		]);
+		expect(components?.schemas?.Twig2).toEqual({
+			type: 'object',
+			properties: {
+				leaf: { $ref: '#/components/schemas/Leaf2' },
+				kids: { type: 'array', items: { $ref: '#/components/schemas/Twig2' } }
+			},
+			required: ['leaf', 'kids']
+		});
+		expect(components?.schemas?.Leaf2).toEqual({
+			type: 'object',
+			properties: { b: { type: 'number' } },
+			required: ['b']
+		});
 		expect(components?.schemas?.Node2).toEqual({
 			type: 'object',
 			properties: {

@@ -274,8 +274,8 @@ const renameRefs = (node: unknown, renames: ReadonlyMap<string, string>): void =
 
 /**
  * Moves the `$defs` of each `t.Cyclic` converted by {@link toSchema} into `schemas`, so that its `$ref`s, rewritten to
- * components, resolve. A name taken by a different schema gets a numeric suffix, and the `t.Cyclic`'s `$ref`s
- * follow it. Any other schema, the `base` ones included, is left untouched.
+ * components, resolve. When a name is taken by a different schema, all the `t.Cyclic`'s definitions get the same
+ * numeric suffix, and its `$ref`s follow them. Any other schema, the `base` ones included, is left untouched.
  *
  * @param node - A converted schema, or any part of the document holding some
  * @param schemas - The components' schemas, completed in place
@@ -288,23 +288,28 @@ export const hoistDefs = (node: unknown, schemas: Record<string, unknown>): void
 	const { $defs } = node;
 	if (!isPlainObject($defs) || !cyclicDefs.has($defs)) return;
 	delete node.$defs;
-	const renames = new Map<string, string>();
-	const hoisted = Object.entries($defs).map(([name, def]) => {
-		const key = componentName(name);
-		let candidate = key;
-		for (
-			let suffix = 2;
-			schemas[candidate] !== undefined && !Bun.deepEquals(schemas[candidate], def);
-			suffix++
-		)
-			candidate = `${key}${suffix}`;
-		if (candidate !== key) renames.set(componentRef(name), `${COMPONENT_PREFIX}${candidate}`);
-		return [candidate, def] as const;
-	});
-	renameRefs(node, renames);
-	for (const [key, def] of hoisted) {
-		renameRefs(def, renames);
-		schemas[key] ??= def;
+	// the definitions are named together: a definition changes through a renamed one it refers to
+	const defs = Object.entries($defs);
+	for (let suffix = 1; ; suffix++) {
+		const keyOf = (name: string): string => `${componentName(name)}${suffix > 1 ? suffix : ''}`;
+		const renames = new Map(
+			defs.map(([name]) => [componentRef(name), `${COMPONENT_PREFIX}${keyOf(name)}`])
+		);
+		const renamed = defs.map(([name, def]) => {
+			const copy = structuredClone(def);
+			renameRefs(copy, renames);
+			return [keyOf(name), copy] as const;
+		});
+		// each name is free, or holds the same schema
+		if (
+			renamed.every(
+				([key, def]) => schemas[key] === undefined || Bun.deepEquals(schemas[key], def)
+			)
+		) {
+			renameRefs(node, renames);
+			for (const [key, def] of renamed) schemas[key] ??= def;
+			return;
+		}
 	}
 };
 
