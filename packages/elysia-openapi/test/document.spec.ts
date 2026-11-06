@@ -450,7 +450,10 @@ describe.concurrent('buildDocument', () => {
 						files: { contentType: 'image/*, application/pdf' },
 						csv: { contentType: 'text/csv' },
 						doc: { contentType: 'image/png, application/pdf' },
-						nested: { contentType: 'text/csv, image/png' }
+						any: { contentType: 'application/octet-stream, image/png' },
+						nested: { contentType: 'text/csv, image/png' },
+						nestedAny: { contentType: 'application/octet-stream, image/png' },
+						orText: { contentType: 'image/png, text/plain' }
 					}
 				}
 			}

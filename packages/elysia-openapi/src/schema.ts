@@ -127,23 +127,35 @@ const holdsFile = (node: unknown): boolean =>
 	filesItemOf(node) !== undefined ||
 	(IsUnion(node) && node.anyOf.some(holdsFile));
 
-/** The media types a `t.File` or `t.Files` accepts, as an Encoding Object's `contentType` lists them. */
-export const fileMediaTypesOf = (node: unknown): string[] | undefined => {
-	if (isFile(node)) return fileOptionsOf(node).types;
+/**
+ * The media types a part is sent with: a file's own types, otherwise the defaults of the Encoding Object's
+ * `contentType` (OAS 3.2 4.15.1.1), `application/octet-stream` for a file without types.
+ */
+const partMediaTypesOf = (node: unknown): string[] => {
+	if (isFile(node)) return fileOptionsOf(node).types ?? ['application/octet-stream'];
 	const file = filesItemOf(node);
-	if (file) return fileOptionsOf(file).types;
-	if (!IsUnion(node)) return undefined;
+	if (file) return partMediaTypesOf(file);
+	if (IsUnion(node)) return [...new Set(node.anyOf.flatMap(partMediaTypesOf))];
 
-	// files in a union, `t.Nullable(t.File())` included: a file without types accepts any, and a value that is not
-	// a file is sent with its own media type
-	const branches = node.anyOf.filter(
-		(branch) => (branch as { readonly type?: unknown }).type !== 'null'
-	);
-	if (!branches.every(holdsFile)) return undefined;
-	const types = branches.map(fileMediaTypesOf);
-	return types.length > 0 && types.every((branch) => branch !== undefined)
-		? [...new Set(types.flat())]
-		: undefined;
+	const { type } = node as { readonly type?: unknown };
+	// a `null` is omitted, its media type is irrelevant
+	if (type === 'null') return [];
+	if (type === 'object' || type === 'array') return ['application/json'];
+	return type === undefined ? ['application/octet-stream'] : ['text/plain'];
+};
+
+/**
+ * The `contentType` of a part holding a `t.File` or `t.Files`, as a list of media types.
+ *
+ * @returns `undefined` when the part holds no file, or is sent with the default `application/octet-stream` of a
+ * schema without `type`
+ */
+export const fileMediaTypesOf = (node: unknown): string[] | undefined => {
+	if (!holdsFile(node)) return undefined;
+	const mediaTypes = partMediaTypesOf(node);
+	return mediaTypes.length === 1 && mediaTypes[0] === 'application/octet-stream'
+		? undefined
+		: mediaTypes;
 };
 
 /** `maxLength` bounds unencoded binary in bytes (OAS 3.2 4.14.3.2). */
