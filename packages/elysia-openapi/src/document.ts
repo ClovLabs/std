@@ -272,16 +272,33 @@ const toResponseContent = (
 
 	// a single union mixing binary, text and JSON values is sent with the media type of the value
 	if (schemas.length === 1 && IsUnion(resolved)) {
-		const branches = Map.groupBy(resolved.anyOf, (branch) => {
-			const schema = resolveModel(branch, models);
-			if (isRawBinary(schema) || isFile(schema)) return 'application/octet-stream';
-			return isText(branch, models) ? 'text/plain' : 'application/json';
-		});
+		// a file is sent with each of its media types
+		const branches = Map.groupBy(
+			resolved.anyOf.flatMap((branch) => {
+				const schema = resolveModel(branch, models);
+				if (isRawBinary(schema) || isFile(schema))
+					return (fileMediaTypesOf(schema) ?? ['application/octet-stream']).map(
+						(mediaType) => ({ mediaType, branch })
+					);
+				return [
+					{
+						mediaType: isText(branch, models) ? 'text/plain' : 'application/json',
+						branch
+					}
+				];
+			}),
+			({ mediaType }) => mediaType
+		);
 		if (branches.size > 1)
 			return Object.fromEntries(
 				[...branches].map(([mediaType, group]) => [
 					mediaType,
-					{ schema: toCombinedSchema(group, 'anyOf') }
+					{
+						schema: toCombinedSchema(
+							group.map(({ branch }) => branch),
+							'anyOf'
+						)
+					}
 				])
 			);
 	}

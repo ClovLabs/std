@@ -122,8 +122,15 @@ const filesItemOf = (node: unknown): Record<string, unknown> | undefined => {
 };
 
 /** The media types a `t.File` or `t.Files` accepts, as an Encoding Object's `contentType` lists them. */
-export const fileMediaTypesOf = (node: unknown): string[] | undefined =>
-	fileOptionsOf(isFile(node) ? node : filesItemOf(node)).types;
+export const fileMediaTypesOf = (node: unknown): string[] | undefined => {
+	if (isFile(node)) return fileOptionsOf(node).types;
+	const file = filesItemOf(node);
+	if (file) return fileOptionsOf(file).types;
+	// a file in a union, `t.Nullable(t.File())` included
+	return IsUnion(node)
+		? node.anyOf.map(fileMediaTypesOf).find((types) => types !== undefined)
+		: undefined;
+};
 
 /** `maxLength` bounds unencoded binary in bytes (OAS 3.2 4.14.3.2). */
 const toFileSchema = (node: Record<string, unknown>): Record<string, unknown> => {
@@ -207,10 +214,10 @@ export const toSchema = (node: unknown): unknown => {
 		else if (key === 'additionalItems') schema.items = toSchema(value);
 		// OAS 3.2 deprecates `example` for JSON Schema's `examples`
 		else if (key === 'example')
-			schema.examples = [
+			schema.examples = uniqueSchemas([
 				...(Array.isArray(node.examples) ? (node.examples as unknown[]) : []),
 				value
-			];
+			]);
 		// values, not schemas
 		else if (['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-'))
 			schema[key] ??= value;
@@ -337,8 +344,18 @@ export const toEventSchema = (schema: Record<string, unknown>): Record<string, u
 						contentSchema: data
 					}
 				}),
-			// Elysia accepts a number, sent as its digits
-			...(isPlainObject(id) && id.type !== 'string' && { id: { type: 'string' } }),
+			// Elysia accepts a number, sent as its digits: only its annotations still apply
+			...(isPlainObject(id) &&
+				id.type !== 'string' && {
+					id: {
+						...Object.fromEntries(
+							Object.entries(id).filter(([key]) =>
+								['title', 'description'].includes(key)
+							)
+						),
+						type: 'string'
+					}
+				}),
 			...(isPlainObject(retry) && { retry: { ...retry, type: 'integer' } })
 		}
 	};

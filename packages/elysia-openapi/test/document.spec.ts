@@ -395,7 +395,8 @@ describe.concurrent('buildDocument', () => {
 						minSize: 3,
 						minItems: 1,
 						maxItems: 4
-					})
+					}),
+					csv: t.Nullable(t.File({ type: 'text/csv' }))
 				})
 			},
 			() => 1
@@ -414,13 +415,15 @@ describe.concurrent('buildDocument', () => {
 								items: { minLength: 3 },
 								minItems: 1,
 								maxItems: 4
-							}
+							},
+							csv: { anyOf: [{}, { type: 'null' }] }
 						},
-						required: ['avatar', 'files']
+						required: ['avatar', 'files', 'csv']
 					},
 					encoding: {
 						avatar: { contentType: 'image/png' },
-						files: { contentType: 'image/*, application/pdf' }
+						files: { contentType: 'image/*, application/pdf' },
+						csv: { contentType: 'text/csv' }
 					}
 				}
 			}
@@ -452,7 +455,7 @@ describe.concurrent('buildDocument', () => {
 				response: withSSE(
 					t.Object({
 						event: t.Optional(t.String()),
-						id: t.Optional(t.Number()),
+						id: t.Optional(t.Number({ description: 'Event id' })),
 						retry: t.Optional(t.Number()),
 						data: t.Object({ n: t.Number() })
 					})
@@ -475,7 +478,7 @@ describe.concurrent('buildDocument', () => {
 					type: 'object',
 					properties: {
 						event: { type: 'string' },
-						id: { type: 'string' },
+						id: { description: 'Event id', type: 'string' },
 						retry: { type: 'integer' },
 						data: {
 							type: 'string',
@@ -499,7 +502,7 @@ describe.concurrent('buildDocument', () => {
 			{
 				query: t.Object({
 					range: t.Tuple([t.Number(), t.Number()]),
-					at: t.String({ example: 'now', examples: ['today'] })
+					at: t.String({ example: 'now', examples: ['today', 'now'] })
 				}),
 				response: withHeaders(
 					t.String(),
@@ -1027,6 +1030,25 @@ describe.concurrent('buildDocument edge cases', () => {
 			},
 			'text/plain': { schema: { type: 'string' } }
 		});
+	});
+
+	test('should document a typed file branch of a response union under its media types', () => {
+		const app = new Elysia().get(
+			'/f',
+			{
+				response: t.Union([
+					t.File({ type: ['image/png', 'image/jpeg'] }),
+					t.Object({ a: t.String() })
+				])
+			},
+			() => ({ a: 'x' })
+		);
+
+		expect(Object.keys(contentOf(operationOf(app, '/f')?.responses?.['200']))).toEqual([
+			'image/png',
+			'image/jpeg',
+			'application/json'
+		]);
 	});
 
 	test('should keep generated operation ids unique against the base ones', () => {
