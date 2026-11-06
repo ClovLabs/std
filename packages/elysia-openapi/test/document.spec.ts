@@ -406,7 +406,8 @@ describe.concurrent('buildDocument', () => {
 						t.Nullable(t.File({ type: 'text/csv' })),
 						t.File({ type: 'image/png' })
 					]),
-					nestedAny: t.Union([t.Nullable(t.File()), t.File({ type: 'image/png' })])
+					nestedAny: t.Union([t.Nullable(t.File()), t.File({ type: 'image/png' })]),
+					orText: t.Union([t.File({ type: 'image/png' }), t.String()])
 				})
 			},
 			() => 1
@@ -430,9 +431,19 @@ describe.concurrent('buildDocument', () => {
 							doc: { anyOf: [{}, {}] },
 							any: { anyOf: [{}, {}] },
 							nested: { anyOf: [{ anyOf: [{}, { type: 'null' }] }, {}] },
-							nestedAny: { anyOf: [{ anyOf: [{}, { type: 'null' }] }, {}] }
+							nestedAny: { anyOf: [{ anyOf: [{}, { type: 'null' }] }, {}] },
+							orText: { anyOf: [{}, { type: 'string' }] }
 						},
-						required: ['avatar', 'files', 'csv', 'doc', 'any', 'nested', 'nestedAny']
+						required: [
+							'avatar',
+							'files',
+							'csv',
+							'doc',
+							'any',
+							'nested',
+							'nestedAny',
+							'orText'
+						]
 					},
 					encoding: {
 						avatar: { contentType: 'image/png' },

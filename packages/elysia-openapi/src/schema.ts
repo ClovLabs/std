@@ -134,8 +134,13 @@ export const fileMediaTypesOf = (node: unknown): string[] | undefined => {
 	if (file) return fileOptionsOf(file).types;
 	if (!IsUnion(node)) return undefined;
 
-	// files in a union, `t.Nullable(t.File())` included: a file without types accepts any
-	const types = node.anyOf.filter(holdsFile).map(fileMediaTypesOf);
+	// files in a union, `t.Nullable(t.File())` included: a file without types accepts any, and a value that is not
+	// a file is sent with its own media type
+	const branches = node.anyOf.filter(
+		(branch) => (branch as { readonly type?: unknown }).type !== 'null'
+	);
+	if (!branches.every(holdsFile)) return undefined;
+	const types = branches.map(fileMediaTypesOf);
 	return types.length > 0 && types.every((branch) => branch !== undefined)
 		? [...new Set(types.flat())]
 		: undefined;
