@@ -1,5 +1,15 @@
 import type { AnySchema } from 'elysia';
-import { Intersect, IsArray, IsIntersect, IsKind, IsObject, IsRef, IsUnion, Union } from 'typebox';
+import {
+	Intersect,
+	IsArray,
+	IsCyclic,
+	IsIntersect,
+	IsKind,
+	IsObject,
+	IsRef,
+	IsUnion,
+	Union
+} from 'typebox';
 
 import type { SchemaObject } from './openapi-types-3.2';
 
@@ -20,8 +30,10 @@ const TEXT_TYPES: ReadonlySet<unknown> = new Set(['string', 'number', 'integer',
 /** A model name as a component key, which only takes letters, digits, `.`, `-` and `_` (OAS 3.2 4.7.1). */
 export const componentName = (name: string): string => name.replaceAll(/[^a-zA-Z0-9.\-_]/g, '_');
 
+const COMPONENT_PREFIX = '#/components/schemas/';
+
 /** JSON Pointer to a component schema, its key needing no escaping. */
-const componentRef = (name: string): string => `#/components/schemas/${componentName(name)}`;
+const componentRef = (name: string): string => `${COMPONENT_PREFIX}${componentName(name)}`;
 
 export const uniqueSchemas = <T>(schemas: readonly T[]): T[] =>
 	schemas.filter(
@@ -178,6 +190,9 @@ const isDroppedKeyword = (key: string, value: unknown): boolean =>
 	// an empty tuple: `prefixItems` needs an item, `items: false` alone describes it
 	(key === 'items' && Array.isArray(value) && value.length === 0);
 
+/** The converted `$defs` of each `t.Cyclic`, which its `$ref`s, rewritten to components, no longer reach. */
+const cyclicDefs = new WeakSet<object>();
+
 /**
  * Converts a TypeBox schema to a plain JSON Schema 2020-12, without mutating it.
  *
@@ -229,15 +244,38 @@ export const toSchema = (node: unknown): unknown => {
 		else schema[key] = toSchema(value);
 	}
 
+	if (IsCyclic(node)) cyclicDefs.add(schema.$defs as object);
 	// a bare OpenAPI 3.0 `nullable`, Elysia's `t.Nullable` already has a `null` branch
 	if (node.nullable === true && !('anyOf' in node))
 		return { anyOf: [toEnum(schema), { type: 'null' }] };
 	return toEnum(schema);
 };
 
+/** The parts of a converted schema that may hold schemas, skipping values (`const`, `enum`, `examples`…). */
+const schemaChildren = (node: Record<string, unknown>): unknown[] =>
+	Object.entries(node).flatMap(([key, value]) => {
+		if (['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-'))
+			return [];
+		// keywords whose keys are names, not keywords
+		return ['properties', 'patternProperties', '$defs', 'dependentSchemas'].includes(key) &&
+			isPlainObject(value)
+			? Object.values(value)
+			: [value];
+	});
+
+/** Rewrites, in place, the `$ref`s named in `renames` to their new target. */
+const renameRefs = (node: unknown, renames: ReadonlyMap<string, string>): void => {
+	if (Array.isArray(node)) for (const item of node) renameRefs(item, renames);
+	if (!isPlainObject(node)) return;
+	const renamed = typeof node.$ref === 'string' ? renames.get(node.$ref) : undefined;
+	if (renamed) node.$ref = renamed;
+	for (const child of schemaChildren(node)) renameRefs(child, renames);
+};
+
 /**
- * Moves the `$defs` of `node` into `schemas`: `t.Cyclic` keeps its schemas there, while its `$ref`s are rewritten to
- * components. A component of the same name is kept.
+ * Moves the `$defs` of each `t.Cyclic` converted by {@link toSchema} into `schemas`, so that its `$ref`s, rewritten to
+ * components, resolve. A name taken by a different schema gets a numeric suffix, and the `t.Cyclic`'s `$ref`s
+ * follow it. Any other schema, the `base` ones included, is left untouched.
  *
  * @param node - A converted schema, or any part of the document holding some
  * @param schemas - The components' schemas, completed in place
@@ -245,18 +283,28 @@ export const toSchema = (node: unknown): unknown => {
 export const hoistDefs = (node: unknown, schemas: Record<string, unknown>): void => {
 	if (Array.isArray(node)) for (const item of node) hoistDefs(item, schemas);
 	if (!isPlainObject(node)) return;
+	for (const child of schemaChildren(node)) hoistDefs(child, schemas);
 
-	for (const [key, value] of Object.entries(node)) {
-		// values, not schemas
-		if (['const', 'enum', 'default', 'examples'].includes(key) || key.startsWith('x-'))
-			continue;
-		if (key === '$defs' && isPlainObject(value)) {
-			delete node.$defs;
-			for (const [name, def] of Object.entries(value)) {
-				hoistDefs(def, schemas);
-				schemas[componentName(name)] ??= def;
-			}
-		} else hoistDefs(value, schemas);
+	const { $defs } = node;
+	if (!isPlainObject($defs) || !cyclicDefs.has($defs)) return;
+	delete node.$defs;
+	const renames = new Map<string, string>();
+	const hoisted = Object.entries($defs).map(([name, def]) => {
+		const key = componentName(name);
+		let candidate = key;
+		for (
+			let suffix = 2;
+			schemas[candidate] !== undefined && !Bun.deepEquals(schemas[candidate], def);
+			suffix++
+		)
+			candidate = `${key}${suffix}`;
+		if (candidate !== key) renames.set(componentRef(name), `${COMPONENT_PREFIX}${candidate}`);
+		return [candidate, def] as const;
+	});
+	renameRefs(node, renames);
+	for (const [key, def] of hoisted) {
+		renameRefs(def, renames);
+		schemas[key] ??= def;
 	}
 };
 
@@ -434,7 +482,8 @@ const partMediaTypesOf = (node: unknown, models: Models, isItem = false): string
 	// an array part is sent as one part per item (OAS 3.2 4.14.5.1)
 	if (IsArray(schema) && !isItem) return partMediaTypesOf(schema.items, models, true);
 
-	const { type } = toSchema(schema) as { readonly type?: unknown };
+	// an unknown model has no type
+	const { type } = (toSchema(schema) ?? {}) as { readonly type?: unknown };
 	if (type === 'object' || type === 'array') return ['application/json'];
 	return type === undefined ? ['application/octet-stream'] : ['text/plain'];
 };
