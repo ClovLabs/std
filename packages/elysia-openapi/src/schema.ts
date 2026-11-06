@@ -126,9 +126,14 @@ export const fileMediaTypesOf = (node: unknown): string[] | undefined => {
 	if (isFile(node)) return fileOptionsOf(node).types;
 	const file = filesItemOf(node);
 	if (file) return fileOptionsOf(file).types;
-	// a file in a union, `t.Nullable(t.File())` included
-	return IsUnion(node)
-		? node.anyOf.map(fileMediaTypesOf).find((types) => types !== undefined)
+	if (!IsUnion(node)) return undefined;
+
+	// files in a union, `t.Nullable(t.File())` included: a file without types accepts any
+	const types = node.anyOf
+		.filter((branch) => isFile(branch) || filesItemOf(branch))
+		.map(fileMediaTypesOf);
+	return types.length > 0 && types.every((branch) => branch !== undefined)
+		? [...new Set(types.flat())]
 		: undefined;
 };
 

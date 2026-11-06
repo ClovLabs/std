@@ -396,7 +396,12 @@ describe.concurrent('buildDocument', () => {
 						minItems: 1,
 						maxItems: 4
 					}),
-					csv: t.Nullable(t.File({ type: 'text/csv' }))
+					csv: t.Nullable(t.File({ type: 'text/csv' })),
+					doc: t.Union([
+						t.File({ type: 'image/png' }),
+						t.File({ type: 'application/pdf' })
+					]),
+					any: t.Union([t.File(), t.File({ type: 'image/png' })])
 				})
 			},
 			() => 1
@@ -416,14 +421,17 @@ describe.concurrent('buildDocument', () => {
 								minItems: 1,
 								maxItems: 4
 							},
-							csv: { anyOf: [{}, { type: 'null' }] }
+							csv: { anyOf: [{}, { type: 'null' }] },
+							doc: { anyOf: [{}, {}] },
+							any: { anyOf: [{}, {}] }
 						},
-						required: ['avatar', 'files', 'csv']
+						required: ['avatar', 'files', 'csv', 'doc', 'any']
 					},
 					encoding: {
 						avatar: { contentType: 'image/png' },
 						files: { contentType: 'image/*, application/pdf' },
-						csv: { contentType: 'text/csv' }
+						csv: { contentType: 'text/csv' },
+						doc: { contentType: 'image/png, application/pdf' }
 					}
 				}
 			}
