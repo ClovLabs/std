@@ -532,6 +532,7 @@ describe.concurrent('buildDocument', () => {
 			{
 				query: t.Object({
 					range: t.Tuple([t.Number(), t.Number()]),
+					none: t.Tuple([]),
 					at: t.String({ example: 'now', examples: ['today', 'now'] })
 				}),
 				response: withHeaders(
@@ -554,11 +555,42 @@ describe.concurrent('buildDocument', () => {
 				items: false,
 				minItems: 2
 			},
+			{ type: 'array', items: false, minItems: 0 },
 			{ type: 'string', examples: ['today', 'now'] }
 		]);
 		expect(
 			Object.keys((operation?.responses?.['200'] as ResponseObject).headers ?? {})
 		).toEqual(['x-total']);
+	});
+
+	test('should encode a file part with the type of each value, arrays per item and models resolved', () => {
+		const app = new Elysia().model({ x: t.Object({ a: t.String() }) }).post(
+			'/parts',
+			{
+				body: t.Object({
+					pngs: t.Array(t.File({ type: 'image/png' })),
+					filesOrTexts: t.Union([t.Files({ type: 'image/png' }), t.Array(t.String())]),
+					fileOrModel: t.Union([t.File({ type: 'image/png' }), t.Ref('x')]),
+					fileOrDate: t.Union([t.File({ type: 'image/png' }), t.Date()])
+				})
+			},
+			() => 1
+		);
+
+		expect(
+			(
+				buildDocument(app).paths?.['/parts']?.post?.requestBody as
+					| RequestBodyObject
+					| undefined
+			)?.content['multipart/form-data']
+		).toMatchObject({
+			encoding: {
+				pngs: { contentType: 'image/png' },
+				filesOrTexts: { contentType: 'image/png, text/plain' },
+				fileOrModel: { contentType: 'image/png, application/json' },
+				fileOrDate: { contentType: 'image/png, text/plain' }
+			}
+		});
 	});
 
 	test('should document raw binary bodies as octet-stream', () => {

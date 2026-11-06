@@ -121,43 +121,6 @@ const filesItemOf = (node: unknown): Record<string, unknown> | undefined => {
 		: undefined;
 };
 
-/** A `t.File`, a `t.Files`, or a union holding one at any depth. */
-const holdsFile = (node: unknown): boolean =>
-	isFile(node) ||
-	filesItemOf(node) !== undefined ||
-	(IsUnion(node) && node.anyOf.some(holdsFile));
-
-/**
- * The media types a part is sent with: a file's own types, otherwise the defaults of the Encoding Object's
- * `contentType` (OAS 3.2 4.15.1.1), `application/octet-stream` for a file without types.
- */
-const partMediaTypesOf = (node: unknown): string[] => {
-	if (isFile(node)) return fileOptionsOf(node).types ?? ['application/octet-stream'];
-	const file = filesItemOf(node);
-	if (file) return partMediaTypesOf(file);
-	if (IsUnion(node)) return [...new Set(node.anyOf.flatMap(partMediaTypesOf))];
-
-	const { type } = node as { readonly type?: unknown };
-	// a `null` is omitted, its media type is irrelevant
-	if (type === 'null') return [];
-	if (type === 'object' || type === 'array') return ['application/json'];
-	return type === undefined ? ['application/octet-stream'] : ['text/plain'];
-};
-
-/**
- * The `contentType` of a part holding a `t.File` or `t.Files`, as a list of media types.
- *
- * @returns `undefined` when the part holds no file, or is sent with the default `application/octet-stream` of a
- * schema without `type`
- */
-export const fileMediaTypesOf = (node: unknown): string[] | undefined => {
-	if (!holdsFile(node)) return undefined;
-	const mediaTypes = partMediaTypesOf(node);
-	return mediaTypes.length === 1 && mediaTypes[0] === 'application/octet-stream'
-		? undefined
-		: mediaTypes;
-};
-
 /** `maxLength` bounds unencoded binary in bytes (OAS 3.2 4.14.3.2). */
 const toFileSchema = (node: Record<string, unknown>): Record<string, unknown> => {
 	const { minSize, maxSize } = fileOptionsOf(node);
@@ -196,6 +159,17 @@ const toKindSchema = (node: Record<string, unknown>): Record<string, unknown> | 
 	return undefined;
 };
 
+/** Keys left out of a converted schema. */
+const isDroppedKeyword = (key: string, value: unknown): boolean =>
+	// `~` keys are Elysia internals, `nullable` is OpenAPI 3.0 only, `headers` belongs to the Response Object
+	// (`withHeaders`), `$id` would rebase every `$ref` inside the component
+	key.startsWith('~') ||
+	key === 'nullable' ||
+	key === 'headers' ||
+	key === '$id' ||
+	// an empty tuple: `prefixItems` needs an item, `items: false` alone describes it
+	(key === 'items' && Array.isArray(value) && value.length === 0);
+
 /**
  * Converts a TypeBox schema to a plain JSON Schema 2020-12, without mutating it.
  *
@@ -214,10 +188,7 @@ export const toSchema = (node: unknown): unknown => {
 
 	const schema: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(node)) {
-		// `~` keys are Elysia internals, `nullable` is OpenAPI 3.0 only, `headers` belongs to the Response Object
-		// (`withHeaders`), `$id` would rebase every `$ref` inside the component
-		if (key.startsWith('~') || key === 'nullable' || key === 'headers' || key === '$id')
-			continue;
+		if (isDroppedKeyword(key, value)) continue;
 
 		// a `$ref` that is neither a pointer nor a URI names a model (`t.Ref('User')`)
 		if (
@@ -385,6 +356,56 @@ export const toEventSchema = (schema: Record<string, unknown>): Record<string, u
 			...(isPlainObject(retry) && { retry: { ...retry, type: 'integer' } })
 		}
 	};
+};
+
+/** A `t.File`, a `t.Files`, or an array or a union holding one at any depth. */
+const holdsFile = (node: unknown, models: Models): boolean => {
+	const schema = resolveModel(node, models);
+	return (
+		isFile(schema) ||
+		filesItemOf(schema) !== undefined ||
+		(IsArray(schema) && holdsFile(schema.items, models)) ||
+		(IsUnion(schema) && schema.anyOf.some((branch) => holdsFile(branch, models)))
+	);
+};
+
+/**
+ * The media types a part is sent with: a file's own types, otherwise the defaults of the Encoding Object's
+ * `contentType` (OAS 3.2 4.15.1.1) for the converted schema, `application/octet-stream` for a file without types.
+ *
+ * @param isItem - Whether `node` is an item of an array part, whose arrays are sent as JSON instead of one part each
+ */
+const partMediaTypesOf = (node: unknown, models: Models, isItem = false): string[] => {
+	const schema = resolveModel(node, models);
+	if (isFile(schema)) return fileOptionsOf(schema).types ?? ['application/octet-stream'];
+	const file = filesItemOf(schema);
+	if (file) return partMediaTypesOf(file, models, isItem);
+	if (IsUnion(schema))
+		return [
+			...new Set(schema.anyOf.flatMap((branch) => partMediaTypesOf(branch, models, isItem)))
+		];
+	// a `null` or `undefined` is omitted, its media type is irrelevant
+	if (['null', 'undefined'].includes(jsonTypeOf(schema) as string)) return [];
+	// an array part is sent as one part per item (OAS 3.2 4.14.5.1)
+	if (IsArray(schema) && !isItem) return partMediaTypesOf(schema.items, models, true);
+
+	const { type } = toSchema(schema) as { readonly type?: unknown };
+	if (type === 'object' || type === 'array') return ['application/json'];
+	return type === undefined ? ['application/octet-stream'] : ['text/plain'];
+};
+
+/**
+ * The `contentType` of a part holding a `t.File` or `t.Files`, as a list of media types.
+ *
+ * @returns `undefined` when the part holds no file, or is sent with the default `application/octet-stream` of a
+ * schema without `type`
+ */
+export const fileMediaTypesOf = (node: unknown, models: Models): string[] | undefined => {
+	if (!holdsFile(node, models)) return undefined;
+	const mediaTypes = partMediaTypesOf(node, models);
+	return mediaTypes.length === 1 && mediaTypes[0] === 'application/octet-stream'
+		? undefined
+		: mediaTypes;
 };
 
 export const containsFile = (node: unknown, models: Models, seen = new Set<unknown>()): boolean => {

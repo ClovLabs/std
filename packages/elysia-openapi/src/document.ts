@@ -209,7 +209,7 @@ const toRequestBody = (
 		bodies.flatMap((body) =>
 			Object.entries(objectShapeOf(body, models)?.properties ?? {}).flatMap(
 				([name, property]) => {
-					const mediaTypes = fileMediaTypesOf(resolveModel(property, models));
+					const mediaTypes = fileMediaTypesOf(property, models);
 					return mediaTypes ? [[name, { contentType: mediaTypes.join(', ') }]] : [];
 				}
 			)
@@ -264,10 +264,9 @@ const toResponseContent = (
 		};
 	if (isRawBinary(resolved) || isFile(resolved))
 		return Object.fromEntries(
-			(fileMediaTypesOf(resolved) ?? ['application/octet-stream']).map((mediaType) => [
-				mediaType,
-				{ schema: toRootSchema(first) }
-			])
+			(fileMediaTypesOf(resolved, models) ?? ['application/octet-stream']).map(
+				(mediaType) => [mediaType, { schema: toRootSchema(first) }]
+			)
 		);
 
 	// a single union mixing binary, text and JSON values is sent with the media type of the value
@@ -277,7 +276,7 @@ const toResponseContent = (
 			resolved.anyOf.flatMap((branch) => {
 				const schema = resolveModel(branch, models);
 				if (isRawBinary(schema) || isFile(schema))
-					return (fileMediaTypesOf(schema) ?? ['application/octet-stream']).map(
+					return (fileMediaTypesOf(schema, models) ?? ['application/octet-stream']).map(
 						(mediaType) => ({ mediaType, branch })
 					);
 				return [
