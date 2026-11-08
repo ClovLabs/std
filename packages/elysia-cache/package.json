@@ -1,6 +1,6 @@
 {
 	"name": "@clov-std/elysia-cache",
-	"version": "1.0.12",
+	"version": "1.0.13",
 	"description": "Response caching for Elysia as a route macro, stored in any @clov-std/kv-store adapter.",
 	"keywords": [
 		"cache",
