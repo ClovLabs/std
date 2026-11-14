@@ -65,7 +65,7 @@ interface RateLimitQuota {
 type RateLimitHook = (context: RateLimitContext) => Promise<void>;
 
 type RateLimitMacro = (options: RateLimitMacroOptions) => {
-	response: { 429: typeof RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED };
+	response: { 429: 'RateLimitQuotaExceeded' };
 } & ({ transform: RateLimitHook } | { derive: RateLimitHook } | { beforeHandle: RateLimitHook });
 
 const isClientIp = (value: string | null | undefined): value is string =>
@@ -138,7 +138,7 @@ export const rateLimitPlugin = (
 	'local',
 	{ decorator: {}; derive: {}; store: {} },
 	{
-		typebox: { [RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED]: typeof rateLimitResponseSchema };
+		typebox: { RateLimitQuotaExceeded: typeof rateLimitResponseSchema };
 		error: [];
 	},
 	{
@@ -153,7 +153,7 @@ export const rateLimitPlugin = (
 	}
 > =>
 	new Elysia<'rateLimitPlugin'>({ name: 'rateLimitPlugin' })
-		.model({ [RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED]: rateLimitResponseSchema })
+		.model({ RateLimitQuotaExceeded: rateLimitResponseSchema })
 		.macro({
 			rateLimit: (({
 				limit,
@@ -171,7 +171,7 @@ export const rateLimitPlugin = (
 						);
 					await consumeRateLimit(store, ctx, { policy, key, limit, window });
 				};
-				const response = { 429: RATE_LIMIT_ERROR_CODES.QUOTA_EXCEEDED } as const;
+				const response = { 429: 'RateLimitQuotaExceeded' } as const;
 
 				if (hook === 'derive') return { response, derive: count };
 				if (hook === 'beforeHandle') return { response, beforeHandle: count };
