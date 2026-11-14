@@ -2,15 +2,17 @@ import { describe, expect, test } from 'bun:test';
 import { Elysia, sse, t, type AnyElysia } from 'elysia';
 
 import { buildDocument } from '#/document';
-import { openapiPlugin, withHeaders, withSSE } from '#/index';
-import type {
-	OpenAPIObject,
-	OperationObject,
-	PathItemObject,
-	RequestBodyObject,
-	ReferenceObject,
-	ResponseObject,
-	SchemaObject
+import {
+	openapiPlugin,
+	withHeaders,
+	withSSE,
+	type OpenAPIObject,
+	type OperationObject,
+	type PathItemObject,
+	type RequestBodyObject,
+	type ReferenceObject,
+	type ResponseObject,
+	type SchemaObject
 } from '#/index';
 
 describe.concurrent('buildDocument', () => {
@@ -83,6 +85,19 @@ describe.concurrent('buildDocument', () => {
 						}
 					}
 				}
+			}
+		});
+	});
+
+	test('should document no request body but the validation 422 when the body must be undefined', () => {
+		const app = new Elysia().post('/close', { body: t.Undefined() }, () => 'ok');
+		const operation = buildDocument(app).paths?.['/close']?.post;
+
+		expect(operation?.requestBody).toBeUndefined();
+		expect(operation?.responses?.['422']).toEqual({
+			description: 'Unprocessable Content',
+			content: {
+				'application/problem+json': { schema: { $ref: '#/components/schemas/validation' } }
 			}
 		});
 	});
@@ -492,7 +507,7 @@ describe.concurrent('buildDocument', () => {
 					})
 				)
 			},
-			async function* () {
+			function* () {
 				yield sse({ data: { n: 1 } });
 			}
 		);
@@ -560,7 +575,9 @@ describe.concurrent('buildDocument', () => {
 			{ type: 'string', examples: ['today', 'now'] }
 		]);
 		expect(
-			Object.keys((operation?.responses?.['200'] as ResponseObject).headers ?? {})
+			Object.keys(
+				(operation?.responses?.['200'] as ResponseObject | undefined)?.headers ?? {}
+			)
 		).toEqual(['x-total']);
 	});
 
@@ -682,14 +699,17 @@ describe.concurrent('buildDocument', () => {
 						t.Object({ data: t.Union([t.String(), t.Object({ n: t.Number() })]) })
 					)
 				},
-				async function* () {
+				function* () {
 					yield sse({ data: 'x' });
 				}
 			)
 			.get('/maybe', { response: t.Union([t.String(), t.Null()]) }, () => null)
 			.post('/raw', { body: t.Uint8Array({ minByteLength: 2, maxByteLength: 10 }) }, () => 1);
 		const { paths, components } = buildDocument(app);
-		const jsonBody = (path: '/never' | '/cyclic' | '/raw', mediaType = 'application/json') =>
+		const jsonBody = (
+			path: '/never' | '/cyclic' | '/raw',
+			mediaType = 'application/json'
+		): unknown =>
 			(paths?.[path]?.post?.requestBody as RequestBodyObject | undefined)?.content[mediaType];
 
 		expect(Object.keys(components?.schemas ?? {})).toEqual(['validation', 'My_Model', 'Node']);
@@ -746,9 +766,9 @@ describe.concurrent('buildDocument', () => {
 	});
 
 	test('should rename a cyclic definition whose name is taken, and leave the base schemas alone', () => {
-		const tree = (properties: Parameters<typeof t.Object>[0]) =>
+		const tree = (properties: Parameters<typeof t.Object>[0]): ReturnType<typeof t.Cyclic> =>
 			t.Cyclic({ Node: t.Object({ ...properties, kids: t.Array(t.Ref('Node')) }) }, 'Node');
-		const withLeaf = (leaf: ReturnType<typeof t.Object>) =>
+		const withLeaf = (leaf: ReturnType<typeof t.Object>): ReturnType<typeof t.Cyclic> =>
 			t.Cyclic(
 				{
 					Twig: t.Object({ leaf: t.Ref('Leaf'), kids: t.Array(t.Ref('Twig')) }),
@@ -782,7 +802,7 @@ describe.concurrent('buildDocument', () => {
 		const { paths, components } = buildDocument(app, {
 			components: { schemas: { Foo: structuredClone(foo) } }
 		});
-		const bodyOf = (path: `/${string}`) =>
+		const bodyOf = (path: `/${string}`): RequestBodyObject['content'] | undefined =>
 			(paths?.[path]?.post?.requestBody as RequestBodyObject | undefined)?.content;
 
 		expect(
@@ -809,8 +829,8 @@ describe.concurrent('buildDocument', () => {
 		]);
 		// a function default is kept as it is, JSON drops it
 		expect(
-			(components?.schemas?.Node3 as { properties: { id: { default: unknown } } }).properties
-				.id.default
+			(components?.schemas?.Node3 as { properties: { id: { default: unknown } } } | undefined)
+				?.properties.id.default
 		).toBeFunction();
 		expect(components?.schemas?.Twig2).toEqual({
 			type: 'object',

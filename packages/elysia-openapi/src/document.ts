@@ -212,6 +212,8 @@ const toRequestBody = (
 	);
 	const [first] = bodies;
 	if (first === undefined) return;
+	// a body that may only be `undefined` forbids one, there is nothing to send
+	if (bodies.every((body) => jsonTypeOf(resolveModel(body, models)) === 'undefined')) return;
 
 	const schema = toCombinedSchema(bodies, 'allOf');
 	// the media types of the file parts, their schemas say only that they are binary
@@ -525,7 +527,11 @@ const toOperation = (route: DocumentedRoute, models: Models, method: string): Op
 	const allParameters = mergeParameters([...parameters.values()], parameterOverrides);
 	const requestBody = mergeRequestBody(toRequestBody(hooks, models, method), requestBodyOverride);
 	const responses = mergeResponses(toResponses(route, models), responseOverrides);
-	if ((parameters.size > 0 || requestBody) && !responses['422'])
+	// a body that must be `undefined` is not documented but is still validated
+	const validatesBody =
+		!['get', 'head', 'trace'].includes(method) &&
+		[hooks, ...(hooks.schemas ?? [])].some((layer) => layer.body !== undefined);
+	if ((parameters.size > 0 || requestBody || validatesBody) && !responses['422'])
 		responses['422'] = validationResponse;
 	return {
 		...(allParameters.length > 0 && { parameters: allParameters }),
