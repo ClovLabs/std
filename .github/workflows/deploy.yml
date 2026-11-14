@@ -60,6 +60,7 @@ jobs:
     packages:
         name: Packages
         runs-on: ubuntu-latest
+        timeout-minutes: 15
         outputs:
             list: ${{ steps.pick.outputs.list }}
             bumps: ${{ steps.pick.outputs.bumps }}
@@ -86,36 +87,17 @@ jobs:
                     echo "list=$(jq -c keys <<< "$BUMPS")"
                   } >> "$GITHUB_OUTPUT"
 
-    # ─── Lint & Test each package ───────────────────────
     ci:
-        name: CI — ${{ matrix.package }} ${{ matrix.check }}
+        name: CI
         needs: packages
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: true
-            matrix:
-                package: ${{ fromJSON(needs.packages.outputs.list) }}
-                check: [fmt:check, lint:github, test]
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v7
-
-            - name: Setup Bun Project
-              uses: ./.github/actions/setup-bun-project
-
-            # Root build resolves workspace dependency order
-            - name: Build
-              run: bun run build
-
-            - name: ${{ matrix.check }}
-              working-directory: packages/${{ matrix.package }}
-              run: bun run ${{ matrix.check }}
+        uses: ./.github/workflows/ci.yml
 
     # ─── Publish, then commit, tag & release each ───────
     release:
         name: Release
         needs: [packages, ci]
         runs-on: ubuntu-latest
+        timeout-minutes: 30
         permissions:
             contents: read
             id-token: write # npm trusted publishing + provenance
@@ -125,13 +107,13 @@ jobs:
         steps:
             - name: Release token
               id: app
-              uses: actions/create-github-app-token@v3
+              uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
               with:
                   client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
                   private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
             - name: Checkout
-              uses: actions/checkout@v7
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   fetch-depth: 0 # the changelog comes from the tags
                   token: ${{ steps.app.outputs.token }}
@@ -140,7 +122,7 @@ jobs:
               uses: ./.github/actions/setup-bun-project
 
             - name: Setup Node
-              uses: actions/setup-node@v6
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
               with:
                   node-version: 'latest'
                   registry-url: 'https://registry.npmjs.org'
