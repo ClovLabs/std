@@ -45,7 +45,7 @@ on:
             registry: *bump
             totp: *bump
 
-# Secrets : GIT_EMAIL, GPG_KEY (signing), SSH_PRIVATE_KEY (push)
+# Secrets : SSH_PRIVATE_KEY (push, the deploy key bypasses the branch ruleset)
 
 permissions:
     contents: read
@@ -137,11 +137,10 @@ jobs:
                   node-version: 'latest'
                   registry-url: 'https://registry.npmjs.org'
 
-            - name: Setup Git
-              uses: ./.github/actions/setup-git
-              with:
-                  gpg-key: ${{ secrets.GPG_KEY }}
-                  git-email: ${{ secrets.GIT_EMAIL }}
+            - name: Git identity
+              run: |
+                  git config user.name 'github-actions[bot]'
+                  git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
             # Dependencies first, so a dependent never reaches npm before the new version it needs.
             # Only the picked ones count: a package's folder is its name without @clov-std/
