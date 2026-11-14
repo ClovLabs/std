@@ -46,7 +46,7 @@
 		"oxfmt": "catalog:base",
 		"oxlint": "catalog:base",
 		"oxlint-tsgolint": "catalog:base",
-		"pino": "^10.3.1",
+		"pino": "^10.4.0",
 		"typescript": "catalog:base"
 	},
 	"peerDependencies": {
