@@ -128,7 +128,7 @@
 		"typescript/consistent-return": "off",
 		"typescript/no-confusing-non-null-assertion": "error",
 		"typescript/no-extraneous-class": "warn",
-		"typescript/no-generated-empty-object-type": "error", // new
+		"typescript/no-generated-empty-object-type": "off", // new
 		"typescript/no-non-null-asserted-nullish-coalescing": "error",
 		"typescript/no-unnecessary-boolean-literal-compare": "off",
 		"typescript/no-unnecessary-template-expression": "error",

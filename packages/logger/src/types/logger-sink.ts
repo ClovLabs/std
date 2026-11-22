@@ -19,7 +19,7 @@ export interface LoggerSink<TLogObject = unknown> {
 	 *
 	 * @returns A promise when the sink is asynchronous; it is awaited by {@link Logger.flush}.
 	 */
-	log(level: LogLevels, timestamp: number, object: TLogObject): Promise<void> | void;
+	log: (level: LogLevels, timestamp: number, object: TLogObject) => Promise<void> | void;
 
 	/**
 	 * Optional fast path receiving the log as the JSON string the logger already produced
@@ -31,19 +31,23 @@ export interface LoggerSink<TLogObject = unknown> {
 	 * @param timestamp - The epoch timestamp (ms) at which the message was logged.
 	 * @param json - The logged object serialized with `JSON.stringify`.
 	 */
-	logJson?(level: LogLevels, timestamp: number, json: string | undefined): Promise<void> | void;
+	logJson?: (
+		level: LogLevels,
+		timestamp: number,
+		json: string | undefined
+	) => Promise<void> | void;
 
 	/**
 	 * Flushes any buffered data to the underlying destination.
 	 * Called by {@link Logger.flush}; implement it when your sink buffers writes
 	 * (e.g. a file writer) and durability on flush matters.
 	 */
-	flush?(): Promise<void> | void;
+	flush?: () => Promise<void> | void;
 
 	/**
 	 * Closes the sink and releases its resources.
 	 * Called when the logger is closing. Optional - implement this if your sink needs
 	 * cleanup (e.g. closing file handles, database connections).
 	 */
-	close?(): Promise<void> | void;
+	close?: () => Promise<void> | void;
 }
