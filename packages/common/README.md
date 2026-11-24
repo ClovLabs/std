@@ -12,12 +12,12 @@ bun add @clov-std/common
 
 ## `parseHumanTime`
 
-Turns `'2 hours'` into a number, so a TTL in your config reads like a duration instead of `7200`.
+Turns `'2 hours'` into a number, so a TTL in your config can read as a duration instead of `7200`. Seconds are the default output unit.
 
 ```ts
 import { parseHumanTime } from '@clov-std/common';
 
-parseHumanTime('2 hours'); // 7200 (seconds by default)
+parseHumanTime('2 hours'); // 7200
 parseHumanTime('30 mins'); // 1800
 parseHumanTime('1 day'); // 86400
 parseHumanTime('2 weeks'); // 1209600
@@ -32,7 +32,7 @@ parseHumanTime('1 day', 'hours'); // 24
 parseHumanTime('1 second', 'ms'); // 1000
 ```
 
-Offsets in the past or future work too:
+A sign or `ago` / `from now` gives a signed offset:
 
 ```ts
 parseHumanTime('30 mins ago'); // -1800
@@ -41,7 +41,7 @@ parseHumanTime('-2 hours'); // -7200
 parseHumanTime('1 hour from now'); // 3600
 ```
 
-Accepted units:
+Accepted input units (a decimal value such as `1.5 hours` works too):
 
 | Unit   | Aliases                                 |
 | ------ | --------------------------------------- |
@@ -56,7 +56,7 @@ Anything it can't parse throws an `Exception` with one of the `PARSE_HUMAN_TIME_
 
 ## `TypedEventEmitter`
 
-Node's `EventEmitter`, with event names and listener arguments checked against a map you declare. Each key is an event, each value the tuple of arguments its listeners receive. Declare the map with `type`, not `interface`: an interface would have to extend `EventMap`, and its index signature would let any event name through.
+Node's `EventEmitter`, with event names and listener arguments checked against a map you declare. Each key is an event, each value the tuple of arguments its listeners receive. Declare the map with `type`, not `interface`: an interface would have to extend `EventMap`, whose index signature lets any event name through.
 
 ```ts
 import { TypedEventEmitter } from '@clov-std/common';
@@ -81,8 +81,8 @@ job.emit('cancelled');
 A typo in the event name or a wrong payload is a compile error:
 
 ```ts
-job.emit('progres', 50); // ❌ not a key of JobEvents
-job.emit('progress', '50'); // ❌ string is not assignable to number
+job.emit('progres', 50); // error: not a key of JobEvents
+job.emit('progress', '50'); // error: string is not assignable to number
 ```
 
 `on`, `once`, `off`, `addListener`, `removeListener`, `prependListener`, `prependOnceListener`, `listeners`, `rawListeners` and `listenerCount` are all typed the same way.
@@ -108,7 +108,7 @@ worker.addEventListener('message', (event: MessageEvent) => {
 });
 ```
 
-The function is turned into a string and evaluated in the worker, which has two consequences:
+The function is turned into a string and evaluated in the worker, so:
 
 - It can't use anything from the scope it was written in: no module imports, no outer variables. Use dynamic `import()` inside the function instead.
 - Arguments go through `JSON.stringify`, so only JSON-serializable values make it across (no functions, `Date` becomes a string, and so on).

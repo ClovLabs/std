@@ -6,12 +6,7 @@
 
 Errors with a stable `code`, so callers branch on what happened instead of matching `error.message`, which breaks the day someone rewords it.
 
-Two classes:
-
-- `Exception`: a `code` and a typed `cause`.
-- `HttpException`: the same, plus a resolved HTTP `status`.
-
-A low-level library throws `Exception` with `code: 'jwt.token.expired'` and knows nothing about HTTP or locales. The layer that does know maps the code to whatever the wire needs. No dependencies.
+There are two classes: `Exception` carries a `code` and a typed `cause`, and `HttpException` adds a resolved HTTP `status`. A low-level library throws `Exception` with `code: 'jwt.token.expired'` and knows nothing about HTTP or locales; the layer that does maps the code to whatever the wire needs. The package has no dependencies.
 
 For translated messages, see [`@clov-std/i18n`](https://www.npmjs.com/package/@clov-std/i18n).
 
@@ -54,13 +49,13 @@ try {
 }
 ```
 
-The constructor frame is stripped from the stack, and `name` is the actual subclass name.
+The constructor frame is stripped from the stack. `name` is `'Exception'` or `'HttpException'`; a subclass that wants its own name has to set it.
 
 ### No request id, no timestamp
 
-On purpose. Both belong to whoever handles the error: the request handler already has an `x-request-id`, and the log sink already stamps every line. Putting them on every exception means every throw pays for data nobody reads.
+On purpose. Both belong to whoever handles the error: the request handler already has an `x-request-id`, and the log sink already stamps every line. Putting them on every exception makes every throw pay for data nobody reads.
 
-If your app really needs them on the instance, subclass:
+If your app needs them on the instance, subclass:
 
 ```ts
 class TracedException extends Exception {

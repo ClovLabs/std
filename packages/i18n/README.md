@@ -6,10 +6,7 @@
 
 Translation catalogs checked by the compiler. You declare each message once with all its translations, and `tsc` tells you when a locale is missing or a `{{param}}` isn't passed.
 
-Catalogs come in two kinds:
-
-- Exception catalogs give you factories that build throwable exceptions. Built on `@clov-std/error`, so each one carries its catalog key as `code`.
-- Message catalogs do the same for everything that isn't an error: confirmations, notifications, labels.
+Catalogs come in two kinds. Exception catalogs give you factories that build throwable exceptions, built on `@clov-std/error`, each carrying its catalog key as `code`. Message catalogs do the same for everything that isn't an error: confirmations, notifications, labels.
 
 ```bash
 bun add @clov-std/i18n @clov-std/error
@@ -19,7 +16,7 @@ bun add @clov-std/i18n @clov-std/error
 
 ## Entries
 
-`entry()` is the building block. With a `status` it's meant for an exception catalog, without one it's a plain message.
+`entry()` is the building block of both kinds. An entry with a `status` belongs in an exception catalog; one without can go in either.
 
 ```ts
 import { entry } from '@clov-std/i18n';
@@ -70,7 +67,7 @@ const AUTH_ERRORS = defineExceptionCatalog({
 	}
 });
 
-// A LocalizedHttpException with status 401
+// A LocalizedHttpException with httpStatusCode 401
 const invalid = AUTH_ERRORS.invalidCredentials();
 
 // Params are inferred from the `{{email}}` placeholder, type-checked so you can't forget one
@@ -120,7 +117,7 @@ Every entry in a catalog must cover the same locales. If one declares `de`, they
 
 ## Resolving a message
 
-`resolveMessage` takes a `LocalizedException` (HTTP or not) or a `LocalizedMessage`, and returns the interpolated string for a locale.
+`resolveMessage` takes a `LocalizedException` (HTTP or not) or a `LocalizedMessage`, and returns the interpolated string for a locale. A locale missing from the translations falls back to the default one. An exception's own `message` is the default-locale template with its `{{placeholders}}` left as is.
 
 ```ts
 import { resolveMessage } from '@clov-std/i18n';
@@ -133,7 +130,7 @@ resolveMessage(error, 'fr'); // → "L'email "a@b.com" est déjà utilisé"
 
 ## Picking the locale from a request
 
-`resolveMessage` wants one locale, and a raw `Accept-Language` like `fr-CA,fr;q=0.9,en;q=0.8` doesn't match any catalog key, so everything would quietly fall back to the default. `defineLocaleNegotiator` handles that, quality values included:
+A raw `Accept-Language` like `fr-CA,fr;q=0.9,en;q=0.8` matches no catalog key, so passing it to `resolveMessage` would quietly fall back to the default locale. `defineLocaleNegotiator` picks the best supported locale, quality values included:
 
 ```ts
 import { defineLocaleNegotiator } from '@clov-std/i18n';
@@ -160,7 +157,7 @@ resolveMessage(error, lang);
 
 The return type is narrowed to `'en' | 'fr' | 'it'`, so a locale your catalogs don't cover can't reach `resolveMessage`.
 
-A couple of things to know:
+Two things to know:
 
 - Keep `supported` lowercase. Ranges are matched case-insensitively, the full tag first (`pt-br`), then the language (`pt`).
 - If a response depends on the locale, send `Vary: Accept-Language`. Otherwise a shared cache keys on the URL alone and serves one visitor's language to the next.

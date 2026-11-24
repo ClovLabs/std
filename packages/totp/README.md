@@ -4,9 +4,7 @@
 
 # Clov TOTP
 
-Generate and verify HOTP and TOTP codes (RFC 4226 / RFC 6238). Secrets can be base32 strings or raw bytes, and you also get secret generation and `otpauth://` URIs for QR codes.
-
-Defaults are what authenticator apps expect: 6 digits, SHA-1, 30-second period.
+Generate and verify HOTP and TOTP codes (RFC 4226 / RFC 6238), generate secrets, and build the `otpauth://` URIs that go in QR codes. Secrets can be base32 strings or raw bytes. Defaults are what authenticator apps expect: 6 digits, SHA-1, 30-second period.
 
 ```bash
 bun add @clov-std/totp
@@ -25,7 +23,7 @@ const otp = await generateHOTP({
 });
 ```
 
-You can also pass raw bytes instead of a base32 string:
+Raw bytes work in place of a base32 string:
 
 ```ts
 const secret = new TextEncoder().encode('12345678901234567890');
@@ -36,7 +34,7 @@ const otp = await generateHOTP({
 });
 ```
 
-Custom digits and algorithms are also supported:
+`digits` (1 to 10) and `algorithm` (`'SHA-1'`, `'SHA-256'`, `'SHA-512'`) can be changed:
 
 ```ts
 const otp = await generateHOTP({
@@ -49,7 +47,7 @@ const otp = await generateHOTP({
 
 ## `verifyHOTP`
 
-Verifies an HOTP code for a given counter. Use `window` to accept future counters.
+Verifies an HOTP code for a given counter.
 
 ```ts
 import { verifyHOTP } from '@clov-std/totp';
@@ -61,7 +59,7 @@ const isValid = await verifyHOTP({
 });
 ```
 
-With a look-ahead window:
+`window` also accepts the next counters:
 
 ```ts
 const isValid = await verifyHOTP({
@@ -86,7 +84,7 @@ const otp = await generateTOTP({
 });
 ```
 
-All of it can be overridden:
+Period, digits and algorithm can be overridden:
 
 ```ts
 const otp = await generateTOTP({
@@ -97,7 +95,7 @@ const otp = await generateTOTP({
 });
 ```
 
-A fixed `time` is handy in tests:
+A fixed `time` (Unix seconds) is handy in tests:
 
 ```ts
 const otp = await generateTOTP({
@@ -182,7 +180,7 @@ Everything thrown is an `Exception` from `@clov-std/error`:
 | Code                            | Constant                                      | When                                              |
 | ------------------------------- | --------------------------------------------- | ------------------------------------------------- |
 | `totp.secret.invalid`           | `HOTP_ERROR_CODES.SECRET_INVALID`             | The provided secret is empty                      |
-| `totp.digits.invalid`           | `HOTP_ERROR_CODES.DIGITS_INVALID`             | `digits` is outside the supported range           |
+| `totp.digits.invalid`           | `HOTP_ERROR_CODES.DIGITS_INVALID`             | `digits` is outside 1 to 10                       |
 | `totp.period.invalid`           | `TOTP_ERROR_CODES.PERIOD_INVALID`             | `period` is `0` or negative                       |
 | `totp.base32.invalid-character` | `DECODE_BASE32_ERROR_CODES.INVALID_CHARACTER` | A base32 secret contains invalid characters       |
 | `totp.hmac.failed`              | `HOTP_ERROR_CODES.HMAC_FAILED`                | The underlying HMAC operation failed unexpectedly |

@@ -12,7 +12,7 @@ bun add @clov-std/jwt
 
 ## `signJWT`
 
-Signs a payload and returns the token. `iss`, `sub`, `aud`, `nbf`, `iat` and `exp` are set for you, so you only pass your own data. The defaults are `iss: 'Clov-Issuer'`, `sub: ''` and `aud: ['Clov-Audience']`, which you'll probably want to override (see below).
+Signs a payload and returns the token. `iss`, `sub`, `aud`, `nbf`, `iat` and `exp` are set for you, so you only pass your own data. The defaults are `iss: 'Clov-Issuer'`, `sub: ''` and `aud: ['Clov-Audience']`, which you will usually want to override (see below).
 
 ```ts
 import { signJWT } from '@clov-std/jwt';
@@ -24,7 +24,7 @@ const token = await signJWT(secret, { userId: 42, role: 'admin' });
 const longerToken = await signJWT(secret, { userId: 42 }, 3600);
 ```
 
-The secret must be at least 32 characters. A shorter one throws right away, so you find out at startup rather than in production.
+The secret must be at least 32 characters. A shorter one throws synchronously, before anything is signed.
 
 Any default claim can be overridden from the payload:
 

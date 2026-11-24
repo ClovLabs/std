@@ -1,7 +1,6 @@
 # Clov Standard Library
 
-The shared TypeScript toolkit behind **Clov**.
-Everything lives in this monorepo, is built with [Bun](https://bun.sh/), and published on npm under the `@clov-std/` scope.
+The shared TypeScript packages behind **Clov**, built with [Bun](https://bun.sh/) and published on npm under the `@clov-std/` scope. Each package has its own README with install instructions and examples.
 
 ## Packages
 
@@ -19,13 +18,13 @@ Everything lives in this monorepo, is built with [Bun](https://bun.sh/), and pub
 | [`@clov-std/registry`](packages/registry)                 | Register shared instances by name and get them back anywhere, without a singleton per class.         |
 | [`@clov-std/totp`](packages/totp)                         | Generate and verify HOTP and TOTP codes (RFC 4226 / 6238), with otpauth:// provisioning URIs.        |
 
-## Getting Started
+## Development
 
 ```bash
 bun install
 ```
 
-## Scripts
+Then, from the repository root:
 
 | Command               | What it does                                |
 | --------------------- | ------------------------------------------- |
@@ -34,29 +33,14 @@ bun install
 | `bun run lint`        | Lint all packages                           |
 | `bun run lint:fix`    | Lint and auto-fix                           |
 | `bun run lint:github` | Lint with GitHub Actions output             |
+| `bun run fmt`         | Format all packages                         |
+| `bun run fmt:check`   | Check formatting                            |
 | `bun run docs`        | Generate TypeDoc documentation              |
 | `bun run clean`       | Wipe `node_modules`, `dist`, and lock files |
 
-## Project Structure
+## Docs
 
-```
-packages/
-├── common/              # @clov-std/common
-├── elysia-cache/        # @clov-std/elysia-cache
-├── elysia-openapi/      # @clov-std/elysia-openapi
-├── elysia-ratelimit/    # @clov-std/elysia-ratelimit
-├── error/               # @clov-std/error
-├── i18n/                # @clov-std/i18n
-├── jwt/                 # @clov-std/jwt
-├── kv-store/            # @clov-std/kv-store
-├── logger/              # @clov-std/logger
-├── registry/            # @clov-std/registry
-└── totp/                # @clov-std/totp
-```
-
-## Documentation
-
-[https://clovlabs.github.io/std/](https://clovlabs.github.io/std/)
+API reference: [clovlabs.github.io/std](https://clovlabs.github.io/std/)
 
 ## License
 

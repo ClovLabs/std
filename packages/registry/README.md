@@ -4,7 +4,7 @@
 
 # Clov Registry
 
-A single place to register shared instances by name and get them back anywhere, instead of a `static instance` and a `getInstance()` on every class that needs one.
+Register shared instances by name and get them back anywhere, instead of writing a `static instance` and a `getInstance()` on every class that needs one.
 
 ```bash
 bun add @clov-std/registry @clov-std/error
@@ -48,7 +48,7 @@ Registry.register('ApiClient', new ApiClient('https://api.example.com', 'key'));
 
 ## Retrieving
 
-You get the same reference every time. The type comes from the generic.
+You get the same reference every time. The type comes from the generic and is not checked at runtime.
 
 ```ts
 const db1 = Registry.get<DatabaseConnection>('DatabaseConnection');
@@ -60,6 +60,8 @@ db1.query('SELECT * FROM users');
 ```
 
 ## Checking and replacing
+
+`register` throws if the name is taken (`registry.instance.already-registered`), and `get` and `unregister` throw if it isn't registered (`registry.instance.not-registered`). Both codes are in `REGISTRY_ERROR_CODES`. `Registry.clear()` empties the registry, which is handy between tests.
 
 ```ts
 if (Registry.has('ApiClient')) {

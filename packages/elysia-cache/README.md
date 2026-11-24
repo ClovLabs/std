@@ -4,9 +4,7 @@
 
 # Clov Elysia Cache
 
-Response caching for Elysia, as a macro. Put `isCached: { ttl: 60 }` on a route, guard or group, and repeated requests are answered from the store in `beforeHandle`, before your handler runs.
-
-Storage goes through `@clov-std/kv-store`: memory by default, Redis when you need it, same routes either way.
+Response caching for Elysia, as a macro. Put `isCached: { ttl: 60 }` on a route, guard or group, and repeated requests are answered from the store in `beforeHandle`, before your handler runs. Storage goes through `@clov-std/kv-store`: memory by default, Redis when you need it, same routes either way.
 
 ```bash
 bun add @clov-std/elysia-cache elysia typebox
@@ -55,7 +53,7 @@ new Elysia()
 
 ### `vary`
 
-By default the key only includes the `authorization` header. If the response depends on other headers, list them:
+By default the key includes only the `authorization` header. If the response depends on other headers, list them:
 
 ```ts
 new Elysia()
@@ -96,16 +94,13 @@ new Elysia()
 
 ## How it behaves
 
-Keys are readable strings: `method:url`, the `vary` header values, then the parsed body. Keys over 1024 characters are hashed with SHA-256.
+Keys are readable strings: `cache:`, then `method:url`, the `vary` header values and the parsed body. Keys over 1024 characters are hashed with SHA-256.
 
 On a hit, the stored response is returned from `beforeHandle` with `X-Cache: HIT` and `Cache-Control: max-age=<remaining>, private`, where the remaining time is computed from when the entry was created.
 
 On a miss, the handler runs, the response is stored for `ttl` seconds, and it goes out with `X-Cache: MISS` and `Cache-Control: max-age=<ttl>, private`.
 
-A few things are never cached:
-
-- `undefined` return values.
-- Requests whose parsed body is or contains binary data (`Blob`, `ArrayBuffer`, typed arrays).
+Two things are never cached: `undefined` return values, and requests whose parsed body is binary data (`Blob`, `ArrayBuffer`, typed arrays) or has binary data in one of its top-level fields.
 
 `Response` instances are cloned before being stored or replayed, so the same cached body can be served many times.
 

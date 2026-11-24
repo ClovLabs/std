@@ -4,12 +4,12 @@
 
 # Clov KV Store
 
-A small key-value store interface with TTLs and counters, and two adapters behind it:
+A key-value store interface with TTLs and counters, and two adapters behind it:
 
 - `MemoryStore`: a `Map` with TTLs, periodic cleanup of expired entries, and an optional max size.
 - `BunRedisStore`: a thin wrapper around Bun's `RedisClient`.
 
-Both expose `get`, `set`, `del`, `increment`, `decrement`, `expire`, `ttl` and `clean`, so code written against memory in dev runs unchanged on Redis in prod. Keys, TTLs and amounts are validated before they reach the backend. The only dependency is `@clov-std/error`.
+Both expose `get`, `set`, `del`, `increment`, `decrement`, `expire`, `ttl` and `clean`. `MemoryStore` answers synchronously and `BunRedisStore` with promises, so code that awaits each call runs on either: memory in dev, Redis in prod. Keys, TTLs and amounts are validated before they reach the backend. The only dependency is `@clov-std/error`.
 
 ```bash
 bun add @clov-std/kv-store
@@ -30,7 +30,7 @@ store.increment('hits'); // 1
 store.increment('hits', 5); // 6
 store.decrement('hits'); // 5
 
-store.ttl('user:42'); // remaining seconds
+store.ttl('user:42'); // remaining seconds, -1 without TTL, -2 if the key is missing (as Redis)
 store.del('user:42'); // true
 store.clean(); // removes all keys, returns count
 
@@ -67,9 +67,11 @@ store.close();
 
 `set` JSON-encodes every value, strings included, so `"123"`, `"true"` or `"null"` come back as strings. Numbers stay compatible with Redis counters.
 
-When upgrading, note that raw strings already in Redis that happen to look like JSON can't be told apart from encoded values. Rewrite those keys from their source, or let them expire.
+`clean()` runs `FLUSHDB`, which empties the whole Redis database, not only the keys this store wrote.
 
-To run the Redis contract test against a throwaway instance, from this package:
+If you are upgrading, raw strings already in Redis that look like JSON can't be told apart from encoded values. Rewrite those keys from their source, or let them expire.
+
+To run the Redis contract test against a throwaway instance, from this package's directory:
 
 ```bash
 TEST_REDIS_URL=redis://127.0.0.1:6379 bun test test/bun-redis-store.spec.ts

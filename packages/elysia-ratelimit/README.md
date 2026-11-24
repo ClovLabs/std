@@ -4,9 +4,9 @@
 
 # Clov Elysia Rate Limit
 
-Rate limiting for Elysia, as a macro. Put `rateLimit: { limit: 10, window: 60 }` on a route, guard or group and you're done.
+Rate limiting for Elysia, as a macro. Put `rateLimit: { limit: 10, window: 60 }` on a route, guard or group.
 
-It runs in `transform`, the first per-route hook, so excess requests are rejected before auth guards or handlers do any work. Counters are per route pattern and client IP by default, which suits login endpoints: `/users/1` and `/users/2` share the quota of `/users/:id`. When lots of users share one IP (an office, a corporate proxy), count per authenticated user instead, with the `derive` hook.
+It runs in `transform`, the first per-route hook, so excess requests are rejected before auth guards or handlers do any work. By default, counters are per method, route pattern and client IP: `/users/1` and `/users/2` share the quota of `/users/:id`. That suits a login endpoint. When many users share one IP (an office, a corporate proxy), count per authenticated user instead, with the `derive` hook.
 
 Storage goes through `@clov-std/kv-store`: memory by default, Redis when you need it, same routes either way.
 
@@ -79,7 +79,7 @@ new Elysia()
 
 Elysia can't type what earlier hooks added, so `keyGenerator` returns `unknown`: anything but a non-empty string throws, so a key read before the hook adding it fails loudly instead of putting every client in one quota. A quota declared at several levels (a guard and its route) counts a request once.
 
-`extractClientIp` is exported if you need it in your own `keyGenerator`.
+The client IP is the first address in `X-Forwarded-For`, then `X-Real-IP`, then the socket address. Both headers are trusted as sent: unless a proxy in front of the app overwrites them, a client can pick its own IP, and with it its quota. `extractClientIp` is exported if you need it in your own `keyGenerator`.
 
 ## Headers and the 429
 
