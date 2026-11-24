@@ -35,10 +35,8 @@
 		"lint": "oxlint ./src",
 		"test": "bun test --pass-with-no-tests --coverage"
 	},
-	"dependencies": {
-		"@clov-std/kv-store": "workspace:^"
-	},
 	"devDependencies": {
+		"@clov-std/kv-store": "workspace:^",
 		"@types/bun": "catalog:base",
 		"oxfmt": "catalog:base",
 		"oxlint": "catalog:base",

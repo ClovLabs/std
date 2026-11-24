@@ -23,10 +23,8 @@
     "packages/elysia-cache": {
       "name": "@clov-std/elysia-cache",
       "version": "1.0.15",
-      "dependencies": {
-        "@clov-std/kv-store": "workspace:^",
-      },
       "devDependencies": {
+        "@clov-std/kv-store": "workspace:^",
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
         "oxlint": "catalog:base",
@@ -57,10 +55,8 @@
     "packages/elysia-ratelimit": {
       "name": "@clov-std/elysia-ratelimit",
       "version": "5.0.6",
-      "dependencies": {
-        "@clov-std/kv-store": "workspace:^",
-      },
       "devDependencies": {
+        "@clov-std/kv-store": "workspace:^",
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
         "oxlint": "catalog:base",
@@ -149,7 +145,6 @@
         "typescript": "catalog:base",
       },
       "peerDependencies": {
-        "@clov-std/common": "workspace:^",
         "@clov-std/error": "workspace:^",
       },
     },

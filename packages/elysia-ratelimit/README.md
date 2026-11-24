@@ -11,10 +11,10 @@ It runs in `transform`, the first per-route hook, so excess requests are rejecte
 Storage goes through `@clov-std/kv-store`: memory by default, Redis when you need it, same routes either way.
 
 ```bash
-bun add @clov-std/elysia-ratelimit elysia typebox
+bun add @clov-std/elysia-ratelimit @clov-std/kv-store elysia typebox
 ```
 
-`elysia` (v2) and `typebox` are peer dependencies.
+`@clov-std/kv-store`, `elysia` (v2) and `typebox` are peer dependencies.
 
 ## Usage
 

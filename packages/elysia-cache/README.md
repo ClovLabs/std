@@ -7,10 +7,10 @@
 Response caching for Elysia, as a macro. Put `isCached: { ttl: 60 }` on a route, guard or group, and repeated requests are answered from the store in `beforeHandle`, before your handler runs. Storage goes through `@clov-std/kv-store`: memory by default, Redis when you need it, same routes either way.
 
 ```bash
-bun add @clov-std/elysia-cache elysia typebox
+bun add @clov-std/elysia-cache @clov-std/kv-store elysia typebox
 ```
 
-`elysia` (v2) and `typebox` are peer dependencies.
+`@clov-std/kv-store`, `elysia` (v2) and `typebox` are peer dependencies.
 
 ## Usage
 
