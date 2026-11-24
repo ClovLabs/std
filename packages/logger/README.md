@@ -29,11 +29,11 @@ logger.log({ event: 'generic_log' });
 await logger.close();
 ```
 
-Sinks are factory functions, not classes. Pass the factory itself to `registerSink`, not the result of calling it: the worker re-evaluates it and calls it with the args you gave, so the sink is built inside the worker.
+Sinks are factory functions, not classes. Pass the factory itself to `registerSink`, not the result of calling it: the sink is built inside the worker, which re-evaluates the factory and calls it with the arguments you gave.
 
 ## Several sinks
 
-Register as many as you need, and target some of them per call:
+Register as many as you need, and pick which ones a call goes to:
 
 ```ts
 import { Logger, consoleSink, fileSink } from '@clov-std/logger';
@@ -55,11 +55,11 @@ await logger.close();
 
 ## Built-in sinks
 
-| Factory       | Args   | Description                                             |
-| ------------- | ------ | ------------------------------------------------------- |
-| `consoleSink` | _none_ | Writes JSON log entries to `console` (routed by level). |
-| `fileSink`    | `path` | Appends JSON log entries to a file via `Bun.FileSink`.  |
-| `devNullSink` | _none_ | Discards everything. Handy for benchmarks.              |
+| Factory       | Args   | Description                                                   |
+| ------------- | ------ | ------------------------------------------------------------- |
+| `consoleSink` | _none_ | Writes JSON log entries to `console` (routed by level).       |
+| `fileSink`    | `path` | Appends JSON log entries to a file, creating it when missing. |
+| `devNullSink` | _none_ | Discards everything. Handy for benchmarks.                    |
 
 ```ts
 import { Logger, devNullSink, fileSink } from '@clov-std/logger';
@@ -103,10 +103,14 @@ await logger.close();
 
 ```ts
 interface LoggerSink<TLogObject = unknown> {
-	log(level: LogLevels, timestamp: number, object: TLogObject): Promise<void> | void;
-	logJson?(level: LogLevels, timestamp: number, json: string | undefined): Promise<void> | void;
-	flush?(): Promise<void> | void; // called by Logger.flush()
-	close?(): Promise<void> | void; // called on Logger.close()
+	log: (level: LogLevels, timestamp: number, object: TLogObject) => Promise<void> | void;
+	logJson?: (
+		level: LogLevels,
+		timestamp: number,
+		json: string | undefined
+	) => Promise<void> | void;
+	flush?: () => Promise<void> | void; // called by Logger.flush(), and before close
+	close?: () => Promise<void> | void; // called on Logger.close()
 }
 ```
 
@@ -124,7 +128,6 @@ import { Logger, type LoggerSink, type LogLevels, type SinkFactory } from '@clov
 interface UserLog {
 	userId: number;
 	action: string;
-	timestamp?: Date;
 }
 
 // Typed factory: the returned sink only accepts UserLog objects.
@@ -136,10 +139,10 @@ const userLogSink: SinkFactory<UserLog> = () => ({
 
 const logger = new Logger().registerSink('userLog', userLogSink);
 
-// ✅ TypeScript requires the correct shape
+// TypeScript requires the correct shape
 logger.info({ userId: 123, action: 'login' });
 
-// ❌ TypeScript error: Missing required property 'action'
+// TypeScript error: missing required property 'action'
 logger.info({ userId: 123 });
 ```
 
@@ -175,7 +178,7 @@ const apiLogSink: SinkFactory<ApiLog> = () => ({
 
 const logger = new Logger().registerSink('user', userLogSink).registerSink('api', apiLogSink);
 
-// ✅ Logging to both sinks requires BOTH types combined
+// Logging to both sinks requires both types combined
 logger.info(
 	{
 		userId: 123,
@@ -187,10 +190,10 @@ logger.info(
 	['user', 'api']
 );
 
-// ✅ Logging to only one sink requires only that sink's type
+// Logging to one sink requires only that sink's type
 logger.warn({ userId: 456, action: 'failed_attempt' }, ['user']);
 
-// ❌ TypeScript error: Missing api properties
+// TypeScript error: missing ApiLog properties
 logger.error({ userId: 789, action: 'error' }, ['user', 'api']);
 ```
 
@@ -217,13 +220,13 @@ const logger = new Logger()
 	.registerSink('database', databaseLogSink)
 	.registerSink('console', consoleSink); // accepts unknown
 
-// ✅ Only DatabaseLog is required, console accepts anything
+// Only DatabaseLog is required, console accepts anything
 logger.info({ query: 'SELECT * FROM users', duration: 123 }, ['database', 'console']);
 ```
 
 ## Errors
 
-When a sink throws, or a factory fails to build inside the worker, the logger emits an event:
+Errors inside the worker don't throw at the call site. The logger emits `sinkError` when a sink fails to write or close, and `registerSinkError` when a factory fails to build:
 
 ```ts
 import { Logger, consoleSink } from '@clov-std/logger';
@@ -246,8 +249,6 @@ await logger.close();
 
 ## Flushing and closing
 
-To make sure everything is written before shutting down:
-
 ```ts
 import { Logger, consoleSink } from '@clov-std/logger';
 
@@ -267,13 +268,14 @@ await logger.close();
 
 ## How it works
 
-A log call serializes the object with `JSON.stringify` and copies the result into a ring buffer shared with the worker (`SharedArrayBuffer`). There is no message per log and no batching timer: the worker reads the buffer as it fills and wakes up only when it has gone idle.
+A log call serializes the object with `JSON.stringify` and copies the result into a ring buffer shared with the worker (`SharedArrayBuffer`). There is no message per log: the worker reads the buffer by itself. While logs keep coming it checks the buffer every millisecond, so a log call never has to wake it. After a few milliseconds without a log it goes to sleep, and the next log wakes it. The console and file sinks write all the logs the worker has just read in one call.
 
 This has a few consequences:
 
-- Sinks receive what `JSON.parse` gives back. `Date` becomes a string, `Map`, `Set` and `Error` become `{}`, and a `BigInt` or a circular object makes the call throw `logger.log.serialization-failed`.
+- `log` receives what `JSON.parse` gives back and `logJson` the JSON string itself, so `Date` becomes a string, `Map`, `Set` and `Error` become `{}`, and a `BigInt` or a circular object makes the call throw `logger.log.serialization-failed`.
 - When the buffer is full, the log call waits for the worker to catch up instead of dropping the log.
-- A single log larger than half of the buffer throws `logger.log.too-large`.
+- A single log that takes half of the buffer or more throws `logger.log.too-large`.
+- A log made after `close()` is dropped.
 - A logger holds at most 32 sinks.
 
 ## Configuration
@@ -283,7 +285,7 @@ import { Logger, consoleSink } from '@clov-std/logger';
 
 const logger = new Logger({
 	bufferSize: 4 * 1024 * 1024, // Shared buffer size in bytes (default: 4 MiB)
-	autoEnd: true // Close (and flush) on process exit (default: true)
+	autoEnd: true // Flush and close when the event loop empties; process.exit() skips the flush (default: true)
 }).registerSink('console', consoleSink);
 ```
 
@@ -291,14 +293,16 @@ const logger = new Logger({
 
 `bun run bench` compares Clov with pino, both writing the same object to a real file. pino runs without `pid` and `hostname` so both write comparable lines.
 
-Results on an Intel Core Ultra 7 155H with Bun 1.4.4:
+It measures a burst of logs, then one `info()` call in two situations: in a tight loop, and spaced 10 µs apart with the event loop running in between, which is how a server logs its requests. The two differ because a tight loop keeps the CPU caches warm and never lets the writer go idle.
 
-| Logger                    | 10,000 logs to disk | One `info()` call |
-| ------------------------- | ------------------- | ----------------- |
-| Clov (`fileSink`)         | 4.4 ms              | 453 ns            |
-| pino `transport` (worker) | 16.5 ms             | 1.01 µs           |
-| pino, sync destination    | 45.2 ms             | 2.29 µs           |
-| pino, async destination   | 48.2 ms             | 2.11 µs           |
+Results on an Intel Core Ultra 7 155H with Bun 1.4.6:
+
+| Logger                    | 10,000 logs to disk | One `info()` call, tight loop | One `info()` call, spaced |
+| ------------------------- | ------------------- | ----------------------------- | ------------------------- |
+| Clov (`fileSink`)         | 3.8 ms              | 337 ns                        | 293 ns                    |
+| pino `transport` (worker) | 10.9 ms             | 954 ns                        | 1.25 µs                   |
+| pino, sync destination    | 32.8 ms             | 2.08 µs                       | 1.01 µs                   |
+| pino, async destination   | 34.6 ms             | 2.09 µs                       | 1.28 µs                   |
 
 pino is measured under Bun here. It is built for Node and may do better there.
 

@@ -14,12 +14,18 @@ import { fileSink } from '#/sinks/file-logger';
  * - "burst": N logs then wait until they are on disk (flush), i.e. end-to-end throughput.
  * - "per call": what one `info()` costs the caller under sustained load; a full
  *   buffer makes the caller wait for the writer, so this is sustained throughput too.
+ * - "spaced": what one `info()` costs the caller when logs come one at a time with
+ *   the event loop running in between, the way a server logs its requests. Unlike a
+ *   tight loop, the caches are cold and a writer that sleeps between logs must be woken.
  *
  * pino runs without `pid`/`hostname` and with an epoch timestamp, so both write
  * one comparable JSON line per log.
  */
 
 const BURST = 10_000;
+const SPACED_LOGS = 50_000;
+/** Time between two spaced logs: 100,000 logs per second */
+const SPACED_GAP_NS = 10_000;
 const dir = mkdtempSync(join(tmpdir(), 'clov-logger-bench-'));
 
 const makeLog = (i: number): Record<string, unknown> => ({
@@ -108,6 +114,69 @@ barplot(() => {
 });
 
 await run({ colors: true });
+
+/**
+ * Logs every `SPACED_GAP_NS`, yielding to the event loop before each log, and times only the
+ * log call itself (the object is built before the clock starts). Flushes first, so what the
+ * previous benchmarks left in the logger is not measured.
+ *
+ * @returns The median duration of a call, in nanoseconds
+ */
+const measureSpaced = async (
+	log: (object: Record<string, unknown>) => void,
+	flush: () => Promise<void>
+): Promise<number> => {
+	await flush();
+	const durations = new Float64Array(SPACED_LOGS);
+	let next = Bun.nanoseconds();
+	for (let n = 0; n < SPACED_LOGS; ++n) {
+		// Sequential by design: one event loop turn between two logs.
+		// oxlint-disable-next-line no-await-in-loop
+		await new Promise((resolve) => {
+			setImmediate(resolve);
+		});
+		const object = makeLog(n);
+		// A late turn logs at once instead of catching up with a burst.
+		next = Math.max(next + SPACED_GAP_NS, Bun.nanoseconds());
+		while (Bun.nanoseconds() < next); // spin: a timer is not precise enough for 10 µs
+		const start = Bun.nanoseconds();
+		log(object);
+		durations[n] = Bun.nanoseconds() - start;
+	}
+	return durations.sort()[SPACED_LOGS >> 1] as number;
+};
+
+console.log(
+	`\n• spaced: one info() every ${SPACED_GAP_NS / 1000} µs, event loop running in between`
+);
+for (const [name, log, flush] of [
+	['empty call (timer overhead)', (): void => undefined, (): Promise<void> => Promise.resolve()],
+	[
+		'Clov (worker, shared memory)',
+		(object: Record<string, unknown>): void => clov.info(object),
+		(): Promise<void> => clov.flush()
+	],
+	[
+		'pino (sync destination)',
+		(object: Record<string, unknown>): void => pinoSync.info(object),
+		(): Promise<void> => flushPino(pinoSync)
+	],
+	[
+		'pino (async destination)',
+		(object: Record<string, unknown>): void => pinoAsync.info(object),
+		(): Promise<void> => flushPino(pinoAsync)
+	],
+	[
+		'pino (transport, worker)',
+		(object: Record<string, unknown>): void => pinoTransport.info(object),
+		(): Promise<void> => flushPino(pinoTransport)
+	]
+] as const)
+	// Sequential by design: one logger measured at a time.
+	// oxlint-disable-next-line no-await-in-loop
+	console.log(
+		`${name.padEnd(30)}${(await measureSpaced(log, flush)).toFixed(0).padStart(6)} ns/call`
+	);
 
 await Promise.all([
 	clov.close(),

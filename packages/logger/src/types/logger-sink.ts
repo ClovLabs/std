@@ -6,18 +6,18 @@ import type { LogLevels } from './log-levels';
  * This is the object a {@link SinkFactory} returns. The factory runs inside the
  * logger worker, so the sink closes over its own state (file handles, buffers, …)
  * instead of exposing it. All values the sink needs must be created **inside** the
- * factory body — it cannot close over module-scoped imports (use dynamic `import()`
+ * factory body: it cannot close over module-scoped imports (use dynamic `import()`
  * or runtime globals such as `Bun` instead).
  */
 export interface LoggerSink<TLogObject = unknown> {
 	/**
-	 * Logs a message with the sink's implementation.
+	 * Writes one log entry.
 	 *
 	 * @param level - The log level at which the message should be logged.
-	 * @param timestamp - The epoch timestamp (ms) at which the message was logged.
-	 * @param object - The object to log.
+	 * @param timestamp - Epoch time in milliseconds when the log was made.
+	 * @param object - The logged value after a JSON round trip (a `Date` arrives as a string).
 	 *
-	 * @returns A promise when the sink is asynchronous; it is awaited by {@link Logger.flush}.
+	 * @returns A promise when the sink is asynchronous; it is awaited by {@link Logger.flush} and on close.
 	 */
 	log: (level: LogLevels, timestamp: number, object: TLogObject) => Promise<void> | void;
 
@@ -28,8 +28,8 @@ export interface LoggerSink<TLogObject = unknown> {
 	 * should implement it.
 	 *
 	 * @param level - The log level at which the message should be logged.
-	 * @param timestamp - The epoch timestamp (ms) at which the message was logged.
-	 * @param json - The logged object serialized with `JSON.stringify`.
+	 * @param timestamp - Epoch time in milliseconds when the log was made.
+	 * @param json - The logged value serialized with `JSON.stringify`.
 	 */
 	logJson?: (
 		level: LogLevels,
@@ -39,15 +39,15 @@ export interface LoggerSink<TLogObject = unknown> {
 
 	/**
 	 * Flushes any buffered data to the underlying destination.
-	 * Called by {@link Logger.flush}; implement it when your sink buffers writes
+	 * Called by {@link Logger.flush} and before {@link LoggerSink.close}; implement it when your sink buffers writes
 	 * (e.g. a file writer) and durability on flush matters.
 	 */
 	flush?: () => Promise<void> | void;
 
 	/**
 	 * Closes the sink and releases its resources.
-	 * Called when the logger is closing. Optional - implement this if your sink needs
-	 * cleanup (e.g. closing file handles, database connections).
+	 * Called once when the logger closes, after {@link LoggerSink.flush}. Implement it when
+	 * the sink holds something to release (file handles, database connections).
 	 */
 	close?: () => Promise<void> | void;
 }
