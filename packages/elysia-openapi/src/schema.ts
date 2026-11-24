@@ -190,7 +190,7 @@ const isDroppedKeyword = (key: string, value: unknown): boolean =>
 	// an empty tuple: `prefixItems` needs an item, `items: false` alone describes it
 	(key === 'items' && Array.isArray(value) && value.length === 0);
 
-/** The converted `$defs` of each `t.Cyclic`, which its `$ref`s, rewritten to components, no longer reach. */
+/** The converted `$defs` of each `t.Cyclic`: its `$ref`s now point to components, so {@link hoistDefs} moves them there. */
 const cyclicDefs = new WeakSet<object>();
 
 /**

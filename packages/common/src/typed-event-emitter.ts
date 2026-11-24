@@ -3,18 +3,18 @@ import { EventEmitter } from 'events';
 import type { EventMap } from './types/event-map';
 
 /**
- * A generic event emitter class that allows for type-safe event handling.
+ * `EventEmitter` whose event names and listener arguments are checked against `TEvents`.
  *
- * @template TEvents - The type of events and their payloads.
+ * @template TEvents - Event names mapped to their listener arguments.
  */
 export class TypedEventEmitter<TEvents extends EventMap> extends EventEmitter {
 	/**
-	 * Emits an event with the specified payload.
+	 * Calls each listener of `event` with `args`.
 	 *
 	 * @template KEvent - The type of event to emit.
 	 *
 	 * @param event - The event name to emit.
-	 * @param args - The data to send with the event.
+	 * @param args - Arguments passed to each listener.
 	 *
 	 * @returns Whether the event had listeners.
 	 *
@@ -85,7 +85,7 @@ export class TypedEventEmitter<TEvents extends EventMap> extends EventEmitter {
 	}
 
 	/**
-	 * Registers an event listener for the specified event (alias for on).
+	 * Alias of {@link TypedEventEmitter.on}.
 	 *
 	 * @template KEvent - The type of event to listen for.
 	 *
@@ -137,7 +137,7 @@ export class TypedEventEmitter<TEvents extends EventMap> extends EventEmitter {
 	}
 
 	/**
-	 * Removes an event listener for the specified event (alias for removeListener).
+	 * Alias of {@link TypedEventEmitter.removeListener}.
 	 *
 	 * @template KEvent - The type of event.
 	 *

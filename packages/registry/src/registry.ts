@@ -26,7 +26,7 @@ export class Registry {
 	 * Stores `instance` under the given `name`.
 	 *
 	 * Each name can only be registered once. Call {@link unregister} first
-	 * if you need to replace an existing instance.
+	 * to replace an existing instance.
 	 *
 	 * @template TClass - The type of the instance being stored.
 	 *
@@ -64,8 +64,7 @@ export class Registry {
 	/**
 	 * Retrieves the instance stored under `name`.
 	 *
-	 * The caller specifies the expected type via the generic parameter;
-	 * no runtime type-check is performed.
+	 * The type parameter is trusted: no runtime type check is done.
 	 *
 	 * @template TClass - Expected type of the stored instance.
 	 *
@@ -92,7 +91,7 @@ export class Registry {
 		return this.registry.has(name);
 	}
 
-	/** Removes every stored instance — useful for test teardown. */
+	/** Removes every stored instance, useful in test teardown. */
 	public static clear(): void {
 		this.registry.clear();
 	}

@@ -8,9 +8,10 @@ import type { Translations } from './type/translations';
  * Creates a single catalog entry for `defineExceptionCatalog` or `defineMessageCatalog`.
  *
  * With a `status` the entry is an {@link ExceptionEntry} and yields a
- * `LocalizedHttpException`; without one it is a {@link MessageEntry} and yields a plain
- * `LocalizedException`. Translations are captured as literals, so interpolation params
- * are inferred from their `{{placeholder}}` tokens.
+ * `LocalizedHttpException`. Without one it is a {@link MessageEntry}: a plain
+ * `LocalizedException` in an exception catalog, a `LocalizedMessage` in a message catalog.
+ * Translations are captured as literals, so interpolation params are inferred from their
+ * `{{placeholder}}` tokens.
  *
  * @param definition - Translations, plus a status for an HTTP exception entry.
  *

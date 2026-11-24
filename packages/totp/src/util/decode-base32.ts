@@ -7,7 +7,7 @@ export const DECODE_BASE32_ERROR_CODES = {
 } as const;
 
 /**
- * Decodes a base32-encoded string into a Uint8Array (RFC 4648).
+ * Decodes a base32 string (RFC 4648). Case-insensitive; whitespace and `=` padding are ignored.
  *
  * @param input - The base32-encoded string to decode.
  *

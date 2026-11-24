@@ -43,7 +43,11 @@ export interface RateLimitMacroOptions {
 	 */
 	hook?: 'transform' | 'derive' | 'beforeHandle';
 
-	// Elysia can't type what earlier hooks added: anything but a non-empty string throws
+	/**
+	 * Returns the key counted against the quota, the client IP by default.
+	 * Typed `unknown` because Elysia can't type what earlier hooks added: anything but a
+	 * non-empty string throws.
+	 */
 	keyGenerator?: (context: RateLimitKeyContext) => unknown;
 }
 
@@ -128,7 +132,7 @@ const consumeRateLimit = async (
  * Creates the rate limit plugin
  *
  * Elysia keeps one definition per plugin name, so every `rateLimitPlugin()` of an app tree
- * resolves to a single plugin instance — the first one. Pass the store here to change it
+ * resolves to a single plugin instance, the first one. Pass the store here to change it
  * for the whole app, a later `rateLimitPlugin(store)` is ignored.
  */
 export const rateLimitPlugin = (

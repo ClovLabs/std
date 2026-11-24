@@ -10,16 +10,17 @@ const MAX_KEY_LENGTH = 1024;
 /**
  * Generates a cache key from a request and the body Elysia parsed for it
  *
- * The key is a readable string built like the rate limit plugin's: `method:url` followed by
- * the `vary` header values and the body. The cache macro prefixes it with `cache:` and
- * hashes it when it grows past the store's key limit.
+ * The key is a readable string: `method:url` followed by the `vary` header values and the
+ * body. The cache macro prefixes it with `cache:` and hashes it when it grows past 1024
+ * characters, the {@link KvStore} key limit.
  *
  * @param request - The request to generate a cache key for
  * @param body - The parsed body, keying on it avoids consuming the raw stream
  * @param vary - Header names to include in the key, every header is included when omitted.
  *   Iterating all of them is both the slowest part of this function and what fragments the
  *   cache per client, so a route that varies on a few headers should list them.
- * @returns The key, or `undefined` when the request cannot be keyed and must not be cached
+ * @returns The key, or `undefined` when the body is or holds binary data (`Blob`,
+ *   `ArrayBuffer`, typed array) and the request must not be cached
  */
 export const generateCacheKey = (
 	request: Request,
@@ -68,24 +69,21 @@ interface CacheAfterHandleContext extends CacheContext {
 }
 
 export interface CacheOptions {
-	/**
-	 * TTL in seconds
-	 */
+	/** TTL in seconds */
 	ttl: number;
 
 	/**
-	 * Header names the key varies on. Only those are hashed instead of every request header,
+	 * Header names the key varies on. Only those enter the key instead of every request header,
 	 * which keeps the cache from fragmenting on `user-agent`, `accept-encoding`, etc.
 	 *
-	 * @defaultValue every request header
+	 * @defaultValue `['authorization']`
 	 */
 	vary?: string[];
 
 	/**
-	 * Builds the cache key for a request. Returning `undefined` leaves that request uncached,
-	 * which is also the way to opt a request out
+	 * Builds the cache key for a request. Returning `undefined` leaves that request uncached.
 	 *
-	 * @defaultValue {@link generateCacheKey}
+	 * @defaultValue {@link generateCacheKey} with `vary`
 	 */
 	keyGenerator?: (
 		request: Request,
@@ -103,7 +101,7 @@ type CacheMacro = (options: CacheOptions) => {
  * Creates the cache plugin
  *
  * Elysia keeps one definition per plugin name, so every `cachePlugin()` of an app tree
- * resolves to a single plugin instance — the first one. Pass the store here to change it
+ * resolves to a single plugin instance, the first one. Pass the store here to change it
  * for the whole app, a later `cachePlugin(store)` is ignored.
  */
 export const cachePlugin = (

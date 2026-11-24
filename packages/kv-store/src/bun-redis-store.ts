@@ -8,9 +8,6 @@ export const BUN_REDIS_STORE_ERROR_CODES = {
 } as const;
 
 export class BunRedisStore extends KvStore {
-	/**
-	 * Redis client instance. Initialized in the constructor and connected in the `connect` method.
-	 */
 	private readonly redis: RedisClient;
 
 	public constructor(url?: string, options?: RedisOptions) {

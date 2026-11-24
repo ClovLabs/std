@@ -7,17 +7,17 @@ export const KV_STORE_ERROR_CODES = {
 } as const;
 
 /**
- * Abstract base class for key-value store adapters.
+ * Base class for key-value store adapters.
  *
- * Provides static validation helpers. Subclasses implement the public
- * methods directly and call the validators as needed.
+ * Subclasses implement the abstract methods and run their inputs through the
+ * protected static validators.
  */
 export abstract class KvStore {
 	public connect?(): Promise<void> | void;
 	public close?(): Promise<void> | void;
 
 	/**
-	 * Validates a key string and throws an exception if it's invalid.
+	 * Rejects a key that is empty, longer than 1024 characters, or contains a NUL character.
 	 *
 	 * @param key - The key to validate.
 	 *
@@ -32,9 +32,9 @@ export abstract class KvStore {
 	}
 
 	/**
-	 * Validates a TTL value and throws an exception if it's invalid.
+	 * Accepts `undefined` (no expiry) or a positive integer number of seconds.
 	 *
-	 * @param ttlSec - The TTL value to validate.
+	 * @param ttlSec - The TTL to validate, in seconds.
 	 *
 	 * @throws ({@link Exception}) - If the TTL is invalid.
 	 */
@@ -49,11 +49,11 @@ export abstract class KvStore {
 	}
 
 	/**
-	 * Validates an increment/decrement amount and throws an exception if it's invalid.
+	 * Accepts an integer increment or decrement amount.
 	 *
 	 * @param amount - The amount to validate.
 	 *
-	 * @throws ({@link Exception}) - If the amount is invalid.
+	 * @throws ({@link Exception}) - If the amount is not an integer.
 	 */
 	protected static validateAmount(amount: number): void {
 		if (!Number.isFinite(amount) || !Number.isInteger(amount))

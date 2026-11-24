@@ -230,7 +230,7 @@ const toRequestBody = (
 	const description = descriptionOf(resolveModel(first, models));
 	return {
 		...(description !== undefined && { description }),
-		// optional on the hook or its model, or accepting `undefined`
+		// not required when every body is optional on the hook or its model, or accepts `undefined`
 		required: !bodies.every((body) => {
 			const resolved = resolveModel(body, models);
 			return (
@@ -567,8 +567,9 @@ const isPathParameter = (
 ): parameter is ParameterObject => !isReference(parameter) && parameter.in === 'path';
 
 /**
- * Keeps only the path parameters templated in `path`, named as in `documented`, the path of the same hierarchy it
- * is documented under, and declares the missing ones as required strings.
+ * Keeps only the path parameters templated in `path` and renames them as in `documented`, the path of the same
+ * hierarchy the operation is filed under. Parameters `documented` templates but the operation lacks are declared as
+ * required strings.
  */
 const withPathParameters = (
 	operation: OperationObject,
@@ -755,7 +756,7 @@ export const buildDocument = (app: AnyElysia, base: Partial<OpenAPIObject> = {})
 		const routeMethod = route.method.toLowerCase();
 		// WebSocket routes have no OpenAPI equivalent
 		if (route.hooks.detail?.hide || routeMethod === 'ws') continue;
-		// the preflight routes `@elysia/cors` adds on `/` and `/*`
+		// the preflight routes `@elysia/cors` adds on `/` and on paths ending in `/*`
 		if (routeMethod === 'options' && route.bare && /^\/(\*)?$|\/\*$/.test(route.path)) continue;
 
 		for (const tag of route.hooks.detail?.tags ?? []) tagNames.add(tag);

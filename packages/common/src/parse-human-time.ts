@@ -14,9 +14,7 @@ export type TimeUnit =
 	| 'weeks'
 	| 'years';
 
-/**
- * Time unit constants in seconds
- */
+/** Length of each input unit, in seconds. */
 const TIME_UNITS = {
 	SECOND: 1,
 	MINUTE: 60,
@@ -27,15 +25,12 @@ const TIME_UNITS = {
 } as const;
 
 /**
- * Regular expression to parse human-readable time expressions
- * Matches patterns like: "2 hours", "+30 minutes", "1 day ago", "5 seconds from now"
+ * Matches a human-readable time expression: "2 hours", "+30 minutes", "1 day ago", "5 seconds from now".
  */
 export const TIME_EXPRESSION_REGEX =
 	/^(\+|-)? ?(\d+|\d+\.\d+) ?(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)(?: (ago|from now))?$/i;
 
-/**
- * Mapping of unit strings to their corresponding time unit values
- */
+/** Seconds per accepted unit spelling. */
 const UNIT_MAPPINGS: Record<string, number> = {
 	// Seconds
 	s: TIME_UNITS.SECOND,
@@ -76,9 +71,7 @@ const UNIT_MAPPINGS: Record<string, number> = {
 	years: TIME_UNITS.YEAR
 };
 
-/**
- * Conversion factors from seconds to each supported unit
- */
+/** Seconds per output unit; the result is divided by it. */
 const CONVERSION_FACTORS: Record<TimeUnit, number> = {
 	ms: 0.001,
 	milliseconds: 0.001,
@@ -140,7 +133,6 @@ export const parseHumanTime = (timeExpression: string, unit: TimeUnit = 'seconds
 	const conversion = CONVERSION_FACTORS[unit];
 	const result = seconds / conversion;
 
-	// Return negative value for past times (ago or negative sign)
 	if (sign === '-' || direction === 'ago') return -result;
 
 	return result;

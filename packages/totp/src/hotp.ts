@@ -16,7 +16,7 @@ export interface GenerateHOTPOptions {
 	/** The shared secret, either as a base32-encoded string or raw bytes. */
 	readonly secret: string | Uint8Array;
 
-	/** The counter value. */
+	/** Counter value, kept in sync with the authenticator. A number is floored. */
 	readonly counter: number | bigint;
 
 	/** Number of digits in the generated code (1-10, default: 6). */
@@ -60,7 +60,8 @@ const dynamicTruncate = (hmac: Uint8Array<ArrayBuffer>, digits: number): string 
  *
  * @param options - HOTP generation parameters.
  *
- * @throws ({@link Exception}) - If the secret is empty, digits is out of range, or HMAC computation fails.
+ * @throws ({@link Exception}) - If the secret is not valid base32 or is empty, digits is out of range, or HMAC
+ * computation fails.
  *
  * @returns The generated OTP code as a zero-padded string.
  */

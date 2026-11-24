@@ -1,9 +1,9 @@
 /**
- * Creates an ArrayBuffer representing the counter value for HOTP/TOTP generation.
+ * Encodes a counter as the 8-byte big-endian value HOTP signs (RFC 4226).
  *
- * @param counter The counter value, either as a number or bigint.
+ * @param counter - The counter value, a number is floored first.
  *
- * @returns An ArrayBuffer representing the counter value.
+ * @returns An 8-byte buffer holding the counter.
  */
 export const createCounterBuffer = (counter: number | bigint): ArrayBuffer => {
 	const counterBuffer = new ArrayBuffer(8);
