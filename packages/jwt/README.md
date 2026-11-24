@@ -7,8 +7,10 @@
 Two functions on top of [jose](https://github.com/panva/jose): sign and verify HS256 tokens with the standard claims filled in for you.
 
 ```bash
-bun add @clov-std/jwt
+bun add @clov-std/jwt @clov-std/error
 ```
+
+`@clov-std/error` is a peer dependency.
 
 ## `signJWT`
 

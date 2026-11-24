@@ -7,8 +7,10 @@
 Generate and verify HOTP and TOTP codes (RFC 4226 / RFC 6238), generate secrets, and build the `otpauth://` URIs that go in QR codes. Secrets can be base32 strings or raw bytes. Defaults are what authenticator apps expect: 6 digits, SHA-1, 30-second period.
 
 ```bash
-bun add @clov-std/totp
+bun add @clov-std/totp @clov-std/error
 ```
+
+`@clov-std/error` is a peer dependency.
 
 ## `generateHOTP`
 

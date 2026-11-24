@@ -37,10 +37,10 @@
 		"test": "bun test --pass-with-no-tests --coverage"
 	},
 	"dependencies": {
-		"@clov-std/common": "workspace:^",
-		"@clov-std/error": "workspace:^"
+		"@clov-std/common": "workspace:^"
 	},
 	"devDependencies": {
+		"@clov-std/error": "workspace:^",
 		"@types/bun": "catalog:base",
 		"mitata": "^1.0.34",
 		"oxfmt": "catalog:base",

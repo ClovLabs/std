@@ -7,8 +7,10 @@
 A logger for Bun that does its writing in a worker thread, so logging doesn't hold up your main loop. Each log is serialized once, handed to the worker through shared memory, and written by one or more sinks (console, file, or your own). Logs are typed: if a sink expects `{ userId, action }`, TypeScript makes you pass it.
 
 ```bash
-bun add @clov-std/logger
+bun add @clov-std/logger @clov-std/error
 ```
+
+`@clov-std/error` is a peer dependency.
 
 ## Basic setup
 

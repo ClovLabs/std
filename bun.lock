@@ -7,11 +7,9 @@
     },
     "packages/common": {
       "name": "@clov-std/common",
-      "version": "2.2.2",
-      "dependencies": {
-        "@clov-std/error": "workspace:^",
-      },
+      "version": "2.2.3",
       "devDependencies": {
+        "@clov-std/error": "workspace:^",
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
         "oxlint": "catalog:base",
@@ -24,7 +22,7 @@
     },
     "packages/elysia-cache": {
       "name": "@clov-std/elysia-cache",
-      "version": "1.0.14",
+      "version": "1.0.15",
       "dependencies": {
         "@clov-std/kv-store": "workspace:^",
       },
@@ -43,7 +41,7 @@
     },
     "packages/elysia-openapi": {
       "name": "@clov-std/elysia-openapi",
-      "version": "1.4.2",
+      "version": "1.4.3",
       "devDependencies": {
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
@@ -58,7 +56,7 @@
     },
     "packages/elysia-ratelimit": {
       "name": "@clov-std/elysia-ratelimit",
-      "version": "5.0.5",
+      "version": "5.0.6",
       "dependencies": {
         "@clov-std/kv-store": "workspace:^",
       },
@@ -77,7 +75,7 @@
     },
     "packages/error": {
       "name": "@clov-std/error",
-      "version": "5.0.6",
+      "version": "5.0.7",
       "devDependencies": {
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
@@ -88,11 +86,9 @@
     },
     "packages/i18n": {
       "name": "@clov-std/i18n",
-      "version": "4.0.6",
-      "dependencies": {
-        "@clov-std/error": "workspace:^",
-      },
+      "version": "4.0.7",
       "devDependencies": {
+        "@clov-std/error": "workspace:^",
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
         "oxlint": "catalog:base",
@@ -105,12 +101,12 @@
     },
     "packages/jwt": {
       "name": "@clov-std/jwt",
-      "version": "2.0.7",
+      "version": "2.0.8",
       "dependencies": {
-        "@clov-std/error": "workspace:^",
         "jose": "^6.2.18",
       },
       "devDependencies": {
+        "@clov-std/error": "workspace:^",
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
         "oxlint": "catalog:base",
@@ -123,11 +119,9 @@
     },
     "packages/kv-store": {
       "name": "@clov-std/kv-store",
-      "version": "2.0.7",
-      "dependencies": {
-        "@clov-std/error": "workspace:^",
-      },
+      "version": "2.0.8",
       "devDependencies": {
+        "@clov-std/error": "workspace:^",
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
         "oxlint": "catalog:base",
@@ -140,12 +134,12 @@
     },
     "packages/logger": {
       "name": "@clov-std/logger",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "dependencies": {
         "@clov-std/common": "workspace:^",
-        "@clov-std/error": "workspace:^",
       },
       "devDependencies": {
+        "@clov-std/error": "workspace:^",
         "@types/bun": "catalog:base",
         "mitata": "^1.0.34",
         "oxfmt": "catalog:base",
@@ -161,11 +155,9 @@
     },
     "packages/registry": {
       "name": "@clov-std/registry",
-      "version": "2.0.6",
-      "dependencies": {
-        "@clov-std/error": "workspace:^",
-      },
+      "version": "2.0.7",
       "devDependencies": {
+        "@clov-std/error": "workspace:^",
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
         "oxlint": "catalog:base",
@@ -178,11 +170,9 @@
     },
     "packages/totp": {
       "name": "@clov-std/totp",
-      "version": "2.0.5",
-      "dependencies": {
-        "@clov-std/error": "workspace:^",
-      },
+      "version": "2.0.6",
       "devDependencies": {
+        "@clov-std/error": "workspace:^",
         "@types/bun": "catalog:base",
         "oxfmt": "catalog:base",
         "oxlint": "catalog:base",

@@ -7,8 +7,10 @@
 Small helpers shared by the other `@clov-std` packages: a human-readable duration parser, a typed event emitter, and a way to run a function in a worker without a separate file.
 
 ```bash
-bun add @clov-std/common
+bun add @clov-std/common @clov-std/error
 ```
+
+`@clov-std/error` is a peer dependency.
 
 ## `parseHumanTime`
 

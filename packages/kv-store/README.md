@@ -9,11 +9,13 @@ A key-value store interface with TTLs and counters, and two adapters behind it:
 - `MemoryStore`: a `Map` with TTLs, periodic cleanup of expired entries, and an optional max size.
 - `BunRedisStore`: a thin wrapper around Bun's `RedisClient`.
 
-Both expose `get`, `set`, `del`, `increment`, `decrement`, `expire`, `ttl` and `clean`. `MemoryStore` answers synchronously and `BunRedisStore` with promises, so code that awaits each call runs on either: memory in dev, Redis in prod. Keys, TTLs and amounts are validated before they reach the backend. The only dependency is `@clov-std/error`.
+Both expose `get`, `set`, `del`, `increment`, `decrement`, `expire`, `ttl` and `clean`. `MemoryStore` answers synchronously and `BunRedisStore` with promises, so code that awaits each call runs on either: memory in dev, Redis in prod. Keys, TTLs and amounts are validated before they reach the backend.
 
 ```bash
-bun add @clov-std/kv-store
+bun add @clov-std/kv-store @clov-std/error
 ```
+
+`@clov-std/error` is a peer dependency.
 
 ## `MemoryStore`
 
