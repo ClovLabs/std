@@ -4,15 +4,13 @@ import type { Translations } from '../type/translations';
 
 /**
  * Options accepted by the {@link LocalizedException} constructor.
- *
- * `key` is omitted: it comes from the first positional argument, and accepting it twice
- * would silently ignore one of the two.
+ * `code` is left out: it is the constructor's first argument.
  *
  * @template TCause - Type of the underlying cause.
  */
 export interface LocalizedExceptionOptions<TCause = unknown> extends Omit<
 	ExceptionOptions<TCause>,
-	'key'
+	'code'
 > {
 	/** All available translations keyed by locale. */
 	readonly translations: Translations;
