@@ -8,45 +8,29 @@ export const MEMORY_STORE_ERROR_CODES = {
 } as const;
 
 interface MemoryStoreEntry {
-	/**
-	 * The stored value for this entry.
-	 */
 	readonly value: unknown;
-	/**
-	 * Timestamp when this entry expires (in milliseconds).
-	 * -1 means no expiration (like Redis behavior).
-	 */
+	/** Expiry as an epoch timestamp in milliseconds, or -1 for none. */
 	exp: number;
 }
 
 /**
- * In-memory key-value store adapter with automatic cleanup of expired entries.
+ * In-memory {@link KvStore} with TTL support.
  *
- * Provides a memory-based implementation of {@link KvStore} with TTL support
- * and automatic background cleanup of expired entries.
+ * Expired entries are dropped when read and by a periodic background sweep.
  */
 export class MemoryStore extends KvStore {
-	/**
-	 * In-memory key-value store.
-	 */
 	private readonly store = new Map<string, MemoryStoreEntry>();
 
 	/**
-	 * Cleanup interval (5 minutes by default).
+	 * Interval of the expired-entry sweep, in milliseconds.
 	 *
 	 * @defaultValue 300000
 	 */
 	private readonly cleanupInterval: number;
 
-	/**
-	 * Maximum number of entries allowed in the store.
-	 * Defaults to Infinity (no limit).
-	 */
+	/** Maximum number of entries, unlimited by default. */
 	private readonly maxSize: number;
 
-	/**
-	 * Timer for cleanup operations.
-	 */
 	private cleanupTimer: Timer | null = null;
 
 	public constructor(cleanupIntervalMs?: number, maxSize?: number) {
@@ -113,13 +97,14 @@ export class MemoryStore extends KvStore {
 	public override ttl(key: string): number {
 		KvStore.validateKey(key);
 
+		// Same replies as Redis TTL: -2 for a missing (or expired) key, -1 for a key without expiry.
 		const entry = this.store.get(key);
-		if (!entry) return -1;
+		if (!entry) return -2;
 
 		if (entry.exp === -1) return -1;
 
 		const remaining = entry.exp - Date.now();
-		return remaining > 0 ? Math.ceil(remaining / 1000) : -1;
+		return remaining > 0 ? Math.ceil(remaining / 1000) : -2;
 	}
 
 	public override clean(): number {
@@ -135,7 +120,7 @@ export class MemoryStore extends KvStore {
 			this.removeExpiredEntries();
 		}, this.cleanupInterval);
 
-		// Allow process to exit even if timer is running
+		// Don't keep the process alive just for the sweep
 		this.cleanupTimer.unref();
 	}
 

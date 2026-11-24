@@ -215,9 +215,17 @@ describe.concurrent('MemoryStore', () => {
 	});
 
 	describe('TTL Management', () => {
-		test('should return -1 for non-existent key', () => {
+		test('should return -2 for non-existent key', () => {
 			const store = new MemoryStore();
-			expect(store.ttl('nonexistent')).toBe(-1);
+			expect(store.ttl('nonexistent')).toBe(-2);
+			store.destroy();
+		});
+
+		test('should return -2 for an expired key', async () => {
+			const store = new MemoryStore();
+			store.set('short', 'value', 1);
+			await Bun.sleep(1100);
+			expect(store.ttl('short')).toBe(-2);
 			store.destroy();
 		});
 
