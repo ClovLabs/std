@@ -18,20 +18,25 @@ export interface VerifyOptions {
 }
 
 /**
- * Signs a JWT with the given payload and expiration
+ * Signs an HS256 JWT.
  *
- * @param secret - The secret key used for HS256 signing (minimum 32 characters)
- * @param payload - The JWT payload claims
- * @param expirationSeconds - Token expiration as a seconds offset from now (default: 15 minutes)
+ * Defaults `iss` to `'Clov-Issuer'`, `aud` to `['Clov-Audience']`, `sub` to `''` and `nbf`, `iat`
+ * and `exp` from the current time; any of them set in `payload` wins.
  *
- * @throws ({@link Exception}) - If secret is too short, expiration is in the past, or signing fails
+ * @param secret - HS256 key, at least 32 characters
+ * @param payload - Claims to sign
+ * @param expirationSeconds - Lifetime from now, in seconds (default: 15 minutes)
  *
- * @returns A Promise resolving to the signed JWT string
+ * @throws ({@link Exception}) - `jwt.secret.too-weak` or `jwt.expiration.in-past`, thrown synchronously, if the secret is
+ * shorter than 32 characters or `expirationSeconds` is not positive
+ *
+ * @returns A promise of the signed token; it rejects with an {@link Exception} (`jwt.signing.failed`, original error as
+ * `cause`) if signing fails
  */
 export const signJWT = (
 	secret: string,
 	payload: JWTPayload,
-	expirationSeconds: number = 60 * 15 // 15 minutes
+	expirationSeconds: number = 60 * 15
 ): Promise<string> => {
 	if (secret.length < 32)
 		throw new Exception('Secret key must be at least 32 characters long', {
@@ -58,28 +63,34 @@ export const signJWT = (
 		...payload
 	};
 
-	try {
-		return new SignJWT(finalPayload)
-			.setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
-			.sign(textEncoder.encode(secret));
-	} catch (error) {
+	const fail = (error: unknown): never => {
 		throw new Exception('Failed to sign JWT', {
 			code: JWT_ERROR_CODES.SIGNING_FAILED,
 			cause: error
 		});
+	};
+
+	try {
+		return new SignJWT(finalPayload)
+			.setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+			.sign(textEncoder.encode(secret))
+			.catch(fail);
+	} catch (error) {
+		return fail(error);
 	}
 };
 
 /**
- * Verifies a JWT token and throws Exception on failure
+ * Verifies an HS256 JWT.
  *
- * @param token - The JWT token string to verify
- * @param secret - The secret key used for HS256 verification
- * @param options - Optional verification options for issuer/audience validation
+ * @param token - Token to verify
+ * @param secret - HS256 key it was signed with
+ * @param options - Expected `iss` and `aud`, checked only when given
  *
- * @throws ({@link Exception}) - 401 if token is expired, invalid signature, malformed, or claim validation fails
+ * @throws ({@link Exception}) - `jwt.token.expired` if the token has expired, `jwt.token.invalid` for any other
+ * failure (bad signature, malformed token, failed claim check)
  *
- * @returns The verification result with payload and protected header
+ * @returns The verified payload and protected header
  */
 export const verifyJWT = async (
 	token: string,

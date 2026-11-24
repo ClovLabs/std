@@ -157,6 +157,17 @@ describe.concurrent('JWT Core Functions', () => {
 			}
 		);
 
+		test('should reject with Exception with SIGNING_FAILED when signing fails', async () => {
+			// BigInt cannot be serialized to JSON, so jose rejects while signing
+			const promise = signJWT(testSecret, { value: 1n });
+
+			const error = await promise.catch((e: unknown) => e);
+			expect(error).toBeInstanceOf(Exception);
+			expect((error as Exception).message).toBe('Failed to sign JWT');
+			expect((error as Exception).code).toBe(JWT_ERROR_CODES.SIGNING_FAILED);
+			expect((error as Exception).cause).toBeInstanceOf(TypeError);
+		});
+
 		test('should handle empty payload', async () => {
 			const token = await signJWT(testSecret, {});
 
